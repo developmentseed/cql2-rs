@@ -1,0 +1,104 @@
+WHITESPACE = _{ SEPARATOR | "\n" | "\t" }
+COLON      = _{ ":" }
+LPAREN     = _{ "(" }
+RPAREN     = _{ ")" }
+QUOTE      = _{ "'" }
+DQUOTE     = _{ "\"" }
+PERIOD     = _{ "." }
+UNDERSCORE = _{ "_" }
+PLUSMINUS  = _{ "+" | "-" }
+COMMA      = _{ "," }
+COMMADELIM = _{ WHITESPACE* ~ COMMA ~ WHITESPACE* }
+
+DECIMAL  =  { Decimal }
+YEAR     = _{ NUMBER{4} }
+MONTH    = _{ NUMBER{2} }
+DAY      = _{ NUMBER{2} }
+DATE_STR = _{ YEAR ~ DASH ~ MONTH ~ DASH ~ DAY }
+
+HOUR    = _{ '0'..'2' ~ NUMBER }
+MINUTE  = _{ '0'..'5' ~ NUMBER }
+SECONDS = _{ '0'..'5' ~ NUMBER ~ (PERIOD ~ NUMBER*)? }
+TZ      = _{ (^"Z" | (PLUSMINUS ~ HOUR) | (PLUSMINUS ~ HOUR ~ COLON ~ MINUTE))? }
+
+TIME_STR = { HOUR ~ COLON ~ MINUTE ~ COLON ~ SECONDS ~ TZ }
+
+TIMESTAMP_STR = { DATE_STR ~ ("T" | " ") ~ TIME_STR }
+
+TORD = { QUOTE ~ (TIMESTAMP_STR | DATE_STR) ~ QUOTE }
+
+// wkt
+PADDED_DECIMAL     = _{ WHITESPACE* ~ DECIMAL* ~ WHITESPACE* }
+COORD              = _{ PADDED_DECIMAL{1, 4} }
+PCOORD             = _{ LPAREN ~ COORD ~ RPAREN }
+COORDLIST          = _{ COORD ~ (COMMADELIM ~ COORD)* }
+PCOORDLIST         = _{ LPAREN ~ COORDLIST ~ RPAREN }
+PCOORDLISTLIST     = _{ LPAREN ~ PCOORDLIST ~ (COMMADELIM ~ PCOORDLIST)* ~ RPAREN }
+PCOORDLISTLISTLIST = _{ LPAREN ~ PCOORDLISTLIST ~ (COMMADELIM ~ PCOORDLISTLIST)* ~ RPAREN }
+
+ZM = _{ WHITESPACE* ~ (^"Z" | ^"ZM")? ~ WHITESPACE* }
+
+POINT      = @{ ^"POINT" ~ ZM ~ PCOORD }
+LINESTRING = @{ ^"LINESTRING" ~ ZM ~ PCOORDLIST }
+POLYGON    = @{ ^"POLYGON" ~ ZM ~ PCOORDLISTLIST }
+
+MULTIPOINT_1 = _{ ^"MULTIPOINT" ~ ZM ~ PCOORDLIST }
+MULTIPOINT_2 = _{ ^"MULTIPOINT" ~ ZM ~ PCOORDLISTLIST }
+MULTIPOINT   = @{ MULTIPOINT_1 | MULTIPOINT_2 }
+
+MULTILINESTRING = @{ ^"MULTILINESTRING" ~ ZM ~ PCOORDLISTLIST }
+MULTIPOLYGON    = @{ ^"MULTIPOLYGON" ~ ZM ~ PCOORDLISTLISTLIST }
+
+GEOMETRY_SINGLE = _{ WHITESPACE* ~ (POINT | LINESTRING | POLYGON | MULTIPOINT | MULTILINESTRING | MULTIPOLYGON) ~ WHITESPACE* }
+
+GEOMETRY_COLLECTION = @{ ^"GEOMETRYCOLLECTION" ~ WHITESPACE* ~ LPAREN ~ GEOMETRY_SINGLE ~ (COMMADELIM ~ GEOMETRY_SINGLE)* ~ RPAREN }
+
+GEOMETRY = @{ GEOMETRY_SINGLE | GEOMETRY_COLLECTION }
+
+IdentifierInner = _{
+    ALPHABETIC ~ (ALPHABETIC | NUMBER | UNDERSCORE | PERIOD | COLON)*
+}
+
+IdentifierQuoted = { DQUOTE ~ IdentifierInner ~ DQUOTE }
+
+Identifier = @{ IdentifierInner | IdentifierQuoted }
+
+NotFlag                   =  { ^"not" }
+Expr                      =  { ExprAtomValue ~ (ExprInfixOp ~ ExprAtomValue)* }
+ExprInfixOp               = _{ Between | ArithInfixOp | CmpInfixOp | ConcatInfixOp | And | Or }
+Between                   =  { NotFlag? ~ ^"between" }
+And                       =  { ^"and" }
+Or                        =  { ^"or" }
+ConcatInfixOp             =  { "||" }
+ArithInfixOp              = _{ Add | Subtract | Multiply | Divide | Modulo }
+Add                       =  { "+" }
+Subtract                  =  { "-" }
+Multiply                  =  { "*" }
+Divide                    =  { "/" }
+Modulo                    =  { "%" }
+CmpInfixOp                = _{ NotEq | GtEq | Gt | LtEq | Lt | Eq | Lt | In }
+Eq                        =  { "=" }
+Gt                        =  { ">" }
+GtEq                      =  { ">=" }
+Lt                        =  { "<" }
+LtEq                      =  { "<=" }
+NotEq                     =  { "<>" | "!=" }
+In                        =  { NotFlag? ~ ^"in" }
+ExprAtomValue             = _{ UnaryNot* ~ AtomicExpr ~ IsNullPostfix? }
+UnaryNot                  = @{ NotFlag }
+IsNullPostfix             =  { ^"is" ~ NotFlag? ~ ^"null" }
+AtomicExpr                = _{ Literal | Function | Identifier | ExpressionInParentheses }
+Literal                   = _{ GEOMETRY | True | False | Null | Double | Decimal | Unsigned | Integer | SingleQuotedString }
+True                      =  { ^"true" }
+False                     =  { ^"false" }
+Null                      =  { ^"null" }
+Decimal                   = @{ Integer ~ ("." ~ ASCII_DIGIT*)? }
+Double                    = @{ Integer ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ Integer) }
+Integer                   = @{ ("+" | "-")? ~ ASCII_DIGIT+ }
+Unsigned                  = @{ ASCII_DIGIT+ }
+SingleQuotedString        = @{ OnlyQuotesSequence | AnythingButQuotesSequence }
+OnlyQuotesSequence        = @{ ("'" ~ "'")+ }
+AnythingButQuotesSequence = @{ "'" ~ (!("'") ~ ANY)* ~ "'" }
+FunctionArgs              = _{ (Expr ~ ("," ~ Expr)*)? }
+Function                  =  { Identifier ~ LPAREN ~ FunctionArgs? ~ RPAREN }
+ExpressionInParentheses   =  { "(" ~ Expr ~ ")" }

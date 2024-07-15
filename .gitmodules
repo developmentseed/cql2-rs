@@ -1,0 +1,3 @@
+[submodule "ogcapi-features"]
+	path = ogcapi-features
+	url = git@github.com:opengeospatial/ogcapi-features.git

@@ -1,0 +1,377 @@
+booleanExpression = { booleanTerm ~ "OR" ~ booleanTerm }
+
+booleanTerm = booleanFactor [ {"AND" booleanFactor} ];
+
+booleanFactor = ["NOT"] booleanPrimary;
+
+booleanPrimary = function
+               | predicate
+               | booleanLiteral
+               | "(" booleanExpression ")";
+
+predicate = comparisonPredicate
+          | spatialPredicate
+          | temporalPredicate
+          | arrayPredicate;
+
+comparisonPredicate = binaryComparisonPredicate
+                    | isLikePredicate
+                    | isBetweenPredicate
+                    | isInListPredicate
+                    | isNullPredicate;
+
+binaryComparisonPredicate = scalarExpression
+                            comparisonOperator
+                            scalarExpression;
+
+scalarExpression = characterClause
+                 | numericLiteral
+                 | instantInstance
+                 | arithmeticExpression
+                 | booleanLiteral
+                 | propertyName
+                 | function;
+
+comparisonOperator = "="      # equal
+                   | "<" ">"  # not equal
+                   | "<"      # less than
+                   | ">"      # greater than
+                   | "<" "="  # less than or equal
+                   | ">" "="; # greater than or equal
+
+isLikePredicate =  characterExpression ["NOT"] "LIKE" patternExpression;
+
+patternExpression = "CASEI" "(" patternExpression ")"
+                  | "ACCENTI" "(" patternExpression ")"
+                  | characterLiteral;
+
+isBetweenPredicate = numericExpression ["NOT"] "BETWEEN"
+                     numericExpression "AND" numericExpression;
+
+numericExpression = arithmeticExpression
+                  | numericLiteral
+                  | propertyName
+                  | function;
+
+isInListPredicate = scalarExpression ["NOT"] "IN" "(" inList ")";
+
+inList = scalarExpression [ {"," scalarExpression} ];
+
+isNullPredicate = isNullOperand "IS" ["NOT"] "NULL";
+
+isNullOperand = characterClause
+              | numericLiteral
+              | temporalInstance
+              | spatialInstance
+              | arithmeticExpression
+              | booleanExpression
+              | propertyName
+              | function;
+
+spatialPredicate =  spatialFunction "(" geomExpression "," geomExpression ")";
+
+spatialFunction = "S_INTERSECTS"
+                | "S_EQUALS"
+                | "S_DISJOINT"
+                | "S_TOUCHES"
+                | "S_WITHIN"
+                | "S_OVERLAPS"
+                | "S_CROSSES"
+                | "S_CONTAINS";
+
+geomExpression = spatialInstance
+               | propertyName
+               | function;
+
+temporalPredicate = temporalFunction
+                    "(" temporalExpression "," temporalExpression ")";
+
+temporalExpression = temporalInstance
+                   | propertyName
+                   | function;
+
+temporalFunction = "T_AFTER"
+                 | "T_BEFORE"
+                 | "T_CONTAINS"
+                 | "T_DISJOINT"
+                 | "T_DURING"
+                 | "T_EQUALS"
+                 | "T_FINISHEDBY"
+                 | "T_FINISHES"
+                 | "T_INTERSECTS"
+                 | "T_MEETS"
+                 | "T_METBY"
+                 | "T_OVERLAPPEDBY"
+                 | "T_OVERLAPS"
+                 | "T_STARTEDBY"
+                 | "T_STARTS";
+
+arrayPredicate = arrayFunction
+                 "(" arrayExpression "," arrayExpression ")";
+
+arrayExpression = array
+                | propertyName
+                | function;
+
+array = "(" ")"
+      | "(" arrayElement [ { "," arrayElement } ] ")";
+
+arrayElement = characterClause
+             | numericLiteral
+             | temporalInstance
+             | spatialInstance
+             | array
+             | arithmeticExpression
+             | booleanExpression
+             | propertyName
+             | function;
+
+arrayFunction = "A_EQUALS"
+              | "A_CONTAINS"
+              | "A_CONTAINEDBY"
+              | "A_OVERLAPS";
+
+
+arithmeticExpression = arithmeticTerm [ {arithmeticOperatorPlusMinus arithmeticTerm} ];
+
+arithmeticOperatorPlusMinus = "+" | "-";
+
+arithmeticTerm = powerTerm [ {arithmeticOperatorMultDiv powerTerm} ];
+
+arithmeticOperatorMultDiv = "*" | "/" | "%" | "div";
+
+powerTerm = arithmeticFactor [ "^" arithmeticFactor ];
+
+arithmeticFactor = "(" arithmeticExpression ")"
+                 | [ "-" ] arithmeticOperand;
+
+arithmeticOperand = numericLiteral
+                  | propertyName
+                  | function;
+
+propertyName = identifier | "\"" identifier "\"";
+
+identifier = identifierStart [ { identifierPart } ];
+
+identifierPart = identifierStart
+               | "."                    # "\x002E"
+               | digit                  # 0-9
+               | "\x0300".."\x036F"     # combining and diacritical marks
+               | "\x203F".."\x2040";    # ‿ and ⁀
+
+identifierStart = "\x003A"              # colon
+                | "\x005F"              # underscore
+                | "\x0041".."\x005A"    # A-Z
+                | "\x0061".."\x007A"    # a-z
+                | "\x00C0".."\x00D6"    # À-Ö Latin-1 Supplement Letters
+                | "\x00D8".."\x00F6"    # Ø-ö Latin-1 Supplement Letters
+                | "\x00F8".."\x02FF"    # ø-ÿ Latin-1 Supplement Letters
+                | "\x0370".."\x037D"    # Ͱ-ͽ Greek and Coptic (without ";")
+                | "\x037F".."\x1FFE"    # See note 1.
+                | "\x200C".."\x200D"    # zero width non-joiner and joiner
+                | "\x2070".."\x218F"    # See note 2.
+                | "\x2C00".."\x2FEF"    # See note 3.
+                | "\x3001".."\xD7FF"    # See note 4.
+                | "\xF900".."\xFDCF"    # See note 5.
+                | "\xFDF0".."\xFFFD"    # See note 6.
+                | "\x10000".."\xEFFFF"; # See note 7.
+
+
+
+function = identifier "(" {argumentList} ")";
+
+argumentList = argument [ { "," argument } ];
+
+argument = characterClause
+         | numericLiteral
+         | temporalInstance
+         | spatialInstance
+         | array
+         | arithmeticExpression
+         | booleanExpression
+         | propertyName
+         | function;
+
+characterExpression = characterClause
+                    | propertyName
+                    | function;
+
+characterClause = "CASEI" "(" characterExpression ")"
+                | "ACCENTI" "(" characterExpression ")"
+                | characterLiteral;
+
+characterLiteral = "'" [ {character} ] "'";
+
+character = alpha | digit | whitespace | escapeQuote;
+
+escapeQuote = "''" | "\\'";
+
+alpha = "\x0007".."\x0008"     # bell, bs
+      | "\x0021".."\x0026"     # !, ", #, $, %, &
+      | "\x0028".."\x002F"     # (, ), *, +, comma, -, ., /
+      | "\x003A".."\x0084"     # --+
+      | "\x0086".."\x009F"     #   |
+      | "\x00A1".."\x167F"     #   |
+      | "\x1681".."\x1FFF"     #   |
+      | "\x200B".."\x2027"     #   +-> :,;,<,=,>,?,@,A-Z,[,\,],^,_,`,a-z,...
+      | "\x202A".."\x202E"     #   |
+      | "\x2030".."\x205E"     #   |
+      | "\x2060".."\x2FFF"     #   |
+      | "\x3001".."\xD7FF"     # --+
+      | "\xE000".."\xFFFD"     # See note 8.
+      | "\x10000".."\x10FFFF"; # See note 9.
+
+
+digit = "\x0030".."\x0039";
+
+whitespace = "\x0009"  # Character tabulation
+           | "\x000A"  # Line feed
+           | "\x000B"  # Line tabulation
+           | "\x000C"  # Form feed
+           | "\x000D"  # Carriage return
+           | "\x0020"  # Space
+           | "\x0085"  # Next line
+           | "\x00A0"  # No-break space
+           | "\x1680"  # Ogham space mark
+           | "\x2000"  # En quad
+           | "\x2001"  # Em quad
+           | "\x2002"  # En space
+           | "\x2003"  # Em space
+           | "\x2004"  # Three-per-em space
+           | "\x2005"  # Four-per-em space
+           | "\x2006"  # Six-per-em space
+           | "\x2007"  # Figure space
+           | "\x2008"  # Punctuation space
+           | "\x2009"  # Thin space
+           | "\x200A"  # Hair space
+           | "\x2028"  # Line separator
+           | "\x2029"  # Paragraph separator
+           | "\x202F"  # Narrow no-break space
+           | "\x205F"  # Medium mathematical space
+           | "\x3000"; # Ideographic space
+
+numericLiteral = unsignedNumericLiteral | signedNumericLiteral;
+
+unsignedNumericLiteral = decimalNumericLiteral | scientificNumericLiteral;
+
+signedNumericLiteral = [sign] unsignedNumericLiteral;
+
+decimalNumericLiteral = unsignedInteger [ "." [ unsignedInteger ] ]
+                        | "." unsignedInteger;
+
+scientificNumericLiteral = mantissa "E" exponent;
+
+mantissa = decimalNumericLiteral;
+
+exponent = signedInteger;
+
+signedInteger = [ sign ] unsignedInteger;
+
+unsignedInteger = {digit};
+
+sign = "+" | "-";
+
+booleanLiteral = "TRUE" | "FALSE";
+
+spatialInstance = geometryLiteral
+                | geometryCollectionTaggedText
+                | bboxTaggedText;
+
+geometryLiteral = pointTaggedText
+                | linestringTaggedText
+                | polygonTaggedText
+                | multipointTaggedText
+                | multilinestringTaggedText
+                | multipolygonTaggedText;
+
+pointTaggedText = "POINT" ["Z"] pointText;
+
+linestringTaggedText = "LINESTRING" ["Z"] lineStringText;
+
+polygonTaggedText = "POLYGON" ["Z"] polygonText;
+
+multipointTaggedText = "MULTIPOINT" ["Z"] multiPointText;
+
+multilinestringTaggedText = "MULTILINESTRING" ["Z"] multiLineStringText;
+
+multipolygonTaggedText = "MULTIPOLYGON" ["Z"] multiPolygonText;
+
+geometryCollectionTaggedText = "GEOMETRYCOLLECTION" ["Z"] geometryCollectionText;
+
+pointText = "(" point ")";
+
+point = xCoord yCoord [zCoord];
+
+xCoord = signedNumericLiteral;
+
+yCoord = signedNumericLiteral;
+
+zCoord = signedNumericLiteral;
+
+lineStringText = "(" point "," point {"," point} ")";
+
+linearRingText = emptySet | "(" point "," point "," point "," point {"," point } ")";
+
+polygonText =  "(" linearRingText {"," linearRingText} ")";
+
+multiPointText = "(" pointText {"," pointText} ")";
+
+multiLineStringText = "(" lineStringText {"," lineStringText} ")";
+
+multiPolygonText = "(" polygonText {"," polygonText} ")";
+
+geometryCollectionText = "(" geometryLiteral {"," geometryLiteral} ")";
+
+bboxTaggedText = "BBOX" bboxText;
+
+bboxText = "(" westBoundLon "," southBoundLat "," [minElev ","] eastBoundLon "," northBoundLat ["," maxElev] ")";
+
+westBoundLon = signedNumericLiteral;
+
+eastBoundLon = signedNumericLiteral;
+
+northBoundLat = signedNumericLiteral;
+
+southBoundLat = signedNumericLiteral;
+
+minElev = signedNumericLiteral;
+
+maxElev = signedNumericLiteral;
+
+temporalInstance = instantInstance | intervalInstance;
+
+instantInstance = dateInstant | timestampInstant;
+
+dateInstant = "DATE"
+              "(" dateInstantString ")";
+
+dateInstantString = "'" fullDate "'";
+
+timestampInstant = "TIMESTAMP"
+                   "(" timestampInstantString ")";
+
+timestampInstantString = "'" fullDate "T" utcTime "'";
+
+intervalInstance = "INTERVAL" "(" instantParameter "," instantParameter ")";
+
+instantParameter = dateInstantString
+                 | timestampInstantString
+                 | "'..'"
+                 | propertyName
+                 | function;
+
+fullDate   = dateYear "-" dateMonth "-" dateDay;
+
+dateYear   = digit digit digit digit;
+
+dateMonth  = digit digit;
+
+dateDay    = digit digit;
+
+utcTime  = timeHour ":" timeMinute ":" timeSecond "Z";
+
+timeHour   = digit digit;
+
+timeMinute = digit digit;
+
+timeSecond = digit digit ["." digit {digit}];

@@ -1,0 +1,34 @@
+WHITESPACE=_{ (" " | "\t" | NEWLINE) }
+wscomma = _{ WHITESPACE* ~ "," ~ WHITESPACE*}
+
+int = @{ ("+" | "-")? ~ ASCII_DIGIT+ }
+num = @{ int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
+
+ident_nonquoted = { ( ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_" )* }
+ident_quoted = { "\"" ~ ASCII_ALPHANUMERIC+ ~ "\"" }
+ident = @{ ident_nonquoted | ident_quoted }
+
+literal = { "'" ~ ASCII_ALPHANUMERIC* ~ "'" }
+
+value = { ( wkt | literal | func | ident ) }
+
+func = { ident ~ WHITESPACE* ~ "(" ~ value? ~ (wscomma ~ value)* ~ ")" }
+
+
+is_not_null = { ^"IS NOT NULL"}
+is_null = { ^"IS NULL" }
+not = { ^"NOT" }
+
+//WKT
+coord = @{ ( num ~ WHITESPACE* ){2,3} }
+coordseq = @{ ("(" ~ coord ~ ( wscomma ~ coord)* ~ ")") }
+singlegeotypes = @{(
+	^"POLYGON" |
+    ^"POINT" |
+    ^"LINESTRING" |
+    ^"GEOMETRYCOLLECTION"
+)}
+geotypes = @{ "MULTI"? ~ singlegeotypes ~ ( WHITESPACE* ~ ^"Z" )? }
+wkt = @{geotypes ~ "(" ~ coordseq ~ ")"}
+
+statement = { value* }

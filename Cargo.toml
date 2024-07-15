@@ -1,0 +1,18 @@
+[package]
+name = "cql2-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+geo-types = "0.7.13"
+geojson = "0.24.1"
+json_schema = "1.7.5"
+jsonschema = "0.18.0"
+lazy_static = "1.5.0"
+peg = "0.8.3"
+pest = "2.7.11"
+pest_derive = "2.7.11"
+serde = "1.0.204"
+serde_derive = "1.0.204"
+serde_json = "1.0.120"
+wkt = { version = "0.10.3", features = ["serde"] }
