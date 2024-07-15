@@ -2,10 +2,11 @@ use pest::iterators::{Pairs, Pair};
 use pest::pratt_parser::PrattParser;
 use pest::Parser;
 use serde_json;
-use serde_derive::Serialize;
+use serde_derive::{Serialize, Deserialize};
 use geo_types::Geometry;
 use wkt::TryFromWkt;
 use geojson::ser::serialize_geometry;
+use geojson::de::deserialize_geometry;
 use jsonschema::JSONSchema;
 use std::fs;
 
@@ -14,7 +15,7 @@ use std::fs;
 #[grammar = "cql2.pest"]
 pub struct CQL2Parser;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Expr {
     Operation {
@@ -30,7 +31,7 @@ pub enum Expr {
     Date {
         date: Box<Expr>,
     },
-    #[serde(serialize_with = "serialize_geometry")]
+    #[serde(serialize_with = "serialize_geometry", deserialize_with = "deserialize_geometry")]
     Geometry(Geometry),
     ArithValue(u64),
     FloatValue(f64),
@@ -195,7 +196,15 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
         .parse(expression_pairs)
 }
 
+
+
 pub fn parse(cql2: &str) -> Expr{
-    let mut pairs = CQL2Parser::parse(Rule::Expr, cql2).unwrap();
-    return parse_expr(pairs.next().unwrap().into_inner());
+    if cql2.starts_with("{") && cql2.ends_with("}") {
+        let expr: Expr = serde_json::from_str(cql2).unwrap();
+        println!("Parsed: {:#?}", &expr);
+        return expr;
+    } else {
+        let mut pairs = CQL2Parser::parse(Rule::Expr, cql2).unwrap();
+        return parse_expr(pairs.next().unwrap().into_inner());
+    }
 }
