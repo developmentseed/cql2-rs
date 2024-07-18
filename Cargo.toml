@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 boon = "0.6.0"
+convert_case = "0.6.0"
 geo-types = "0.7.13"
 geojson = "0.24.1"
 geozero = "0.13.0"

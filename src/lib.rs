@@ -3,22 +3,47 @@ use pest::pratt_parser::PrattParser;
 use pest::Parser;
 use serde_json;
 use serde_derive::{Serialize, Deserialize};
-use geo_types::Geometry;
-use wkt::TryFromWkt;
-use geojson::ser::serialize_geometry;
-use geojson::de::deserialize_geometry;
-use jsonschema::JSONSchema;
-use jsonschema::Draft::Draft202012;
 use std::fs;
+use boon::{Schemas, Compiler, SchemaIndex};
 
-pub fn get_validator()-> JSONSchema{
-    JSONSchema::options()
-        .with_draft(Draft202012)
-        .should_validate_formats(false)
-        .compile(
-            &serde_json::from_str(include_str!("../ogcapi-features/cql2/standard/schema/cql2.json")).unwrap()
-        )
-        .expect("Invalid Schema")
+pub struct Validator {
+    schemas: Schemas,
+    index: SchemaIndex
+}
+
+impl Validator {
+    pub fn new() -> Validator{
+        let mut schemas = Schemas::new();
+        let mut compiler = Compiler::new();
+        let schema_json = serde_json::from_str(include_str!("../ogcapi-features/cql2/standard/schema/cql2.json")).expect("Could not parse schema to json");
+        compiler.add_resource("/tmp/cql2.json", schema_json).expect("Could not add schema to compiler");
+        let index = compiler.compile(
+            "/tmp/cql2.json",
+            &mut schemas
+        ).expect("Could not compile schema");
+        Validator{schemas,index}
+
+    }
+    pub fn validate(self, obj: serde_json::Value) -> bool {
+        let valid = self.schemas.validate(&obj, self.index);
+        match valid {
+            Ok(()) => true,
+            Err(e) => {
+                let debug_level: &str = &std::env::var("CQL2_DEBUG_LEVEL").unwrap_or("1".to_string());
+                match debug_level {
+                    "3" => { println!("-----------\n{e:#?}\n---------------")},
+                    "2" => { println!("-----------\n{e:?}\n---------------")},
+                    "1" => { println!("-----------\n{e}\n---------------")},
+                    _ => { println!("-----------\nCQL2 Is Invalid!\n---------------")},
+                }
+
+                false
+            }
+        }
+    }
+    pub fn validate_str(self, obj: &str) -> bool{
+        self.validate(serde_json::from_str(obj).expect("Could not convert string to json."))
+    }
 }
 
 
@@ -45,10 +70,7 @@ pub enum Expr {
         date: Box<Expr>,
     },
     // #[serde(serialize_with = "serialize_geometry", deserialize_with = "deserialize_geometry")]
-    Geometry{
-        r#type: String,
-        coordinates: Box<Expr>
-    },
+    Geometry(GeomSteps),
     ArithValue(u64),
     FloatValue(f64),
     LiteralValue(String),
@@ -57,8 +79,8 @@ pub enum Expr {
         property: String,
     },
     ArrayValue(Vec<Box<Expr>>),
-    Coord(Vec<Box<Expr>>),
-    PCoordList(Vec<Box<Expr>>),
+    Coord(Vec<Box<f64>>),
+    PCoordList(Vec<Expr>),
     PCoordListList(Vec<Box<Expr>>),
     PCoordListListList(Vec<Box<Expr>>),
 
@@ -78,18 +100,7 @@ impl Expr {
         return serde_json::to_string_pretty(&self).unwrap();
     }
     pub fn validate(&self) -> bool {
-        let schema = get_validator();
-        let json = serde_json::from_str(&self.as_json()).expect("Bad Json Returned");
-
-        let result = schema.validate(&json);
-        if let Err(errors) = result {
-            for error in errors {
-                println!("Validation error: {}", error);
-                println!("Instance path: {}", error.instance_path.to_string());
-            }
-            return false
-        }
-        return true
+        Validator::new().validate_str(&self.as_json())
     }
 }
 
@@ -154,8 +165,82 @@ pub fn opstr(op: Pair<Rule>) -> String {
     return normalize_op(op.as_str());
 }
 
-pub fn parse_geom(rule: Pair<Rule>) -> Expr::Geometry{
-    let mut pairs
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum GeomSteps {
+    Geometry{
+        r#type: String,
+        coordinates: Box<GeomSteps>
+    },
+    Coord(Vec<GeomSteps>),
+    CoordList(Vec<GeomSteps>),
+    Ord(f64),
+}
+
+pub fn geom_type_str(t: &str) -> String {
+    let out = match t.to_lowercase().as_str() {
+        "point" => "Point",
+        "linestring" => "LineString",
+        "polygon" => "Polygon",
+        "multipoint" => "MultiPoint",
+        "multilinestring" => "MultiLineString",
+        "multipolygon" => "MultiPolygon",
+        "geometrycollection" => "GeometryCollection",
+        _ => unreachable!("Invalid Geometry Type")
+    };
+    out.to_string()
+}
+
+fn parse_geom(p: Pair<Rule>) -> GeomSteps{
+    match p.as_rule(){
+        Rule::GEOMETRY => {
+            let mut geom_pairs = p.into_inner().next().unwrap().into_inner();
+            let r#type = geom_type_str(geom_pairs.next().unwrap().as_str());
+            // let mut coordinates: Vec<GeomSteps> = Vec::new();
+            // for pair in geom_pairs{
+            //     let vals = parse_geom(pair);
+            //     coordinates.push(vals);
+            // }
+            let coordinates = parse_geom(geom_pairs.next().unwrap());
+            return GeomSteps::Geometry{
+                r#type,
+                coordinates: Box::new(coordinates)
+            }
+        },
+        Rule::PCOORDLISTLISTLIST | Rule::PCOORDLISTLIST  | Rule::PCOORDLIST => {
+            //println!("Rule: {:#?}", p.as_rule());
+            let pairs = p.into_inner();
+            //println!("Pairs>> {:#?}", pairs);
+            let mut arr = Vec::new();
+            for pair in pairs{
+                //println!("Pair>>{:#?}", pair);
+                let val = parse_geom(pair);
+                //println!("Val>> {:#?}", val);
+                arr.push(val);
+            }
+            //println!("Arr>> {:#?}", arr);
+            return GeomSteps::CoordList(arr)
+
+        },
+        Rule::COORD => {
+            let pairs = p.into_inner();
+            //println!("COORD Pairs {:#?}", pairs);
+            let mut coords = Vec::new();
+            for coord in pairs{
+                //println!("COORD {:#?}", coord);
+                coords.push(parse_geom(coord))
+            }
+            return GeomSteps::Coord(coords)
+        },
+        Rule::DECIMAL => {
+            return GeomSteps::Ord(p.as_str().parse::<f64>().unwrap())
+        },
+        _ => {
+            unreachable!("Cannot parse rule into geometry")
+        }
+    }
+
 }
 
 fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
@@ -182,55 +267,10 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                     property: strip_quotes(primary.as_str()),
                 }
             },
-            Rule::COORD => {
-                let pairs = primary.into_inner();
-                println!("COORD Pairs {:#?}", pairs);
-                let mut coords = Vec::new();
-                for coord in pairs{
-                    println!("COORD {:#?}", coord);
-                    coords.push(Box::new(Expr::FloatValue(coord.as_str().parse::<f64>().unwrap())))
-                }
-                println!("COORDS {:#?}", coords);
-                Expr::Coord(coords)
-            },
-            Rule::PCOORDLIST => {
-                let pairs = primary.into_inner();
-                println!("PCOORDLIST Pairs {:#?}", pairs);
-                let mut coords = Vec::new();
-                for coord in pairs{
-                    println!("COORD {:#?}", coord);
-                    coords.push(Box::new(Expr::Coord(parse_expr(coord))));
-                }
-                println!("COORDS {:#?}", coords);
-                Expr::Coord(coords)
-            },
             Rule::GEOMETRY => {
-                let mut pairs = primary.into_inner().next().unwrap().into_inner();
-                println!("GEOMETRY PAIRS {:#?}", pairs);
-                let geom = pairs.next().unwrap();
-                println!("GEOM {:#?}", geom);
-                let geomtype = geom.as_str();
+                let geom = parse_geom(primary);
+                Expr::Geometry(geom)
 
-                let gnext = parse_expr(pairs);
-                // let mut array_elements: Vec<Box<Expr>> = Vec::new();
-                // for pair in gpairs{
-                //     match pair.as_rule() {
-                //         Rule::DECIMAL => {
-                //             let num = pair.as_str().parse::<f64>().unwrap();
-                //             array_elements.push(Box::new(Expr::FloatValue(num)));
-                //         },
-                //         rule => {
-                //             println!("Unmatched {:#?}", rule);
-                //         }
-
-                //     }
-                // }
-                //let array_elements = parse_expr(gpairs);
-                println!("gnext {:#?}", gnext);
-                Expr::Geometry{
-                    r#type: geomtype.to_string(),
-                    coordinates: Box::new(gnext)
-                }
             },
             Rule::Function => {
                 let mut pairs = primary.into_inner();
@@ -248,7 +288,7 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
             },
             Rule::Array => {
                 let pairs = primary.into_inner();
-                println!("ARRAY PAIRS {:#?}", pairs);
+                //println!("ARRAY PAIRS {:#?}", pairs);
                 let mut array_elements = Vec::new();
                 for pair in pairs {
                     array_elements.push(Box::new(parse_expr(pair.into_inner())))
@@ -260,7 +300,7 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
             rule => unreachable!("Expr::parse expected atomic rule, found {:?}", rule),
         })
         .map_infix(|lhs, op, rhs| {
-            println!("INFIX: {:#?} {} {:#?}", lhs, op, rhs);
+            //println!("INFIX: {:#?} {} {:#?}", lhs, op, rhs);
             let opstring = opstr(op);
             let origargs = vec![Box::new(lhs.clone()),Box::new(rhs.clone())];
             let rhsclone = rhs.clone();
