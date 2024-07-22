@@ -1,3 +1,4 @@
+use geozero::geojson::GeoJsonWriter;
 use pest::iterators::{Pairs, Pair};
 use pest::pratt_parser::PrattParser;
 use pest::Parser;
@@ -5,7 +6,8 @@ use serde_json;
 use serde_derive::{Serialize, Deserialize};
 use std::fs;
 use boon::{Schemas, Compiler, SchemaIndex};
-
+use geozero::wkt::Wkt;
+use geozero::{ToJson, CoordDimensions, GeozeroGeometry};
 pub struct Validator {
     schemas: Schemas,
     index: SchemaIndex
@@ -70,7 +72,7 @@ pub enum Expr {
         date: Box<Expr>,
     },
     // #[serde(serialize_with = "serialize_geometry", deserialize_with = "deserialize_geometry")]
-    Geometry(GeomSteps),
+    Geometry(serde_json::Value),
     ArithValue(u64),
     FloatValue(f64),
     LiteralValue(String),
@@ -110,6 +112,7 @@ lazy_static::lazy_static! {
         use Rule::*;
         PrattParser::new()
             .op(Op::infix(Or, Left))
+            .op(Op::infix(Between, Left))
             .op(Op::infix(And, Left))
             .op(Op::prefix(UnaryNot))
             .op(Op::infix(Eq, Right))
@@ -121,7 +124,7 @@ lazy_static::lazy_static! {
                 Op::infix(LtEq, Right)
             )
             .op(Op::infix(Like, Right))
-            .op(Op::infix(Between, Left))
+            //.op(Op::infix(Between, Left))
             .op(Op::infix(In, Left))
             .op(Op::postfix(IsNullPostfix))
             .op(Op::infix(Is, Right))
@@ -166,83 +169,6 @@ pub fn opstr(op: Pair<Rule>) -> String {
 }
 
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(untagged)]
-pub enum GeomSteps {
-    Geometry{
-        r#type: String,
-        coordinates: Box<GeomSteps>
-    },
-    Coord(Vec<GeomSteps>),
-    CoordList(Vec<GeomSteps>),
-    Ord(f64),
-}
-
-pub fn geom_type_str(t: &str) -> String {
-    let out = match t.to_lowercase().as_str() {
-        "point" => "Point",
-        "linestring" => "LineString",
-        "polygon" => "Polygon",
-        "multipoint" => "MultiPoint",
-        "multilinestring" => "MultiLineString",
-        "multipolygon" => "MultiPolygon",
-        "geometrycollection" => "GeometryCollection",
-        _ => unreachable!("Invalid Geometry Type")
-    };
-    out.to_string()
-}
-
-fn parse_geom(p: Pair<Rule>) -> GeomSteps{
-    match p.as_rule(){
-        Rule::GEOMETRY => {
-            let mut geom_pairs = p.into_inner().next().unwrap().into_inner();
-            let r#type = geom_type_str(geom_pairs.next().unwrap().as_str());
-            // let mut coordinates: Vec<GeomSteps> = Vec::new();
-            // for pair in geom_pairs{
-            //     let vals = parse_geom(pair);
-            //     coordinates.push(vals);
-            // }
-            let coordinates = parse_geom(geom_pairs.next().unwrap());
-            return GeomSteps::Geometry{
-                r#type,
-                coordinates: Box::new(coordinates)
-            }
-        },
-        Rule::PCOORDLISTLISTLIST | Rule::PCOORDLISTLIST  | Rule::PCOORDLIST => {
-            //println!("Rule: {:#?}", p.as_rule());
-            let pairs = p.into_inner();
-            //println!("Pairs>> {:#?}", pairs);
-            let mut arr = Vec::new();
-            for pair in pairs{
-                //println!("Pair>>{:#?}", pair);
-                let val = parse_geom(pair);
-                //println!("Val>> {:#?}", val);
-                arr.push(val);
-            }
-            //println!("Arr>> {:#?}", arr);
-            return GeomSteps::CoordList(arr)
-
-        },
-        Rule::COORD => {
-            let pairs = p.into_inner();
-            //println!("COORD Pairs {:#?}", pairs);
-            let mut coords = Vec::new();
-            for coord in pairs{
-                //println!("COORD {:#?}", coord);
-                coords.push(parse_geom(coord))
-            }
-            return GeomSteps::Coord(coords)
-        },
-        Rule::DECIMAL => {
-            return GeomSteps::Ord(p.as_str().parse::<f64>().unwrap())
-        },
-        _ => {
-            unreachable!("Cannot parse rule into geometry")
-        }
-    }
-
-}
-
 fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
     PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {
@@ -268,8 +194,15 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                 }
             },
             Rule::GEOMETRY => {
-                let geom = parse_geom(primary);
-                Expr::Geometry(geom)
+                println!{"PARSING GEOMETRY"};
+                println!{"PRIMARY: {:#?}", primary};
+                let geom_wkt = Wkt(primary.as_str());
+                let mut out: Vec<u8> = Vec::new();
+                let mut p = GeoJsonWriter::with_dims(&mut out, CoordDimensions::xyz());
+                let _ = geom_wkt.process_geom(&mut p);
+
+                println!{"WKT: {:#?} {:#?}", geom_wkt, String::from_utf8(out)};
+                Expr::Geometry(serde_json::from_str(&geom_wkt.to_json().unwrap()).unwrap())
 
             },
             Rule::Function => {
@@ -300,24 +233,82 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
             rule => unreachable!("Expr::parse expected atomic rule, found {:?}", rule),
         })
         .map_infix(|lhs, op, rhs| {
-            //println!("INFIX: {:#?} {} {:#?}", lhs, op, rhs);
-            let opstring = opstr(op);
+            println!("INFIX: {:#?} {} {:#?}", lhs, op, rhs);
+
+            let mut opstring = opstr(op);
+
+            let mut notflag: bool= false;
+            if opstring.starts_with("not"){
+                opstring = opstring.replace("not ","");
+                notflag=true;
+            }
+
             let origargs = vec![Box::new(lhs.clone()),Box::new(rhs.clone())];
+            let mut retexpr;
+            let mut lhsclone = lhs.clone();
             let rhsclone = rhs.clone();
-            let retexpr = match lhs {
-                Expr::Operation{ op, args} if op == "between".to_string() =>{
-                    let mut lhsargs = args.into_iter();
-                    Expr::Operation{
-                        op,
-                        args: vec![lhsargs.next().unwrap(), lhsargs.next().unwrap(), Box::new(rhsclone)]
+
+            let mut outargs: Vec<Box<Expr>> = Vec::new();
+
+            match lhsclone {
+                Expr::Operation{ref op, ref args} if *op == "and".to_string() =>  {
+                    for arg in args.into_iter(){
+                        outargs.push(arg.clone());
                     }
+                    outargs.push(Box::new(rhsclone));
+                    //retexpr = Expr::Operation{op, args: outargs};
+                    println!("AND OutArgs {:#?}", outargs);
+                    return Expr::Operation{op: "and".to_string(), args:outargs};
                 },
-                _ => Expr::Operation {
-                        op: opstring,
-                        args: origargs
-                    }
-            };
-            return retexpr
+                _=>()
+            }
+
+            // if opstring == "and".to_string() {
+            //     match lhsclone{
+            //         Expr::Operation{op, args} if op == "and".to_string() => {
+            //             args.push
+            //         },
+            //         _=>()
+            //     }
+
+            // }
+            if opstring == "between".to_string() {
+                match lhsclone {
+                    Expr::Operation{op, args} if op == "not".to_string() => {
+                        let mut lhsargs = args.into_iter();
+                        lhsclone = *lhsargs.next().unwrap();
+                        notflag=true;
+                    },
+                    _=>()
+                }
+
+
+                match rhs {
+                    Expr::Operation{op,args} if op == "and".to_string() => {
+                        let mut rhsargs = args.into_iter();
+                        retexpr = Expr::Operation{ op: opstring, args: vec![Box::new(lhsclone), rhsargs.next().unwrap(), rhsargs.next().unwrap()]};
+                        if rhsargs.len() >= 1 {
+                            let mut newargs = vec![Box::new(retexpr)];
+                            for rhsarg in rhsargs{
+                                newargs.push(rhsarg);
+                            }
+                            retexpr = Expr::Operation{ op: "and".to_string(), args: newargs};
+                        }
+                    },
+                    _ => unreachable!("RHS of between must be And Statement")
+                }
+            } else {
+                retexpr = Expr::Operation {
+                    op: opstring,
+                    args: origargs
+                };
+            }
+
+
+            if notflag {
+                return Expr::Operation{ op: "not".to_string(), args:vec!(Box::new(retexpr))};
+            }
+            return retexpr;
 
 
         })

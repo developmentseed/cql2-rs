@@ -5,19 +5,12 @@ edition = "2021"
 
 [dependencies]
 boon = "0.6.0"
-convert_case = "0.6.0"
-geo-types = "0.7.13"
-geojson = "0.24.1"
-geozero = "0.13.0"
 glob = "0.3.1"
-json_schema = "1.7.5"
-jsonschema = { version = "0.18.0", features = ["draft202012", "draft201909"] }
 lazy_static = "1.5.0"
-peg = "0.8.3"
 pest = "2.7.11"
 pest_derive = "2.7.11"
 rstest = "0.21.0"
 serde = "1.0.204"
 serde_derive = "1.0.204"
 serde_json = "1.0.120"
-wkt = { version = "0.10.3", features = ["serde"] }
+geozero = { git = "https://github.com/bitner/geozero.git", rev = "45828d7", features = ["with-geos"] }
