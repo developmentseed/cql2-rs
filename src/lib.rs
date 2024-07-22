@@ -194,14 +194,10 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                 }
             },
             Rule::GEOMETRY => {
-                println!{"PARSING GEOMETRY"};
-                println!{"PRIMARY: {:#?}", primary};
                 let geom_wkt = Wkt(primary.as_str());
                 let mut out: Vec<u8> = Vec::new();
                 let mut p = GeoJsonWriter::with_dims(&mut out, CoordDimensions::xyz());
                 let _ = geom_wkt.process_geom(&mut p);
-
-                println!{"WKT: {:#?} {:#?}", geom_wkt, String::from_utf8(out)};
                 Expr::Geometry(serde_json::from_str(&geom_wkt.to_json().unwrap()).unwrap())
 
             },
@@ -221,7 +217,6 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
             },
             Rule::Array => {
                 let pairs = primary.into_inner();
-                //println!("ARRAY PAIRS {:#?}", pairs);
                 let mut array_elements = Vec::new();
                 for pair in pairs {
                     array_elements.push(Box::new(parse_expr(pair.into_inner())))
@@ -233,8 +228,6 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
             rule => unreachable!("Expr::parse expected atomic rule, found {:?}", rule),
         })
         .map_infix(|lhs, op, rhs| {
-            println!("INFIX: {:#?} {} {:#?}", lhs, op, rhs);
-
             let mut opstring = opstr(op);
 
             let mut notflag: bool= false;
@@ -257,21 +250,11 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                     }
                     outargs.push(Box::new(rhsclone));
                     //retexpr = Expr::Operation{op, args: outargs};
-                    println!("AND OutArgs {:#?}", outargs);
                     return Expr::Operation{op: "and".to_string(), args:outargs};
                 },
                 _=>()
             }
 
-            // if opstring == "and".to_string() {
-            //     match lhsclone{
-            //         Expr::Operation{op, args} if op == "and".to_string() => {
-            //             args.push
-            //         },
-            //         _=>()
-            //     }
-
-            // }
             if opstring == "between".to_string() {
                 match lhsclone {
                     Expr::Operation{op, args} if op == "not".to_string() => {
