@@ -1,12 +1,9 @@
-use cql2_rs::{parse,Validator};
+use cql2_rs::{parse, Validator};
+use rstest::rstest;
 use std::fs;
 use std::path::PathBuf;
-use rstest::rstest;
 
-
-
-
-pub fn validate_file(f: &str){
+pub fn validate_file(f: &str) {
     //println!("Current Directory: {:#?}", env::current_dir());
     println!("File Path: {:#?}", f);
     let cql2 = fs::read_to_string(f).unwrap();
@@ -24,7 +21,9 @@ pub fn validate_file(f: &str){
 // }
 
 #[rstest]
-fn json_examples_are_valid(#[files("ogcapi-features/cql2/standard/schema/examples/json/*.json")] path: PathBuf){
+fn json_examples_are_valid(
+    #[files("ogcapi-features/cql2/standard/schema/examples/json/*.json")] path: PathBuf,
+) {
     let cql2 = fs::read_to_string(path).unwrap();
     let validator = Validator::new();
     let result = validator.validate_str(&cql2);
@@ -32,12 +31,16 @@ fn json_examples_are_valid(#[files("ogcapi-features/cql2/standard/schema/example
 }
 
 #[rstest]
-fn for_each_text_file(#[files("ogcapi-features/cql2/standard/schema/examples/text/*.txt")] path: PathBuf){
+fn for_each_text_file(
+    #[files("ogcapi-features/cql2/standard/schema/examples/text/*.txt")] path: PathBuf,
+) {
     validate_file(path.to_str().expect("reason"));
 }
 
 #[rstest]
-fn for_each_json_file(#[files("ogcapi-features/cql2/standard/schema/examples/json/*.json")] path: PathBuf){
+fn for_each_json_file(
+    #[files("ogcapi-features/cql2/standard/schema/examples/json/*.json")] path: PathBuf,
+) {
     validate_file(path.to_str().expect("reason"));
 }
 
