@@ -1,12 +1,14 @@
 use boon::{Compiler, SchemaIndex, Schemas};
+use geozero::geojson::GeoJsonString;
 use geozero::geojson::GeoJsonWriter;
 use geozero::wkt::Wkt;
-use geozero::{CoordDimensions, GeozeroGeometry, ToJson};
+use geozero::{CoordDimensions, GeozeroGeometry, ToJson, ToWkt};
 use pest::iterators::{Pair, Pairs};
 use pest::pratt_parser::PrattParser;
 use pest::Parser;
 use serde_derive::{Deserialize, Serialize};
 use std::fs;
+
 pub struct Validator {
     schemas: Schemas,
     index: SchemaIndex,
@@ -84,12 +86,48 @@ pub enum Expr {
 }
 
 impl Expr {
-    /* fn as_cql2_text(&self) -> String {
-        return "cql2-text".to_string();
+    pub fn as_cql2_text(&self) -> String {
+        match self {
+            Expr::Bool(v) => v.to_string(),
+            Expr::Float(v) => v.to_string(),
+            Expr::Literal(v) => format!("'{}'", v.as_str()),
+            Expr::Property { property } => format!("\"{property}\""),
+            Expr::Interval { interval } => format!(
+                "INTERVAL {}/{}",
+                interval[0].as_cql2_text(),
+                interval[1].as_cql2_text()
+            ),
+            Expr::Date { date } => format!("DATE {}", date.as_cql2_text()),
+            Expr::Timestamp { timestamp } => format!("TIMESTAMP {}", timestamp.as_cql2_text()),
+            Expr::Geometry(v) => {
+                let gj = GeoJsonString(v.to_string());
+                gj.to_wkt().unwrap()
+            }
+            Expr::Array(v) => {
+                let array_els: Vec<String> = v.into_iter().map(|a| a.as_cql2_text()).collect();
+                format!("[{}]", array_els.join(", "))
+            }
+            Expr::Operation { op, args } => {
+                let a: Vec<String> = args.into_iter().map(|x| x.as_cql2_text()).collect();
+                match op.as_str() {
+                    "and" => a.join(" AND "),
+                    "or" => a.join(" OR "),
+                    "between" => format!("{} BETWEEN {} AND {}", a[0], a[1], a[2]),
+                    "not" => format!("NOT {}", a[0]),
+                    "is null" => format!("{} IS NULL", a[0]),
+                    "+" | "-" | "*" | "/" | "%" | "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
+                        format!("{} {} {}", a[0], op, a[1])
+                    }
+                    _ => format!("{} ({})", op, a.join(", ")),
+                }
+            }
+        }
     }
+    /*
     fn as_sql() -> String {
         return "sql".to_string();
-    } */
+    }
+    */
     pub fn as_json(&self) -> String {
         serde_json::to_string(&self).unwrap()
     }
