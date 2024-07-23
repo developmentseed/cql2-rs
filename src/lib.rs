@@ -75,7 +75,6 @@ pub enum Expr {
     Interval { interval: Vec<Box<Expr>> },
     Timestamp { timestamp: Box<Expr> },
     Date { date: Box<Expr> },
-    // #[serde(serialize_with = "serialize_geometry", deserialize_with = "deserialize_geometry")]
     Geometry(serde_json::Value),
     ArithValue(u64),
     FloatValue(f64),
@@ -83,10 +82,6 @@ pub enum Expr {
     BoolConst(bool),
     Property { property: String },
     ArrayValue(Vec<Box<Expr>>),
-    Coord(Vec<Box<f64>>),
-    PCoordList(Vec<Expr>),
-    PCoordListList(Vec<Box<Expr>>),
-    PCoordListListList(Vec<Box<Expr>>),
 }
 
 impl Expr {
@@ -125,7 +120,6 @@ lazy_static::lazy_static! {
                 Op::infix(LtEq, Right)
             )
             .op(Op::infix(Like, Right))
-            //.op(Op::infix(Between, Left))
             .op(Op::infix(In, Left))
             .op(Op::postfix(IsNullPostfix))
             .op(Op::infix(Is, Right))
@@ -246,7 +240,6 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                         outargs.push(arg.clone());
                     }
                     outargs.push(Box::new(rhsclone));
-                    //retexpr = Expr::Operation{op, args: outargs};
                     return Expr::Operation {
                         op: "and".to_string(),
                         args: outargs,
