@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+geozero = { git = "https://github.com/bitner/geozero.git", rev = "45828d7" }
 boon = "0.6.0"
 glob = "0.3.1"
 lazy_static = "1.5.0"
@@ -13,4 +14,3 @@ rstest = "0.21.0"
 serde = "1.0.204"
 serde_derive = "1.0.204"
 serde_json = "1.0.120"
-geozero = { git = "https://github.com/bitner/geozero.git", rev = "45828d7", features = ["with-geos"] }
