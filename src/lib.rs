@@ -76,12 +76,11 @@ pub enum Expr {
     Timestamp { timestamp: Box<Expr> },
     Date { date: Box<Expr> },
     Geometry(serde_json::Value),
-    ArithValue(u64),
-    FloatValue(f64),
-    LiteralValue(String),
-    BoolConst(bool),
+    Float(f64),
+    Literal(String),
+    Bool(bool),
     Property { property: String },
-    ArrayValue(Vec<Box<Expr>>),
+    Array(Vec<Box<Expr>>),
 }
 
 impl Expr {
@@ -166,18 +165,22 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
     PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {
             Rule::Expr | Rule::ExpressionInParentheses => parse_expr(primary.into_inner()),
-            Rule::Unsigned => {
-                let u64_value = primary.as_str().parse::<u64>().unwrap();
-                Expr::ArithValue(u64_value)
-            }
-            Rule::DECIMAL => {
-                let f64_value = primary.as_str().parse::<f64>().unwrap();
-                Expr::FloatValue(f64_value)
-            }
-            Rule::SingleQuotedString => Expr::LiteralValue(strip_quotes(primary.as_str())),
+            Rule::Unsigned => Expr::Float(
+                primary
+                    .as_str()
+                    .parse::<f64>()
+                    .expect("Could not cast value to float"),
+            ),
+            Rule::DECIMAL => Expr::Float(
+                primary
+                    .as_str()
+                    .parse::<f64>()
+                    .expect("Could not cast value to float"),
+            ),
+            Rule::SingleQuotedString => Expr::Literal(strip_quotes(primary.as_str())),
             Rule::True | Rule::False => {
                 let bool_value = primary.as_str().to_lowercase().parse::<bool>().unwrap();
-                Expr::BoolConst(bool_value)
+                Expr::Bool(bool_value)
             }
             Rule::Identifier => Expr::Property {
                 property: strip_quotes(primary.as_str()),
@@ -213,7 +216,7 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                 for pair in pairs {
                     array_elements.push(Box::new(parse_expr(pair.into_inner())))
                 }
-                Expr::ArrayValue(array_elements)
+                Expr::Array(array_elements)
             }
 
             rule => unreachable!("Expr::parse expected atomic rule, found {:?}", rule),
@@ -304,7 +307,7 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
             },
             Rule::Negative => Expr::Operation {
                 op: "*".to_string(),
-                args: vec![Box::new(Expr::FloatValue(-1.0)), Box::new(child)],
+                args: vec![Box::new(Expr::Float(-1.0)), Box::new(child)],
             },
             rule => unreachable!("Expr::parse expected prefix operator, found {:?}", rule),
         })
