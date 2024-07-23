@@ -15,9 +15,7 @@ pub fn validate_file(f: &str) {
 }
 
 #[rstest]
-fn json_examples_are_valid(
-    #[files("tests/fixtures/json/*.json")] path: PathBuf,
-) {
+fn json_examples_are_valid(#[files("tests/fixtures/json/*.json")] path: PathBuf) {
     let cql2 = fs::read_to_string(path).unwrap();
     let validator = Validator::new();
     let result = validator.validate_str(&cql2);
@@ -25,15 +23,11 @@ fn json_examples_are_valid(
 }
 
 #[rstest]
-fn for_each_text_file(
-    #[files("tests/fixtures/text/*.txt")] path: PathBuf,
-) {
+fn for_each_text_file(#[files("tests/fixtures/text/*.txt")] path: PathBuf) {
     validate_file(path.to_str().expect("reason"));
 }
 
 #[rstest]
-fn for_each_json_file(
-    #[files("tests/fixtures/json/*.json")] path: PathBuf,
-) {
+fn for_each_json_file(#[files("tests/fixtures/json/*.json")] path: PathBuf) {
     validate_file(path.to_str().expect("reason"));
 }
