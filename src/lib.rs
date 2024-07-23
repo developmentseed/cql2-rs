@@ -17,7 +17,7 @@ impl Validator {
         let mut schemas = Schemas::new();
         let mut compiler = Compiler::new();
         let schema_json = serde_json::from_str(include_str!(
-            "../ogcapi-features/cql2/standard/schema/cql2.json"
+            "cql2.json"
         ))
         .expect("Could not parse schema to json");
         compiler

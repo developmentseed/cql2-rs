@@ -14,15 +14,9 @@ pub fn validate_file(f: &str) {
     assert!(valid)
 }
 
-// #[test]
-// fn validate_text(){
-//     println!("{:#?}", env::current_dir());
-//     validate_file("ogcapi-features/cql2/standard/schema/examples/json/example01.json");
-// }
-
 #[rstest]
 fn json_examples_are_valid(
-    #[files("ogcapi-features/cql2/standard/schema/examples/json/*.json")] path: PathBuf,
+    #[files("tests/fixtures/json/*.json")] path: PathBuf,
 ) {
     let cql2 = fs::read_to_string(path).unwrap();
     let validator = Validator::new();
@@ -32,20 +26,14 @@ fn json_examples_are_valid(
 
 #[rstest]
 fn for_each_text_file(
-    #[files("ogcapi-features/cql2/standard/schema/examples/text/*.txt")] path: PathBuf,
+    #[files("tests/fixtures/text/*.txt")] path: PathBuf,
 ) {
     validate_file(path.to_str().expect("reason"));
 }
 
 #[rstest]
 fn for_each_json_file(
-    #[files("ogcapi-features/cql2/standard/schema/examples/json/*.json")] path: PathBuf,
+    #[files("tests/fixtures/json/*.json")] path: PathBuf,
 ) {
     validate_file(path.to_str().expect("reason"));
 }
-
-// #[test]
-// fn geom_operation() {
-//     let expr = parse("S_Within(Point(0 0),geom)");
-//     assert_eq!(expr.as_json(), "{\"op\":\"s_within\",\"args\":[{\"coordinates\":[0.0,0.0],\"type\":\"Point\"},{\"property\":\"geom\"}]}");
-// }
