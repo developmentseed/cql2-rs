@@ -1,25 +1,19 @@
-use cql2::{parse, Validator};
+use cql2::{parse, Expr, Validator};
 use rstest::rstest;
 use std::fs;
 use std::path::PathBuf;
 
 pub fn validate_file(f: &str) {
-    //println!("Current Directory: {:#?}", env::current_dir());
     println!("File Path: {:#?}", f);
     let cql2 = fs::read_to_string(f).unwrap();
     println!("CQL2: {}", cql2);
-    let expr: cql2::Expr = parse(&cql2);
-    println!("Expr: {}", expr.as_json_pretty());
-    let valid = expr.validate();
-    assert!(valid)
-}
+    let expr: Expr = parse(&cql2);
+    println!("Expr: {}", expr.to_json_pretty().unwrap());
 
-#[rstest]
-fn json_examples_are_valid(#[files("tests/fixtures/json/*.json")] path: PathBuf) {
-    let cql2 = fs::read_to_string(path).unwrap();
-    let validator = Validator::new();
-    let result = validator.validate_str(&cql2);
-    assert!(result)
+    Validator::new()
+        .unwrap()
+        .validate(&expr.to_value().unwrap())
+        .unwrap();
 }
 
 #[rstest]

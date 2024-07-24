@@ -14,3 +14,9 @@ rstest = "0.21.0"
 serde = "1.0.204"
 serde_derive = "1.0.204"
 serde_json = "1.0.120"
+thiserror = "1.0.63"
+
+[[bin]]
+name = "cql2"
+test = false
+doc = false

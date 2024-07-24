@@ -1,4 +1,4 @@
-use boon::{Compiler, SchemaIndex, Schemas};
+use boon::{Compiler, SchemaIndex, Schemas, ValidationError};
 use geozero::geojson::GeoJsonWriter;
 use geozero::wkt::Wkt;
 use geozero::{CoordDimensions, GeozeroGeometry, ToJson};
@@ -6,61 +6,73 @@ use pest::iterators::{Pair, Pairs};
 use pest::pratt_parser::PrattParser;
 use pest::Parser;
 use serde_derive::{Deserialize, Serialize};
+use serde_json::Value;
 use std::fs;
+use thiserror::Error;
+
+/// Crate-specific error enum.
+#[derive(Debug, Error)]
+pub enum Error {
+    /// [boon::CompileError]
+    #[error(transparent)]
+    BoonCompile(#[from] boon::CompileError),
+
+    /// [serde_json::Error]
+    #[error(transparent)]
+    SerdeJson(#[from] serde_json::Error),
+}
+
+/// A re-usable json-schema validator for CQL2.
 pub struct Validator {
     schemas: Schemas,
     index: SchemaIndex,
 }
 
 impl Validator {
-    pub fn new() -> Validator {
+    /// Creates a new validator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Validator;
+    ///
+    /// let validator = Validator::new().unwrap();
+    /// ```
+    pub fn new() -> Result<Validator, Error> {
         let mut schemas = Schemas::new();
         let mut compiler = Compiler::new();
-        let schema_json = serde_json::from_str(include_str!("cql2.json"))
-            .expect("Could not parse schema to json");
-        compiler
-            .add_resource("/tmp/cql2.json", schema_json)
-            .expect("Could not add schema to compiler");
-        let index = compiler
-            .compile("/tmp/cql2.json", &mut schemas)
-            .expect("Could not compile schema");
-        Validator { schemas, index }
+        let schema_json = serde_json::from_str(include_str!("cql2.json"))?;
+        compiler.add_resource("/tmp/cql2.json", schema_json)?;
+        let index = compiler.compile("/tmp/cql2.json", &mut schemas)?;
+        Ok(Validator { schemas, index })
     }
 
-    pub fn validate(self, obj: serde_json::Value) -> bool {
-        let valid = self.schemas.validate(&obj, self.index);
-        match valid {
-            Ok(()) => true,
-            Err(e) => {
-                let debug_level: &str =
-                    &std::env::var("CQL2_DEBUG_LEVEL").unwrap_or("1".to_string());
-                match debug_level {
-                    "3" => {
-                        println!("-----------\n{e:#?}\n---------------")
-                    }
-                    "2" => {
-                        println!("-----------\n{e:?}\n---------------")
-                    }
-                    "1" => {
-                        println!("-----------\n{e}\n---------------")
-                    }
-                    _ => {
-                        println!("-----------\nCQL2 Is Invalid!\n---------------")
-                    }
-                }
-
-                false
-            }
-        }
-    }
-    pub fn validate_str(self, obj: &str) -> bool {
-        self.validate(serde_json::from_str(obj).expect("Could not convert string to json."))
-    }
-}
-
-impl Default for Validator {
-    fn default() -> Self {
-        Self::new()
+    /// Validates a [serde_json::Value].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Validator;
+    /// use serde_json::json;
+    ///
+    /// let validator = Validator::new().unwrap();
+    ///
+    /// let valid = json!({
+    ///     "op": "=",
+    ///     "args": [
+    ///         { "property": "landsat:scene_id" },
+    ///         "LC82030282019133LGN00"
+    ///     ]
+    /// });
+    /// validator.validate(&valid).unwrap();
+    ///
+    /// let invalid = json!({
+    ///     "op": "not an operator!",
+    /// });
+    /// validator.validate(&invalid).unwrap_err();
+    /// ```
+    pub fn validate<'a, 'b>(&'a self, value: &'b Value) -> Result<(), ValidationError<'a, 'b>> {
+        self.schemas.validate(value, self.index)
     }
 }
 
@@ -96,14 +108,74 @@ impl Expr {
     fn as_sql() -> String {
         return "sql".to_string();
     } */
-    pub fn as_json(&self) -> String {
-        serde_json::to_string(&self).unwrap()
+
+    /// Converts this expression to a JSON string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    ///
+    /// let expr = Expr::BoolConst(true);
+    /// let s = expr.to_json().unwrap();
+    /// ```
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string(&self)
     }
-    pub fn as_json_pretty(&self) -> String {
-        serde_json::to_string_pretty(&self).unwrap()
+
+    /// Converts this expression to a pretty JSON string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    ///
+    /// let expr = Expr::BoolConst(true);
+    /// let s = expr.to_json_pretty().unwrap();
+    /// ```
+    pub fn to_json_pretty(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(&self)
     }
-    pub fn validate(&self) -> bool {
-        Validator::new().validate_str(&self.as_json())
+
+    /// Converts this expression to a [serde_json::Value].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    ///
+    /// let expr = Expr::BoolConst(true);
+    /// let value = expr.to_value().unwrap();
+    /// ```
+    pub fn to_value(&self) -> Result<Value, serde_json::Error> {
+        serde_json::to_value(self)
+    }
+
+    /// Returns true if this expression is valid CQL2.
+    ///
+    /// For detailed error reporting, use [Validator::validate] in conjunction with [Expr::to_value].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    ///
+    /// let expr = Expr::BoolConst(true);
+    /// assert!(expr.is_valid());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if the default validator can't be created.
+    pub fn is_valid(&self) -> bool {
+        serde_json::to_value(self)
+            .map(|value| {
+                Validator::new()
+                    .expect("should be able to create the default validator")
+                    .validate(&value)
+                    .is_ok()
+            })
+            .unwrap_or_default()
     }
 }
 
