@@ -77,12 +77,13 @@ pub enum Expr {
     Interval { interval: Vec<Box<Expr>> },
     Timestamp { timestamp: Box<Expr> },
     Date { date: Box<Expr> },
-    Geometry(serde_json::Value),
     Float(f64),
     Literal(String),
     Bool(bool),
     Property { property: String },
     Array(Vec<Box<Expr>>),
+    BBox{ bbox: Vec<Box<Expr>> },
+    Geometry(serde_json::Value),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -93,39 +94,45 @@ pub struct SqlQuery {
 
 impl Expr {
     pub fn as_cql2_text(&self) -> String {
+        println!("------------\nAS CQL2:\n{:?}", self);
         match self {
             Expr::Bool(v) => v.to_string(),
             Expr::Float(v) => v.to_string(),
             Expr::Literal(v) => format!("'{}'", v.as_str()),
             Expr::Property { property } => format!("\"{property}\""),
             Expr::Interval { interval } => format!(
-                "INTERVAL('{}','{}')",
+                "INTERVAL({},{})",
                 interval[0].as_cql2_text(),
                 interval[1].as_cql2_text()
             ),
-            Expr::Date { date } => format!("DATE('{}')", date.as_cql2_text()),
-            Expr::Timestamp { timestamp } => format!("TIMESTAMP('{}')", timestamp.as_cql2_text()),
+            Expr::Date { date } => format!("DATE({})", date.as_cql2_text()),
+            Expr::Timestamp { timestamp } => format!("TIMESTAMP({})", timestamp.as_cql2_text()),
             Expr::Geometry(v) => {
                 let gj = GeoJsonString(v.to_string());
-                gj.to_wkt().unwrap()
+                println!("GJ {:?}", gj);
+                gj.to_wkt().expect("error converting geojson to wkt")
             }
             Expr::Array(v) => {
                 let array_els: Vec<String> = v.into_iter().map(|a| a.as_cql2_text()).collect();
-                format!("[{}]", array_els.join(", "))
+                format!("({})", array_els.join(", "))
             }
             Expr::Operation { op, args } => {
                 let a: Vec<String> = args.into_iter().map(|x| x.as_cql2_text()).collect();
                 match op.as_str() {
-                    "and" => a.join(" AND "),
-                    "or" => a.join(" OR "),
-                    "between" => format!("{} BETWEEN {} AND {}", a[0], a[1], a[2]),
-                    "not" => format!("NOT {}", a[0]),
-                    "is null" => format!("{} IS NULL", a[0]),
+                    "and" => format!("({})",a.join(" AND ")),
+                    "or" => format!("({})",a.join(" OR ")),
+                    "between" => format!("({} BETWEEN {} AND {})", a[0], a[1], a[2]),
+                    "not" => format!("(NOT {})", a[0]),
+                    "is null" => format!("({} IS NULL)", a[0]),
                     "+" | "-" | "*" | "/" | "%" | "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
-                        format!("{} {} {}", a[0], op, a[1])
+                        format!("({} {} {})", a[0], op, a[1])
                     }
-                    _ => format!("{} ({})", op, a.join(", ")),
+                    _ => format!("{}({})", op, a.join(", ")),
                 }
+            },
+            Expr::BBox{bbox} =>{
+                let array_els: Vec<String> = bbox.into_iter().map(|a| a.as_cql2_text()).collect();
+                format!("BBOX({})", array_els.join(", "))
             }
         }
     }
@@ -177,16 +184,21 @@ impl Expr {
             Expr::Operation { op, args } => {
                 let a: Vec<String> = args.into_iter().map(|x| x.as_sql_inner(params)).collect();
                 match op.as_str() {
-                    "and" => a.join(" AND "),
-                    "or" => a.join(" OR "),
-                    "between" => format!("{} BETWEEN {} AND {}", a[0], a[1], a[2]),
-                    "not" => format!("NOT {}", a[0]),
-                    "is null" => format!("{} IS NULL", a[0]),
+                    "and" => format!("({})",a.join(" AND ")),
+                    "or" => format!("({})",a.join(" OR ")),
+                    "between" => format!("({} BETWEEN {} AND {})", a[0], a[1], a[2]),
+                    "not" => format!("(NOT {})", a[0]),
+                    "is null" => format!("({} IS NULL)", a[0]),
                     "+" | "-" | "*" | "/" | "%" | "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
-                        format!("{} {} {}", a[0], op, a[1])
+                        format!("({} {} {})", a[0], op, a[1])
                     }
-                    _ => format!("{} ({})", op, a.join(", ")),
+                    _ => format!("{}({})", op, a.join(", ")),
                 }
+            },
+            Expr::BBox{bbox} =>{
+                let array_els: Vec<String> =
+                    bbox.into_iter().map(|a| a.as_sql_inner(params)).collect();
+                format!("[{}]", array_els.join(", "))
             }
         }
     }
