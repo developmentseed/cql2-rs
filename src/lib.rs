@@ -85,6 +85,12 @@ pub enum Expr {
     Array(Vec<Box<Expr>>),
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SqlQuery {
+    query: String,
+    params: Vec<String>
+}
+
 impl Expr {
     pub fn as_cql2_text(&self) -> String {
         match self {
@@ -93,20 +99,20 @@ impl Expr {
             Expr::Literal(v) => format!("'{}'", v.as_str()),
             Expr::Property { property } => format!("\"{property}\""),
             Expr::Interval { interval } => format!(
-                "INTERVAL {}/{}",
+                "INTERVAL('{}','{}')",
                 interval[0].as_cql2_text(),
                 interval[1].as_cql2_text()
             ),
-            Expr::Date { date } => format!("DATE {}", date.as_cql2_text()),
-            Expr::Timestamp { timestamp } => format!("TIMESTAMP {}", timestamp.as_cql2_text()),
+            Expr::Date { date } => format!("DATE('{}')", date.as_cql2_text()),
+            Expr::Timestamp { timestamp } => format!("TIMESTAMP('{}')", timestamp.as_cql2_text()),
             Expr::Geometry(v) => {
                 let gj = GeoJsonString(v.to_string());
                 gj.to_wkt().unwrap()
-            }
+            },
             Expr::Array(v) => {
                 let array_els: Vec<String> = v.into_iter().map(|a| a.as_cql2_text()).collect();
                 format!("[{}]", array_els.join(", "))
-            }
+            },
             Expr::Operation { op, args } => {
                 let a: Vec<String> = args.into_iter().map(|x| x.as_cql2_text()).collect();
                 match op.as_str() {
@@ -123,11 +129,71 @@ impl Expr {
             }
         }
     }
-    /*
-    fn as_sql() -> String {
-        return "sql".to_string();
+
+    pub fn as_sql(&self) -> SqlQuery{
+        let mut params: &mut Vec<String> = &mut vec![];
+        let query = self.as_sql_inner(&mut params);
+        SqlQuery{query, params: params.to_vec()}
+
     }
-    */
+
+    fn as_sql_inner(&self, params: &mut Vec<String>) -> String{
+        match self {
+            Expr::Bool(v) => {
+                params.push(v.to_string());
+                format!("${}", params.len())
+            },
+            Expr::Float(v) => {
+                params.push(v.to_string());
+                format!("${}", params.len())
+            },
+            Expr::Literal(v) => {
+                params.push(v.to_string());
+                format!("${}", params.len())
+            },
+            Expr::Date { date } => date.as_sql_inner(params),
+            Expr::Timestamp { timestamp } => timestamp.as_sql_inner(params),
+
+            Expr::Interval { interval } => {
+                let a: Vec<String> = interval.into_iter().map(|x| x.as_sql_inner(params)).collect();
+                format!(
+                    "tstzrange({},{})",
+                    a[0],
+                    a[1],
+                )
+            },
+            Expr::Geometry(v) => {
+                let gj = GeoJsonString(v.to_string());
+                params.push(
+                    format!(
+                        "EPSG:4326;{}",
+                        gj.to_wkt().unwrap()
+                    )
+                );
+                format!("${}", params.len())
+            },
+            Expr::Array(v) => {
+                let array_els: Vec<String> = v.into_iter().map(|a| a.as_sql_inner(params)).collect();
+                format!("[{}]", array_els.join(", "))
+            },
+            Expr::Property { property } => format!("\"{property}\""),
+            Expr::Operation { op, args } => {
+                let a: Vec<String> = args.into_iter().map(|x| x.as_sql_inner(params)).collect();
+                match op.as_str() {
+                    "and" => a.join(" AND "),
+                    "or" => a.join(" OR "),
+                    "between" => format!("{} BETWEEN {} AND {}", a[0], a[1], a[2]),
+                    "not" => format!("NOT {}", a[0]),
+                    "is null" => format!("{} IS NULL", a[0]),
+                    "+" | "-" | "*" | "/" | "%" | "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
+                        format!("{} {} {}", a[0], op, a[1])
+                    }
+                    _ => format!("{} ({})", op, a.join(", ")),
+                }
+            }
+        }
+    }
+
     pub fn as_json(&self) -> String {
         serde_json::to_string(&self).unwrap()
     }

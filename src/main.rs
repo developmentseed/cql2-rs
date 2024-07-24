@@ -5,6 +5,8 @@ fn main() -> io::Result<()> {
         let parsed = parse(&line?);
 
         println!("Parsed: {}", parsed.as_cql2_text());
+        let sql = parsed.as_sql();
+        println!("SQL: {:#?}", sql);
         println!("{}", parsed.as_json());
 
         parsed.validate();
