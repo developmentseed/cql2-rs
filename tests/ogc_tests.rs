@@ -1,4 +1,4 @@
-use cql2_rs::{parse, Validator};
+use cql2::{parse, Validator};
 use rstest::rstest;
 use std::fs;
 use std::path::PathBuf;
@@ -8,7 +8,7 @@ pub fn validate_file(f: &str) {
     println!("File Path: {:#?}", f);
     let cql2 = fs::read_to_string(f).unwrap();
     println!("CQL2: {}", cql2);
-    let expr: cql2_rs::Expr = parse(&cql2);
+    let expr: cql2::Expr = parse(&cql2);
     println!("Expr: {}", expr.as_json_pretty());
     let valid = expr.validate();
     assert!(valid)

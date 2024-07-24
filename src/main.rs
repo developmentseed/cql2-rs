@@ -1,4 +1,4 @@
-use cql2_rs::parse;
+use cql2::parse;
 use std::io::{self, BufRead};
 fn main() -> io::Result<()> {
     for line in io::stdin().lock().lines() {
