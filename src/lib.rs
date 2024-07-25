@@ -78,7 +78,7 @@ pub enum Expr {
     Timestamp { timestamp: Box<Expr> },
     Date { date: Box<Expr> },
     Property { property: String },
-    BBox{ bbox: Vec<Box<Expr>> },
+    BBox { bbox: Vec<Box<Expr>> },
     Float(f64),
     Literal(String),
     Bool(bool),
@@ -117,8 +117,8 @@ impl Expr {
             Expr::Operation { op, args } => {
                 let a: Vec<String> = args.into_iter().map(|x| x.as_cql2_text()).collect();
                 match op.as_str() {
-                    "and" => format!("({})",a.join(" AND ")),
-                    "or" => format!("({})",a.join(" OR ")),
+                    "and" => format!("({})", a.join(" AND ")),
+                    "or" => format!("({})", a.join(" OR ")),
                     "between" => format!("({} BETWEEN {} AND {})", a[0], a[1], a[2]),
                     "not" => format!("(NOT {})", a[0]),
                     "is null" => format!("({} IS NULL)", a[0]),
@@ -127,8 +127,8 @@ impl Expr {
                     }
                     _ => format!("{}({})", op, a.join(", ")),
                 }
-            },
-            Expr::BBox{bbox} =>{
+            }
+            Expr::BBox { bbox } => {
                 let array_els: Vec<String> = bbox.into_iter().map(|a| a.as_cql2_text()).collect();
                 format!("BBOX({})", array_els.join(", "))
             }
@@ -182,8 +182,8 @@ impl Expr {
             Expr::Operation { op, args } => {
                 let a: Vec<String> = args.into_iter().map(|x| x.as_sql_inner(params)).collect();
                 match op.as_str() {
-                    "and" => format!("({})",a.join(" AND ")),
-                    "or" => format!("({})",a.join(" OR ")),
+                    "and" => format!("({})", a.join(" AND ")),
+                    "or" => format!("({})", a.join(" OR ")),
                     "between" => format!("({} BETWEEN {} AND {})", a[0], a[1], a[2]),
                     "not" => format!("(NOT {})", a[0]),
                     "is null" => format!("({} IS NULL)", a[0]),
@@ -192,8 +192,8 @@ impl Expr {
                     }
                     _ => format!("{}({})", op, a.join(", ")),
                 }
-            },
-            Expr::BBox{bbox} =>{
+            }
+            Expr::BBox { bbox } => {
                 let array_els: Vec<String> =
                     bbox.into_iter().map(|a| a.as_sql_inner(params)).collect();
                 format!("[{}]", array_els.join(", "))
