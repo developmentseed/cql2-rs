@@ -1,12 +1,14 @@
 use boon::{Compiler, SchemaIndex, Schemas};
+use geozero::geojson::GeoJsonString;
 use geozero::geojson::GeoJsonWriter;
 use geozero::wkt::Wkt;
-use geozero::{CoordDimensions, GeozeroGeometry, ToJson};
+use geozero::{CoordDimensions, GeozeroGeometry, ToJson, ToWkt};
 use pest::iterators::{Pair, Pairs};
 use pest::pratt_parser::PrattParser;
 use pest::Parser;
 use serde_derive::{Deserialize, Serialize};
 use std::fs;
+
 pub struct Validator {
     schemas: Schemas,
     index: SchemaIndex,
@@ -36,16 +38,16 @@ impl Validator {
                     &std::env::var("CQL2_DEBUG_LEVEL").unwrap_or("1".to_string());
                 match debug_level {
                     "3" => {
-                        println!("-----------\n{e:#?}\n---------------")
+                        eprintln!("-----------\n{e:#?}\n---------------")
                     }
                     "2" => {
-                        println!("-----------\n{e:?}\n---------------")
+                        eprintln!("-----------\n{e:?}\n---------------")
                     }
                     "1" => {
-                        println!("-----------\n{e}\n---------------")
+                        eprintln!("-----------\n{e}\n---------------")
                     }
                     _ => {
-                        println!("-----------\nCQL2 Is Invalid!\n---------------")
+                        eprintln!("-----------\nCQL2 Is Invalid!\n---------------")
                     }
                 }
 
@@ -75,27 +77,125 @@ pub enum Expr {
     Interval { interval: Vec<Box<Expr>> },
     Timestamp { timestamp: Box<Expr> },
     Date { date: Box<Expr> },
-    // #[serde(serialize_with = "serialize_geometry", deserialize_with = "deserialize_geometry")]
-    Geometry(serde_json::Value),
-    ArithValue(u64),
-    FloatValue(f64),
-    LiteralValue(String),
-    BoolConst(bool),
     Property { property: String },
-    ArrayValue(Vec<Box<Expr>>),
-    Coord(Vec<Box<f64>>),
-    PCoordList(Vec<Expr>),
-    PCoordListList(Vec<Box<Expr>>),
-    PCoordListListList(Vec<Box<Expr>>),
+    BBox { bbox: Vec<Box<Expr>> },
+    Float(f64),
+    Literal(String),
+    Bool(bool),
+    Array(Vec<Box<Expr>>),
+    Geometry(serde_json::Value),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SqlQuery {
+    query: String,
+    params: Vec<String>,
 }
 
 impl Expr {
-    /* fn as_cql2_text(&self) -> String {
-        return "cql2-text".to_string();
+    pub fn as_cql2_text(&self) -> String {
+        match self {
+            Expr::Bool(v) => v.to_string(),
+            Expr::Float(v) => v.to_string(),
+            Expr::Literal(v) => format!("'{}'", v.as_str()),
+            Expr::Property { property } => format!("\"{property}\""),
+            Expr::Interval { interval } => format!(
+                "INTERVAL({},{})",
+                interval[0].as_cql2_text(),
+                interval[1].as_cql2_text()
+            ),
+            Expr::Date { date } => format!("DATE({})", date.as_cql2_text()),
+            Expr::Timestamp { timestamp } => format!("TIMESTAMP({})", timestamp.as_cql2_text()),
+            Expr::Geometry(v) => {
+                let gj = GeoJsonString(v.to_string());
+                gj.to_wkt().expect("error converting geojson to wkt")
+            }
+            Expr::Array(v) => {
+                let array_els: Vec<String> = v.iter().map(|a| a.as_cql2_text()).collect();
+                format!("({})", array_els.join(", "))
+            }
+            Expr::Operation { op, args } => {
+                let a: Vec<String> = args.iter().map(|x| x.as_cql2_text()).collect();
+                match op.as_str() {
+                    "and" => format!("({})", a.join(" AND ")),
+                    "or" => format!("({})", a.join(" OR ")),
+                    "between" => format!("({} BETWEEN {} AND {})", a[0], a[1], a[2]),
+                    "not" => format!("(NOT {})", a[0]),
+                    "is null" => format!("({} IS NULL)", a[0]),
+                    "+" | "-" | "*" | "/" | "%" | "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
+                        format!("({} {} {})", a[0], op, a[1])
+                    }
+                    _ => format!("{}({})", op, a.join(", ")),
+                }
+            }
+            Expr::BBox { bbox } => {
+                let array_els: Vec<String> = bbox.iter().map(|a| a.as_cql2_text()).collect();
+                format!("BBOX({})", array_els.join(", "))
+            }
+        }
     }
-    fn as_sql() -> String {
-        return "sql".to_string();
-    } */
+
+    pub fn as_sql(&self) -> SqlQuery {
+        let params: &mut Vec<String> = &mut vec![];
+        let query = self.as_sql_inner(params);
+        SqlQuery {
+            query,
+            params: params.to_vec(),
+        }
+    }
+
+    fn as_sql_inner(&self, params: &mut Vec<String>) -> String {
+        match self {
+            Expr::Bool(v) => {
+                params.push(v.to_string());
+                format!("${}", params.len())
+            }
+            Expr::Float(v) => {
+                params.push(v.to_string());
+                format!("${}", params.len())
+            }
+            Expr::Literal(v) => {
+                params.push(v.to_string());
+                format!("${}", params.len())
+            }
+            Expr::Date { date } => date.as_sql_inner(params),
+            Expr::Timestamp { timestamp } => timestamp.as_sql_inner(params),
+
+            Expr::Interval { interval } => {
+                let a: Vec<String> = interval.iter().map(|x| x.as_sql_inner(params)).collect();
+                format!("TSTZRANGE({},{})", a[0], a[1],)
+            }
+            Expr::Geometry(v) => {
+                let gj = GeoJsonString(v.to_string());
+                params.push(format!("EPSG:4326;{}", gj.to_wkt().unwrap()));
+                format!("${}", params.len())
+            }
+            Expr::Array(v) => {
+                let array_els: Vec<String> = v.iter().map(|a| a.as_sql_inner(params)).collect();
+                format!("[{}]", array_els.join(", "))
+            }
+            Expr::Property { property } => format!("\"{property}\""),
+            Expr::Operation { op, args } => {
+                let a: Vec<String> = args.iter().map(|x| x.as_sql_inner(params)).collect();
+                match op.as_str() {
+                    "and" => format!("({})", a.join(" AND ")),
+                    "or" => format!("({})", a.join(" OR ")),
+                    "between" => format!("({} BETWEEN {} AND {})", a[0], a[1], a[2]),
+                    "not" => format!("(NOT {})", a[0]),
+                    "is null" => format!("({} IS NULL)", a[0]),
+                    "+" | "-" | "*" | "/" | "%" | "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
+                        format!("({} {} {})", a[0], op, a[1])
+                    }
+                    _ => format!("{}({})", op, a.join(", ")),
+                }
+            }
+            Expr::BBox { bbox } => {
+                let array_els: Vec<String> = bbox.iter().map(|a| a.as_sql_inner(params)).collect();
+                format!("[{}]", array_els.join(", "))
+            }
+        }
+    }
+
     pub fn as_json(&self) -> String {
         serde_json::to_string(&self).unwrap()
     }
@@ -125,7 +225,6 @@ lazy_static::lazy_static! {
                 Op::infix(LtEq, Right)
             )
             .op(Op::infix(Like, Right))
-            //.op(Op::infix(Between, Left))
             .op(Op::infix(In, Left))
             .op(Op::postfix(IsNullPostfix))
             .op(Op::infix(Is, Right))
@@ -172,18 +271,22 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
     PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {
             Rule::Expr | Rule::ExpressionInParentheses => parse_expr(primary.into_inner()),
-            Rule::Unsigned => {
-                let u64_value = primary.as_str().parse::<u64>().unwrap();
-                Expr::ArithValue(u64_value)
-            }
-            Rule::DECIMAL => {
-                let f64_value = primary.as_str().parse::<f64>().unwrap();
-                Expr::FloatValue(f64_value)
-            }
-            Rule::SingleQuotedString => Expr::LiteralValue(strip_quotes(primary.as_str())),
+            Rule::Unsigned => Expr::Float(
+                primary
+                    .as_str()
+                    .parse::<f64>()
+                    .expect("Could not cast value to float"),
+            ),
+            Rule::DECIMAL => Expr::Float(
+                primary
+                    .as_str()
+                    .parse::<f64>()
+                    .expect("Could not cast value to float"),
+            ),
+            Rule::SingleQuotedString => Expr::Literal(strip_quotes(primary.as_str())),
             Rule::True | Rule::False => {
                 let bool_value = primary.as_str().to_lowercase().parse::<bool>().unwrap();
-                Expr::BoolConst(bool_value)
+                Expr::Bool(bool_value)
             }
             Rule::Identifier => Expr::Property {
                 property: strip_quotes(primary.as_str()),
@@ -219,7 +322,7 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                 for pair in pairs {
                     array_elements.push(Box::new(parse_expr(pair.into_inner())))
                 }
-                Expr::ArrayValue(array_elements)
+                Expr::Array(array_elements)
             }
 
             rule => unreachable!("Expr::parse expected atomic rule, found {:?}", rule),
@@ -234,62 +337,95 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
             }
 
             let origargs = vec![Box::new(lhs.clone()), Box::new(rhs.clone())];
-            let mut retexpr;
+            let mut retexpr: Expr;
             let mut lhsclone = lhs.clone();
             let rhsclone = rhs.clone();
 
-            let mut outargs: Vec<Box<Expr>> = Vec::new();
-
-            match lhsclone {
-                Expr::Operation { ref op, ref args } if *op == "and" => {
-                    for arg in args.iter() {
-                        outargs.push(arg.clone());
-                    }
-                    outargs.push(Box::new(rhsclone));
-                    //retexpr = Expr::Operation{op, args: outargs};
-                    return Expr::Operation {
-                        op: "and".to_string(),
-                        args: outargs,
-                    };
-                }
-                _ => (),
-            }
+            let mut lhsargs: Vec<Box<Expr>> = Vec::new();
+            let mut rhsargs: Vec<Box<Expr>> = Vec::new();
+            let mut betweenargs: Vec<Box<Expr>> = Vec::new();
 
             if opstring == "between" {
-                match lhsclone {
-                    Expr::Operation { op, args } if op == "not" => {
-                        let mut lhsargs = args.into_iter();
-                        lhsclone = *lhsargs.next().unwrap();
-                        notflag = true;
+                match &lhsclone {
+                    Expr::Operation { op, args } if op == "and" => {
+                        lhsargs = args.to_vec();
+                        lhsclone = *lhsargs.pop().unwrap();
                     }
                     _ => (),
                 }
 
-                match rhs {
-                    Expr::Operation { op, args } if op == "and" => {
-                        let mut rhsargs = args.into_iter();
-                        retexpr = Expr::Operation {
-                            op: opstring,
-                            args: vec![
-                                Box::new(lhsclone),
-                                rhsargs.next().unwrap(),
-                                rhsargs.next().unwrap(),
-                            ],
-                        };
-                        if rhsargs.len() >= 1 {
-                            let mut newargs = vec![Box::new(retexpr)];
-                            for rhsarg in rhsargs {
-                                newargs.push(rhsarg);
-                            }
-                            retexpr = Expr::Operation {
-                                op: "and".to_string(),
-                                args: newargs,
-                            };
-                        }
+                match &lhsclone {
+                    Expr::Operation { op, args } if op == "not" => {
+                        lhsargs = args.to_vec();
+                        lhsclone = *lhsargs.pop().unwrap();
+                        notflag = true;
                     }
-                    _ => unreachable!("RHS of between must be And Statement"),
+                    _ => (),
                 }
+                let betweenleft = lhsclone.to_owned();
+                betweenargs.push(Box::new(betweenleft));
+
+                match &rhs {
+                    Expr::Operation { op, args } if op == "and" => {
+                        for a in args {
+                            betweenargs.push(a.clone());
+                        }
+                        rhsargs = betweenargs.split_off(3);
+                    }
+                    _ => (),
+                }
+
+                retexpr = Expr::Operation {
+                    op: "between".to_string(),
+                    args: betweenargs,
+                };
+
+                if notflag {
+                    retexpr = Expr::Operation {
+                        op: "not".to_string(),
+                        args: vec![Box::new(retexpr)],
+                    };
+                };
+
+                if lhsargs.is_empty() || rhsargs.is_empty() {
+                    return retexpr;
+                }
+
+                let mut andargs: Vec<Box<Expr>> = Vec::new();
+
+                if !lhsargs.is_empty() {
+                    for a in lhsargs.into_iter() {
+                        andargs.push(a);
+                    }
+                }
+                andargs.push(Box::new(retexpr));
+
+                if !rhsargs.is_empty() {
+                    for a in rhsargs.into_iter() {
+                        andargs.push(a);
+                    }
+                }
+
+                return Expr::Operation {
+                    op: "and".to_string(),
+                    args: andargs,
+                };
             } else {
+                let mut outargs: Vec<Box<Expr>> = Vec::new();
+
+                match lhsclone {
+                    Expr::Operation { ref op, ref args } if op == "and" => {
+                        for arg in args.iter() {
+                            outargs.push(arg.clone());
+                        }
+                        outargs.push(Box::new(rhsclone));
+                        return Expr::Operation {
+                            op: "and".to_string(),
+                            args: outargs,
+                        };
+                    }
+                    _ => (),
+                }
                 retexpr = Expr::Operation {
                     op: opstring,
                     args: origargs,
@@ -311,7 +447,7 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
             },
             Rule::Negative => Expr::Operation {
                 op: "*".to_string(),
-                args: vec![Box::new(Expr::FloatValue(-1.0)), Box::new(child)],
+                args: vec![Box::new(Expr::Float(-1.0)), Box::new(child)],
             },
             rule => unreachable!("Expr::parse expected prefix operator, found {:?}", rule),
         })
