@@ -1,5 +1,5 @@
 use assert_json_diff::assert_json_eq;
-use cql2::{parse};
+use cql2::parse;
 use rstest::rstest;
 use serde_json::json;
 use std::fs;
