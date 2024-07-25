@@ -12,8 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: true
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -23,15 +21,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Cargo fmt
-        run: cargo fmt --all -- --check
+        run: cargo fmt -- --check
 
       - name: "clippy --all"
-        run: cargo clippy --all --all-features --tests -- -D warnings
+        run: cargo clippy --all-features --tests -- -D warnings
 
       - name: "cargo check"
-        run: cargo check --all --all-features
+        run: cargo check --all-features
 
       - name: "cargo test"
         run: |
-          cargo test --all
+          cargo test --all --no-default-features
           cargo test --all --all-features
