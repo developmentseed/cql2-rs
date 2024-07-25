@@ -146,7 +146,7 @@ impl Expr {
         }
     }
 
-    /// Converts this expression to a SqlQuery Struct
+    /// Converts this expression to a [SqlQuery] struct
     /// with parameters separated to use with parameter binding
     ///
     /// # Examples
@@ -155,18 +155,18 @@ impl Expr {
     /// use cql2::Expr;
     ///
     /// let expr = Expr::Bool(true);
-    /// let s = expr.as_sql();
+    /// let s = expr.to_sql();
     /// ```
-    pub fn as_sql(&self) -> SqlQuery {
+    pub fn to_sql(&self) -> SqlQuery {
         let params: &mut Vec<String> = &mut vec![];
-        let query = self.as_sql_inner(params);
+        let query = self.to_sql_inner(params);
         SqlQuery {
             query,
             params: params.to_vec(),
         }
     }
 
-    fn as_sql_inner(&self, params: &mut Vec<String>) -> String {
+    fn to_sql_inner(&self, params: &mut Vec<String>) -> String {
         match self {
             Expr::Bool(v) => {
                 params.push(v.to_string());
@@ -180,11 +180,11 @@ impl Expr {
                 params.push(v.to_string());
                 format!("${}", params.len())
             }
-            Expr::Date { date } => date.as_sql_inner(params),
-            Expr::Timestamp { timestamp } => timestamp.as_sql_inner(params),
+            Expr::Date { date } => date.to_sql_inner(params),
+            Expr::Timestamp { timestamp } => timestamp.to_sql_inner(params),
 
             Expr::Interval { interval } => {
-                let a: Vec<String> = interval.iter().map(|x| x.as_sql_inner(params)).collect();
+                let a: Vec<String> = interval.iter().map(|x| x.to_sql_inner(params)).collect();
                 format!("TSTZRANGE({},{})", a[0], a[1],)
             }
             Expr::Geometry(v) => {
@@ -193,12 +193,12 @@ impl Expr {
                 format!("${}", params.len())
             }
             Expr::Array(v) => {
-                let array_els: Vec<String> = v.iter().map(|a| a.as_sql_inner(params)).collect();
+                let array_els: Vec<String> = v.iter().map(|a| a.to_sql_inner(params)).collect();
                 format!("[{}]", array_els.join(", "))
             }
             Expr::Property { property } => format!("\"{property}\""),
             Expr::Operation { op, args } => {
-                let a: Vec<String> = args.iter().map(|x| x.as_sql_inner(params)).collect();
+                let a: Vec<String> = args.iter().map(|x| x.to_sql_inner(params)).collect();
                 match op.as_str() {
                     "and" => format!("({})", a.join(" AND ")),
                     "or" => format!("({})", a.join(" OR ")),
@@ -212,7 +212,7 @@ impl Expr {
                 }
             }
             Expr::BBox { bbox } => {
-                let array_els: Vec<String> = bbox.iter().map(|a| a.as_sql_inner(params)).collect();
+                let array_els: Vec<String> = bbox.iter().map(|a| a.to_sql_inner(params)).collect();
                 format!("[{}]", array_els.join(", "))
             }
         }
@@ -226,9 +226,9 @@ impl Expr {
     /// use cql2::Expr;
     ///
     /// let expr = Expr::Bool(true);
-    /// let s = expr.as_json().unwrap();
+    /// let s = expr.to_json().unwrap();
     /// ```
-    pub fn as_json(&self) -> Result<String, serde_json::Error> {
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string(&self)
     }
 
@@ -240,9 +240,9 @@ impl Expr {
     /// use cql2::Expr;
     ///
     /// let expr = Expr::Bool(true);
-    /// let s = expr.as_json_pretty().unwrap();
+    /// let s = expr.to_json_pretty().unwrap();
     /// ```
-    pub fn as_json_pretty(&self) -> Result<String, serde_json::Error> {
+    pub fn to_json_pretty(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string_pretty(&self)
     }
 
@@ -277,9 +277,14 @@ impl Expr {
     ///
     /// Panics if the default validator can't be created.
     pub fn is_valid(&self) -> bool {
-        let value = serde_json::to_value(self).unwrap();
-        let validator = Validator::new().unwrap();
-        validator.validate(&value).is_ok()
+        let value = serde_json::to_value(self);
+        match &value {
+            Ok(value) => {
+                let validator = Validator::new().expect("Could not create default validator");
+                validator.validate(value).is_ok()
+            }
+            _ => false,
+        }
     }
 }
 
