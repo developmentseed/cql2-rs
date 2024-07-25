@@ -1,70 +1,79 @@
 #![deny(unused_crate_dependencies)]
-
-use boon::{Compiler, SchemaIndex, Schemas};
-use geozero::geojson::GeoJsonString;
-use geozero::geojson::GeoJsonWriter;
+use boon::{Compiler, SchemaIndex, Schemas, ValidationError};
+use geozero::geojson::{GeoJsonString, GeoJsonWriter};
 use geozero::wkt::Wkt;
 use geozero::{CoordDimensions, GeozeroGeometry, ToJson, ToWkt};
 use pest::iterators::{Pair, Pairs};
 use pest::pratt_parser::PrattParser;
 use pest::Parser;
 use serde_derive::{Deserialize, Serialize};
+use serde_json::Value;
 use std::fs;
+use thiserror::Error;
 
+/// Crate-specific error enum.
+#[derive(Debug, Error)]
+pub enum Error {
+    /// [boon::CompileError]
+    #[error(transparent)]
+    BoonCompile(#[from] boon::CompileError),
+
+    /// [serde_json::Error]
+    #[error(transparent)]
+    SerdeJson(#[from] serde_json::Error),
+}
+
+/// A re-usable json-schema validator for CQL2.
 pub struct Validator {
     schemas: Schemas,
     index: SchemaIndex,
 }
 
 impl Validator {
-    pub fn new() -> Validator {
+    /// Creates a new validator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Validator;
+    ///
+    /// let validator = Validator::new().unwrap();
+    /// ```
+    pub fn new() -> Result<Validator, Error> {
         let mut schemas = Schemas::new();
         let mut compiler = Compiler::new();
-        let schema_json = serde_json::from_str(include_str!("cql2.json"))
-            .expect("Could not parse schema to json");
-        compiler
-            .add_resource("/tmp/cql2.json", schema_json)
-            .expect("Could not add schema to compiler");
-        let index = compiler
-            .compile("/tmp/cql2.json", &mut schemas)
-            .expect("Could not compile schema");
-        Validator { schemas, index }
+        let schema_json = serde_json::from_str(include_str!("cql2.json"))?;
+        compiler.add_resource("/tmp/cql2.json", schema_json)?;
+        let index = compiler.compile("/tmp/cql2.json", &mut schemas)?;
+        Ok(Validator { schemas, index })
     }
 
-    pub fn validate(self, obj: serde_json::Value) -> bool {
-        let valid = self.schemas.validate(&obj, self.index);
-        match valid {
-            Ok(()) => true,
-            Err(e) => {
-                let debug_level: &str =
-                    &std::env::var("CQL2_DEBUG_LEVEL").unwrap_or("1".to_string());
-                match debug_level {
-                    "3" => {
-                        eprintln!("-----------\n{e:#?}\n---------------")
-                    }
-                    "2" => {
-                        eprintln!("-----------\n{e:?}\n---------------")
-                    }
-                    "1" => {
-                        eprintln!("-----------\n{e}\n---------------")
-                    }
-                    _ => {
-                        eprintln!("-----------\nCQL2 Is Invalid!\n---------------")
-                    }
-                }
-
-                false
-            }
-        }
-    }
-    pub fn validate_str(self, obj: &str) -> bool {
-        self.validate(serde_json::from_str(obj).expect("Could not convert string to json."))
-    }
-}
-
-impl Default for Validator {
-    fn default() -> Self {
-        Self::new()
+    /// Validates a [serde_json::Value].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Validator;
+    /// use serde_json::json;
+    ///
+    /// let validator = Validator::new().unwrap();
+    ///
+    /// let valid = json!({
+    ///     "op": "=",
+    ///     "args": [
+    ///         { "property": "landsat:scene_id" },
+    ///         "LC82030282019133LGN00"
+    ///     ]
+    /// });
+    /// validator.validate(&valid).unwrap();
+    ///
+    /// let invalid = json!({
+    ///     "op": "not an operator!",
+    /// });
+    /// validator.validate(&invalid).unwrap_err();
+    /// ```
+    pub fn validate<'a, 'b>(&'a self, value: &'b Value) -> Result<(), ValidationError<'a, 'b>> {
+        self.schemas.validate(value, self.index)
     }
 }
 
@@ -137,16 +146,27 @@ impl Expr {
         }
     }
 
-    pub fn as_sql(&self) -> SqlQuery {
+    /// Converts this expression to a [SqlQuery] struct
+    /// with parameters separated to use with parameter binding
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    ///
+    /// let expr = Expr::Bool(true);
+    /// let s = expr.to_sql();
+    /// ```
+    pub fn to_sql(&self) -> SqlQuery {
         let params: &mut Vec<String> = &mut vec![];
-        let query = self.as_sql_inner(params);
+        let query = self.to_sql_inner(params);
         SqlQuery {
             query,
             params: params.to_vec(),
         }
     }
 
-    fn as_sql_inner(&self, params: &mut Vec<String>) -> String {
+    fn to_sql_inner(&self, params: &mut Vec<String>) -> String {
         match self {
             Expr::Bool(v) => {
                 params.push(v.to_string());
@@ -160,11 +180,11 @@ impl Expr {
                 params.push(v.to_string());
                 format!("${}", params.len())
             }
-            Expr::Date { date } => date.as_sql_inner(params),
-            Expr::Timestamp { timestamp } => timestamp.as_sql_inner(params),
+            Expr::Date { date } => date.to_sql_inner(params),
+            Expr::Timestamp { timestamp } => timestamp.to_sql_inner(params),
 
             Expr::Interval { interval } => {
-                let a: Vec<String> = interval.iter().map(|x| x.as_sql_inner(params)).collect();
+                let a: Vec<String> = interval.iter().map(|x| x.to_sql_inner(params)).collect();
                 format!("TSTZRANGE({},{})", a[0], a[1],)
             }
             Expr::Geometry(v) => {
@@ -173,12 +193,12 @@ impl Expr {
                 format!("${}", params.len())
             }
             Expr::Array(v) => {
-                let array_els: Vec<String> = v.iter().map(|a| a.as_sql_inner(params)).collect();
+                let array_els: Vec<String> = v.iter().map(|a| a.to_sql_inner(params)).collect();
                 format!("[{}]", array_els.join(", "))
             }
             Expr::Property { property } => format!("\"{property}\""),
             Expr::Operation { op, args } => {
-                let a: Vec<String> = args.iter().map(|x| x.as_sql_inner(params)).collect();
+                let a: Vec<String> = args.iter().map(|x| x.to_sql_inner(params)).collect();
                 match op.as_str() {
                     "and" => format!("({})", a.join(" AND ")),
                     "or" => format!("({})", a.join(" OR ")),
@@ -192,20 +212,79 @@ impl Expr {
                 }
             }
             Expr::BBox { bbox } => {
-                let array_els: Vec<String> = bbox.iter().map(|a| a.as_sql_inner(params)).collect();
+                let array_els: Vec<String> = bbox.iter().map(|a| a.to_sql_inner(params)).collect();
                 format!("[{}]", array_els.join(", "))
             }
         }
     }
 
-    pub fn as_json(&self) -> String {
-        serde_json::to_string(&self).unwrap()
+    /// Converts this expression to a JSON string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    ///
+    /// let expr = Expr::Bool(true);
+    /// let s = expr.to_json().unwrap();
+    /// ```
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string(&self)
     }
-    pub fn as_json_pretty(&self) -> String {
-        serde_json::to_string_pretty(&self).unwrap()
+
+    /// Converts this expression to a pretty JSON string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    ///
+    /// let expr = Expr::Bool(true);
+    /// let s = expr.to_json_pretty().unwrap();
+    /// ```
+    pub fn to_json_pretty(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(&self)
     }
-    pub fn validate(&self) -> bool {
-        Validator::new().validate_str(&self.as_json())
+
+    /// Converts this expression to a [serde_json::Value].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    ///
+    /// let expr = Expr::Bool(true);
+    /// let value = expr.to_value().unwrap();
+    /// ```
+    pub fn to_value(&self) -> Result<Value, serde_json::Error> {
+        serde_json::to_value(self)
+    }
+
+    /// Returns true if this expression is valid CQL2.
+    ///
+    /// For detailed error reporting, use [Validator::validate] in conjunction with [Expr::to_value].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    ///
+    /// let expr = Expr::Bool(true);
+    /// assert!(expr.is_valid());
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if the default validator can't be created.
+    pub fn is_valid(&self) -> bool {
+        let value = serde_json::to_value(self);
+        match &value {
+            Ok(value) => {
+                let validator = Validator::new().expect("Could not create default validator");
+                validator.validate(value).is_ok()
+            }
+            _ => false,
+        }
     }
 }
 
@@ -478,8 +557,64 @@ pub fn parse_file(f: &str) -> Expr {
     parse(&cql2)
 }
 
+pub fn get_stdin() -> String {
+    use std::env;
+    use std::io::{self, IsTerminal};
+    let args: Vec<String> = env::args().collect();
+    let mut buffer = String::new();
+
+    if args.len() >= 2 {
+        buffer = args[1].to_string();
+    } else if io::stdin().is_terminal() {
+        println!("Enter CQL2 as Text or JSON, then hit return");
+        io::stdin().read_line(&mut buffer).unwrap();
+    } else {
+        io::stdin().read_line(&mut buffer).unwrap();
+    }
+    buffer
+}
+
+pub fn parse_stderr(cql2: &str) -> Expr {
+    let debug_level: u8 = std::env::var("CQL2_DEBUG_LEVEL")
+        .map(|s| {
+            s.parse()
+                .unwrap_or_else(|_| panic!("CQL2_DEBUG_LEVEL should be an integer: {}", s))
+        })
+        .unwrap_or(1);
+    let validator = Validator::new().unwrap();
+
+    let parsed: Expr = parse(cql2).clone();
+    let value = serde_json::to_value(&parsed).unwrap();
+
+    let validation = validator.validate(&value);
+
+    match validation {
+        Ok(()) => parsed,
+        Err(err) => {
+            eprintln!("Passed in CQL2 parsed to {value}.");
+            eprintln!("This did not pass jsonschema validation for CQL2.");
+            match debug_level {
+                0 => eprintln!("For more detailed validation details set CQL2_DEBUG_LEVEL to 1."),
+                1 => eprintln!(
+                    "{err}\nFor more detailed validation details set CQL2_DEBUG_LEVEL to 2."
+                ),
+                2 => eprintln!(
+                    "{err:#}\nFor more detailed validation details set CQL2_DEBUG_LEVEL to 3."
+                ),
+                _ => {
+                    let detailed_output = err.detailed_output();
+                    eprintln!("{detailed_output:#}");
+                }
+            }
+            std::process::exit(1);
+        }
+    }
+}
+
+pub fn parse_stdin() -> Expr {
+    let buffer = get_stdin();
+    parse_stderr(&buffer)
+}
+
 #[cfg(test)]
 use {assert_json_diff as _, rstest as _};
-
-#[cfg(feature = "bin")]
-use atty as _;
