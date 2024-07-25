@@ -38,16 +38,16 @@ impl Validator {
                     &std::env::var("CQL2_DEBUG_LEVEL").unwrap_or("1".to_string());
                 match debug_level {
                     "3" => {
-                        println!("-----------\n{e:#?}\n---------------")
+                        eprintln!("-----------\n{e:#?}\n---------------")
                     }
                     "2" => {
-                        println!("-----------\n{e:?}\n---------------")
+                        eprintln!("-----------\n{e:?}\n---------------")
                     }
                     "1" => {
-                        println!("-----------\n{e}\n---------------")
+                        eprintln!("-----------\n{e}\n---------------")
                     }
                     _ => {
-                        println!("-----------\nCQL2 Is Invalid!\n---------------")
+                        eprintln!("-----------\nCQL2 Is Invalid!\n---------------")
                     }
                 }
 
@@ -77,12 +77,12 @@ pub enum Expr {
     Interval { interval: Vec<Box<Expr>> },
     Timestamp { timestamp: Box<Expr> },
     Date { date: Box<Expr> },
+    Property { property: String },
+    BBox{ bbox: Vec<Box<Expr>> },
     Float(f64),
     Literal(String),
     Bool(bool),
-    Property { property: String },
     Array(Vec<Box<Expr>>),
-    BBox{ bbox: Vec<Box<Expr>> },
     Geometry(serde_json::Value),
 }
 
@@ -94,7 +94,6 @@ pub struct SqlQuery {
 
 impl Expr {
     pub fn as_cql2_text(&self) -> String {
-        println!("------------\nAS CQL2:\n{:?}", self);
         match self {
             Expr::Bool(v) => v.to_string(),
             Expr::Float(v) => v.to_string(),
@@ -109,7 +108,6 @@ impl Expr {
             Expr::Timestamp { timestamp } => format!("TIMESTAMP({})", timestamp.as_cql2_text()),
             Expr::Geometry(v) => {
                 let gj = GeoJsonString(v.to_string());
-                println!("GJ {:?}", gj);
                 gj.to_wkt().expect("error converting geojson to wkt")
             }
             Expr::Array(v) => {
