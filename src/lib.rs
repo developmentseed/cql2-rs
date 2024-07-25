@@ -162,10 +162,7 @@ impl Expr {
             Expr::Timestamp { timestamp } => timestamp.as_sql_inner(params),
 
             Expr::Interval { interval } => {
-                let a: Vec<String> = interval
-                    .iter()
-                    .map(|x| x.as_sql_inner(params))
-                    .collect();
+                let a: Vec<String> = interval.iter().map(|x| x.as_sql_inner(params)).collect();
                 format!("TSTZRANGE({},{})", a[0], a[1],)
             }
             Expr::Geometry(v) => {
@@ -174,8 +171,7 @@ impl Expr {
                 format!("${}", params.len())
             }
             Expr::Array(v) => {
-                let array_els: Vec<String> =
-                    v.iter().map(|a| a.as_sql_inner(params)).collect();
+                let array_els: Vec<String> = v.iter().map(|a| a.as_sql_inner(params)).collect();
                 format!("[{}]", array_els.join(", "))
             }
             Expr::Property { property } => format!("\"{property}\""),
@@ -194,8 +190,7 @@ impl Expr {
                 }
             }
             Expr::BBox { bbox } => {
-                let array_els: Vec<String> =
-                    bbox.iter().map(|a| a.as_sql_inner(params)).collect();
+                let array_els: Vec<String> = bbox.iter().map(|a| a.as_sql_inner(params)).collect();
                 format!("[{}]", array_els.join(", "))
             }
         }
