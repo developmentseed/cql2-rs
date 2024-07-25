@@ -102,7 +102,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cql2-rs"
+name = "cql2"
 version = "0.1.0"
 dependencies = [
  "boon",
