@@ -1,5 +1,5 @@
 use atty::Stream;
-use cql2_rs::parse;
+use cql2::parse;
 use std::env;
 use std::io;
 use std::process::ExitCode;
