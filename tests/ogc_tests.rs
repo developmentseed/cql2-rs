@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 pub fn validate_str(cql2: &str) {
     println!("CQL2: {}", cql2);
-    let expr: cql2_rs::Expr = parse(&cql2);
+    let expr: cql2_rs::Expr = parse(cql2);
     let outcql2: String = expr.as_cql2_text();
     println!("Out CQL2: {}", outcql2);
     println!("Expr:  {}", expr.as_json());

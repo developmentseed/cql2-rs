@@ -8,7 +8,7 @@ fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
     let mut buffer = String::new();
     if args.len() >= 2 {
-        buffer = args[1].clone();
+        buffer = args[1].to_string();
     } else if atty::isnt(Stream::Stdin) {
         io::stdin().read_line(&mut buffer).unwrap();
     } else {

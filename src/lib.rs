@@ -111,11 +111,11 @@ impl Expr {
                 gj.to_wkt().expect("error converting geojson to wkt")
             }
             Expr::Array(v) => {
-                let array_els: Vec<String> = v.into_iter().map(|a| a.as_cql2_text()).collect();
+                let array_els: Vec<String> = v.iter().map(|a| a.as_cql2_text()).collect();
                 format!("({})", array_els.join(", "))
             }
             Expr::Operation { op, args } => {
-                let a: Vec<String> = args.into_iter().map(|x| x.as_cql2_text()).collect();
+                let a: Vec<String> = args.iter().map(|x| x.as_cql2_text()).collect();
                 match op.as_str() {
                     "and" => format!("({})", a.join(" AND ")),
                     "or" => format!("({})", a.join(" OR ")),
@@ -129,15 +129,15 @@ impl Expr {
                 }
             }
             Expr::BBox { bbox } => {
-                let array_els: Vec<String> = bbox.into_iter().map(|a| a.as_cql2_text()).collect();
+                let array_els: Vec<String> = bbox.iter().map(|a| a.as_cql2_text()).collect();
                 format!("BBOX({})", array_els.join(", "))
             }
         }
     }
 
     pub fn as_sql(&self) -> SqlQuery {
-        let mut params: &mut Vec<String> = &mut vec![];
-        let query = self.as_sql_inner(&mut params);
+        let params: &mut Vec<String> = &mut vec![];
+        let query = self.as_sql_inner(params);
         SqlQuery {
             query,
             params: params.to_vec(),
@@ -163,7 +163,7 @@ impl Expr {
 
             Expr::Interval { interval } => {
                 let a: Vec<String> = interval
-                    .into_iter()
+                    .iter()
                     .map(|x| x.as_sql_inner(params))
                     .collect();
                 format!("TSTZRANGE({},{})", a[0], a[1],)
@@ -175,12 +175,12 @@ impl Expr {
             }
             Expr::Array(v) => {
                 let array_els: Vec<String> =
-                    v.into_iter().map(|a| a.as_sql_inner(params)).collect();
+                    v.iter().map(|a| a.as_sql_inner(params)).collect();
                 format!("[{}]", array_els.join(", "))
             }
             Expr::Property { property } => format!("\"{property}\""),
             Expr::Operation { op, args } => {
-                let a: Vec<String> = args.into_iter().map(|x| x.as_sql_inner(params)).collect();
+                let a: Vec<String> = args.iter().map(|x| x.as_sql_inner(params)).collect();
                 match op.as_str() {
                     "and" => format!("({})", a.join(" AND ")),
                     "or" => format!("({})", a.join(" OR ")),
@@ -195,7 +195,7 @@ impl Expr {
             }
             Expr::BBox { bbox } => {
                 let array_els: Vec<String> =
-                    bbox.into_iter().map(|a| a.as_sql_inner(params)).collect();
+                    bbox.iter().map(|a| a.as_sql_inner(params)).collect();
                 format!("[{}]", array_els.join(", "))
             }
         }
@@ -361,7 +361,7 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
 
                 match &lhsclone {
                     Expr::Operation { op, args } if op == "not" => {
-                        lhsargs = args.clone();
+                        lhsargs = args.to_vec();
                         lhsclone = *lhsargs.pop().unwrap();
                         notflag = true;
                     }
@@ -392,20 +392,20 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                     };
                 };
 
-                if lhsargs.len() < 1 || rhsargs.len() < 1 {
+                if lhsargs.is_empty() || rhsargs.is_empty() {
                     return retexpr;
                 }
 
                 let mut andargs: Vec<Box<Expr>> = Vec::new();
 
-                if lhsargs.len() >= 1 {
+                if !lhsargs.is_empty() {
                     for a in lhsargs.into_iter() {
                         andargs.push(a);
                     }
                 }
                 andargs.push(Box::new(retexpr));
 
-                if rhsargs.len() >= 1 {
+                if !rhsargs.is_empty() {
                     for a in rhsargs.into_iter() {
                         andargs.push(a);
                     }
@@ -419,8 +419,8 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                 let mut outargs: Vec<Box<Expr>> = Vec::new();
 
                 match lhsclone {
-                    Expr::Operation { ref op, ref args } if *op == "and".to_string() => {
-                        for arg in args.into_iter() {
+                    Expr::Operation { ref op, ref args } if op == "and" => {
+                        for arg in args.iter() {
                             outargs.push(arg.clone());
                         }
                         outargs.push(Box::new(rhsclone));
