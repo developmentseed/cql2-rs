@@ -118,7 +118,6 @@ dependencies = [
  "assert-json-diff",
  "boon",
  "geozero",
- "glob",
  "lazy_static",
  "pest",
  "pest_derive",

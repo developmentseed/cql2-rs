@@ -1,3 +1,4 @@
+#![deny(unused_crate_dependencies)]
 use boon::{Compiler, SchemaIndex, Schemas, ValidationError};
 use geozero::geojson::{GeoJsonString, GeoJsonWriter};
 use geozero::wkt::Wkt;
@@ -609,3 +610,7 @@ pub fn parse_stdin() -> Expr {
     let buffer = get_stdin();
     parse_stderr(&buffer)
 }
+
+#[cfg(test)]
+use {assert_json_diff as _, rstest as _};
+
