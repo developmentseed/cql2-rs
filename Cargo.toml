@@ -3,16 +3,31 @@ name = "cql2"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+defaults = ["bin"]
+bin = ["dep:atty"]
+
 [dependencies]
 geozero = { git = "https://github.com/bitner/geozero.git", rev = "45828d7" }
 boon = "0.6.0"
-glob = "0.3.1"
 lazy_static = "1.5.0"
 pest = "2.7.11"
 pest_derive = "2.7.11"
-rstest = "0.21.0"
 serde = "1.0.204"
 serde_derive = "1.0.204"
 serde_json = { version = "1.0.120", features = ["preserve_order"] }
+atty = { version = "0.2.14", optional = true }
+
+[dev-dependencies]
 assert-json-diff = "2.0.2"
-atty = "0.2.14"
+rstest = "0.21.0"
+
+[[bin]]
+name = "cql2json"
+path = "src/bin/cql2json.rs"
+required-features = ["bin"]
+
+[[bin]]
+name = "cql2text"
+path = "src/bin/cql2text.rs"
+required-features = ["bin"]

@@ -130,7 +130,6 @@ dependencies = [
  "atty",
  "boon",
  "geozero",
- "glob",
  "lazy_static",
  "pest",
  "pest_derive",

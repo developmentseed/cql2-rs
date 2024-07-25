@@ -1,3 +1,5 @@
+#![deny(unused_crate_dependencies)]
+
 use boon::{Compiler, SchemaIndex, Schemas};
 use geozero::geojson::GeoJsonString;
 use geozero::geojson::GeoJsonWriter;
@@ -475,3 +477,9 @@ pub fn parse_file(f: &str) -> Expr {
     let cql2 = fs::read_to_string(f).unwrap();
     parse(&cql2)
 }
+
+#[cfg(test)]
+use {assert_json_diff as _, rstest as _};
+
+#[cfg(feature = "bin")]
+use atty as _;
