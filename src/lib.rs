@@ -1,4 +1,7 @@
+//! Parse and transform [Common Query Language 2 (CQL2)](https://docs.ogc.org/DRAFTS/21-065.html).
+
 #![deny(unused_crate_dependencies)]
+
 use boon::{Compiler, SchemaIndex, Schemas, ValidationError};
 use geozero::geojson::{GeoJsonString, GeoJsonWriter};
 use geozero::wkt::Wkt;
@@ -9,6 +12,7 @@ use pest::Parser;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
+use std::path::Path;
 use thiserror::Error;
 
 /// Crate-specific error enum.
@@ -77,10 +81,12 @@ impl Validator {
     }
 }
 
+/// [pest] parser for CQL2.
 #[derive(pest_derive::Parser)]
 #[grammar = "cql2.pest"]
 pub struct CQL2Parser;
 
+/// A CQL2 expression.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum Expr {
@@ -97,6 +103,7 @@ pub enum Expr {
     Geometry(serde_json::Value),
 }
 
+/// A SQL query, broken into the query and parameters.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SqlQuery {
     query: String,
@@ -104,7 +111,17 @@ pub struct SqlQuery {
 }
 
 impl Expr {
-    pub fn as_cql2_text(&self) -> String {
+    /// Converts this expression to CQL2 text.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    ///
+    /// let expr = Expr::Bool(true);
+    /// assert_eq!(expr.to_cql2_text(), "true");
+    /// ```
+    pub fn to_cql2_text(&self) -> String {
         match self {
             Expr::Bool(v) => v.to_string(),
             Expr::Float(v) => v.to_string(),
@@ -112,21 +129,21 @@ impl Expr {
             Expr::Property { property } => format!("\"{property}\""),
             Expr::Interval { interval } => format!(
                 "INTERVAL({},{})",
-                interval[0].as_cql2_text(),
-                interval[1].as_cql2_text()
+                interval[0].to_cql2_text(),
+                interval[1].to_cql2_text()
             ),
-            Expr::Date { date } => format!("DATE({})", date.as_cql2_text()),
-            Expr::Timestamp { timestamp } => format!("TIMESTAMP({})", timestamp.as_cql2_text()),
+            Expr::Date { date } => format!("DATE({})", date.to_cql2_text()),
+            Expr::Timestamp { timestamp } => format!("TIMESTAMP({})", timestamp.to_cql2_text()),
             Expr::Geometry(v) => {
                 let gj = GeoJsonString(v.to_string());
                 gj.to_wkt().expect("error converting geojson to wkt")
             }
             Expr::Array(v) => {
-                let array_els: Vec<String> = v.iter().map(|a| a.as_cql2_text()).collect();
+                let array_els: Vec<String> = v.iter().map(|a| a.to_cql2_text()).collect();
                 format!("({})", array_els.join(", "))
             }
             Expr::Operation { op, args } => {
-                let a: Vec<String> = args.iter().map(|x| x.as_cql2_text()).collect();
+                let a: Vec<String> = args.iter().map(|x| x.to_cql2_text()).collect();
                 match op.as_str() {
                     "and" => format!("({})", a.join(" AND ")),
                     "or" => format!("({})", a.join(" OR ")),
@@ -140,14 +157,14 @@ impl Expr {
                 }
             }
             Expr::BBox { bbox } => {
-                let array_els: Vec<String> = bbox.iter().map(|a| a.as_cql2_text()).collect();
+                let array_els: Vec<String> = bbox.iter().map(|a| a.to_cql2_text()).collect();
                 format!("BBOX({})", array_els.join(", "))
             }
         }
     }
 
-    /// Converts this expression to a [SqlQuery] struct
-    /// with parameters separated to use with parameter binding
+    /// Converts this expression to a [SqlQuery] struct with parameters
+    /// separated to use with parameter binding.
     ///
     /// # Examples
     ///
@@ -323,7 +340,7 @@ lazy_static::lazy_static! {
         };
 }
 
-pub fn normalize_op(op: &str) -> String {
+fn normalize_op(op: &str) -> String {
     let oper = op.to_lowercase();
     let operator: &str = match oper.as_str() {
         "eq" => "=",
@@ -332,7 +349,7 @@ pub fn normalize_op(op: &str) -> String {
     operator.to_string()
 }
 
-pub fn strip_quotes(quoted_string: &str) -> String {
+fn strip_quotes(quoted_string: &str) -> String {
     let len = quoted_string.len();
     let bytes = quoted_string.as_bytes();
     if (bytes[0] == b'"' && bytes[len - 1] == b'"')
@@ -344,7 +361,7 @@ pub fn strip_quotes(quoted_string: &str) -> String {
     }
 }
 
-pub fn opstr(op: Pair<Rule>) -> String {
+fn opstr(op: Pair<Rule>) -> String {
     return normalize_op(op.as_str());
 }
 
@@ -542,22 +559,68 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
         .parse(expression_pairs)
 }
 
+/// Parses a string into a CQL2 expression.
+///
+/// The string can be cql2-text or cql2-json — the type will be auto-detected.
+/// Use [parse_text] and [parse_json] if you already know the CQL2 type of the
+/// string.
+///
+/// # Examples
+///
+/// ```
+/// let s = "landsat:scene_id = 'LC82030282019133LGN00'";
+/// let expr = cql2::parse(s);
+/// ```
 pub fn parse(cql2: &str) -> Expr {
+    // TODO impl FromStr
     if cql2.starts_with('{') {
-        let expr: Expr = serde_json::from_str(cql2).unwrap();
-        expr
+        parse_json(cql2)
     } else {
-        let mut pairs = CQL2Parser::parse(Rule::Expr, cql2).unwrap();
-        return parse_expr(pairs.next().unwrap().into_inner());
+        parse_text(cql2)
     }
 }
 
-pub fn parse_file(f: &str) -> Expr {
-    let cql2 = fs::read_to_string(f).unwrap();
+/// Parses a cql2-json string into a CQL2 expression.
+///
+/// # Examples
+///
+/// ```
+/// let s = include_str!("../tests/fixtures/json/example01.json");
+/// let expr = cql2::parse_json(s);
+/// ```
+pub fn parse_json(cql2: &str) -> Expr {
+    // TODO don't unwrap
+    serde_json::from_str(cql2).unwrap()
+}
+
+/// Parses a cql2-text string into a CQL2 expression.
+///
+/// # Examples
+///
+/// ```
+/// let s = "landsat:scene_id = 'LC82030282019133LGN00'";
+/// let expr = cql2::parse_text(s);
+/// ```
+pub fn parse_text(cql2: &str) -> Expr {
+    // TODO don't unwrap
+    let mut pairs = CQL2Parser::parse(Rule::Expr, cql2).unwrap();
+    parse_expr(pairs.next().unwrap().into_inner())
+}
+
+/// Reads a file and returns its contents as a CQL2 expression;
+///
+/// # Examples
+///
+/// ```no_run
+/// let expr = cql2::parse_file("tests/fixtures/json/example01.json");
+/// ```
+pub fn parse_file(path: impl AsRef<Path>) -> Expr {
+    // TODO don't unwrap
+    let cql2 = fs::read_to_string(path).unwrap();
     parse(&cql2)
 }
 
-pub fn get_stdin() -> String {
+fn get_stdin() -> String {
     use std::env;
     use std::io::{self, IsTerminal};
     let args: Vec<String> = env::args().collect();
@@ -574,7 +637,7 @@ pub fn get_stdin() -> String {
     buffer
 }
 
-pub fn parse_stderr(cql2: &str) -> Expr {
+fn parse_stderr(cql2: &str) -> Expr {
     let debug_level: u8 = std::env::var("CQL2_DEBUG_LEVEL")
         .map(|s| {
             s.parse()
@@ -611,7 +674,15 @@ pub fn parse_stderr(cql2: &str) -> Expr {
     }
 }
 
+/// Parse standard input into a CQL2 expression.
+///
+/// # Examples
+///
+/// ```no_run
+/// let expr = cql2::parse_stdin();
+/// ```
 pub fn parse_stdin() -> Expr {
+    // TODO don't unwrap
     let buffer = get_stdin();
     parse_stderr(&buffer)
 }
