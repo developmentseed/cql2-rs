@@ -36,7 +36,7 @@ pub enum Error {
 
     /// [pest::error::Error]
     #[error(transparent)]
-    Pest(#[from] pest::error::Error<Rule>),
+    Pest(#[from] Box<pest::error::Error<Rule>>),
 
     /// [serde_json::Error]
     #[error(transparent)]
@@ -650,7 +650,7 @@ pub fn parse_json(cql2: &str) -> Result<Expr, serde_json::Error> {
 /// let expr = cql2::parse_text(s);
 /// ```
 pub fn parse_text(cql2: &str) -> Result<Expr, Error> {
-    let mut pairs = CQL2Parser::parse(Rule::Expr, cql2)?;
+    let mut pairs = CQL2Parser::parse(Rule::Expr, cql2).map_err(Box::new)?;
     if let Some(pair) = pairs.next() {
         if pairs.next().is_some() {
             Err(Error::InvalidCql2Text(cql2.to_string()))
