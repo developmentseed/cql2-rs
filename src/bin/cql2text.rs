@@ -2,5 +2,5 @@ use cql2::parse_stdin;
 
 fn main() {
     let parsed = parse_stdin();
-    println!("{}", parsed.as_cql2_text());
+    println!("{}", parsed.to_cql2_text());
 }
