@@ -22,9 +22,34 @@ pub enum Error {
     #[error(transparent)]
     BoonCompile(#[from] boon::CompileError),
 
+    /// Invalid CQL2 text
+    #[error("invalid cql2-text: {0}")]
+    InvalidCql2Text(String),
+
+    /// [std::io::Error]
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    /// [std::num::ParseIntError]
+    #[error(transparent)]
+    ParseInt(#[from] std::num::ParseIntError),
+
+    /// [pest::error::Error]
+    #[error(transparent)]
+    Pest(#[from] Box<pest::error::Error<Rule>>),
+
     /// [serde_json::Error]
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
+
+    /// A validation error.
+    ///
+    /// This holds a [serde_json::Value] that is the output from a
+    /// [boon::ValidationError]. We can't hold the validation error itself
+    /// becuase it contains references to both the validated object and the
+    /// validator's data.
+    #[error("validation error")]
+    Validation(Value),
 }
 
 /// A re-usable json-schema validator for CQL2.
@@ -119,31 +144,37 @@ impl Expr {
     /// use cql2::Expr;
     ///
     /// let expr = Expr::Bool(true);
-    /// assert_eq!(expr.to_cql2_text(), "true");
+    /// assert_eq!(expr.to_cql2_text().unwrap(), "true");
     /// ```
-    pub fn to_cql2_text(&self) -> String {
-        match self {
+    pub fn to_cql2_text(&self) -> Result<String, geozero::error::GeozeroError> {
+        Ok(match self {
             Expr::Bool(v) => v.to_string(),
             Expr::Float(v) => v.to_string(),
             Expr::Literal(v) => format!("'{}'", v.as_str()),
             Expr::Property { property } => format!("\"{property}\""),
             Expr::Interval { interval } => format!(
                 "INTERVAL({},{})",
-                interval[0].to_cql2_text(),
-                interval[1].to_cql2_text()
+                interval[0].to_cql2_text()?,
+                interval[1].to_cql2_text()?
             ),
-            Expr::Date { date } => format!("DATE({})", date.to_cql2_text()),
-            Expr::Timestamp { timestamp } => format!("TIMESTAMP({})", timestamp.to_cql2_text()),
+            Expr::Date { date } => format!("DATE({})", date.to_cql2_text()?),
+            Expr::Timestamp { timestamp } => format!("TIMESTAMP({})", timestamp.to_cql2_text()?),
             Expr::Geometry(v) => {
                 let gj = GeoJsonString(v.to_string());
-                gj.to_wkt().expect("error converting geojson to wkt")
+                gj.to_wkt()?
             }
             Expr::Array(v) => {
-                let array_els: Vec<String> = v.iter().map(|a| a.to_cql2_text()).collect();
+                let array_els: Vec<String> = v
+                    .iter()
+                    .map(|a| a.to_cql2_text())
+                    .collect::<Result<_, _>>()?;
                 format!("({})", array_els.join(", "))
             }
             Expr::Operation { op, args } => {
-                let a: Vec<String> = args.iter().map(|x| x.to_cql2_text()).collect();
+                let a: Vec<String> = args
+                    .iter()
+                    .map(|x| x.to_cql2_text())
+                    .collect::<Result<_, _>>()?;
                 match op.as_str() {
                     "and" => format!("({})", a.join(" AND ")),
                     "or" => format!("({})", a.join(" OR ")),
@@ -157,10 +188,13 @@ impl Expr {
                 }
             }
             Expr::BBox { bbox } => {
-                let array_els: Vec<String> = bbox.iter().map(|a| a.to_cql2_text()).collect();
+                let array_els: Vec<String> = bbox
+                    .iter()
+                    .map(|a| a.to_cql2_text())
+                    .collect::<Result<_, _>>()?;
                 format!("BBOX({})", array_els.join(", "))
             }
-        }
+        })
     }
 
     /// Converts this expression to a [SqlQuery] struct with parameters
@@ -172,19 +206,22 @@ impl Expr {
     /// use cql2::Expr;
     ///
     /// let expr = Expr::Bool(true);
-    /// let s = expr.to_sql();
+    /// let s = expr.to_sql().unwrap();
     /// ```
-    pub fn to_sql(&self) -> SqlQuery {
+    pub fn to_sql(&self) -> Result<SqlQuery, geozero::error::GeozeroError> {
         let params: &mut Vec<String> = &mut vec![];
-        let query = self.to_sql_inner(params);
-        SqlQuery {
+        let query = self.to_sql_inner(params)?;
+        Ok(SqlQuery {
             query,
             params: params.to_vec(),
-        }
+        })
     }
 
-    fn to_sql_inner(&self, params: &mut Vec<String>) -> String {
-        match self {
+    fn to_sql_inner(
+        &self,
+        params: &mut Vec<String>,
+    ) -> Result<String, geozero::error::GeozeroError> {
+        Ok(match self {
             Expr::Bool(v) => {
                 params.push(v.to_string());
                 format!("${}", params.len())
@@ -197,25 +234,34 @@ impl Expr {
                 params.push(v.to_string());
                 format!("${}", params.len())
             }
-            Expr::Date { date } => date.to_sql_inner(params),
-            Expr::Timestamp { timestamp } => timestamp.to_sql_inner(params),
+            Expr::Date { date } => date.to_sql_inner(params)?,
+            Expr::Timestamp { timestamp } => timestamp.to_sql_inner(params)?,
 
             Expr::Interval { interval } => {
-                let a: Vec<String> = interval.iter().map(|x| x.to_sql_inner(params)).collect();
+                let a: Vec<String> = interval
+                    .iter()
+                    .map(|x| x.to_sql_inner(params))
+                    .collect::<Result<_, _>>()?;
                 format!("TSTZRANGE({},{})", a[0], a[1],)
             }
             Expr::Geometry(v) => {
                 let gj = GeoJsonString(v.to_string());
-                params.push(format!("EPSG:4326;{}", gj.to_wkt().unwrap()));
+                params.push(format!("EPSG:4326;{}", gj.to_wkt()?));
                 format!("${}", params.len())
             }
             Expr::Array(v) => {
-                let array_els: Vec<String> = v.iter().map(|a| a.to_sql_inner(params)).collect();
+                let array_els: Vec<String> = v
+                    .iter()
+                    .map(|a| a.to_sql_inner(params))
+                    .collect::<Result<_, _>>()?;
                 format!("[{}]", array_els.join(", "))
             }
             Expr::Property { property } => format!("\"{property}\""),
             Expr::Operation { op, args } => {
-                let a: Vec<String> = args.iter().map(|x| x.to_sql_inner(params)).collect();
+                let a: Vec<String> = args
+                    .iter()
+                    .map(|x| x.to_sql_inner(params))
+                    .collect::<Result<_, _>>()?;
                 match op.as_str() {
                     "and" => format!("({})", a.join(" AND ")),
                     "or" => format!("({})", a.join(" OR ")),
@@ -229,10 +275,13 @@ impl Expr {
                 }
             }
             Expr::BBox { bbox } => {
-                let array_els: Vec<String> = bbox.iter().map(|a| a.to_sql_inner(params)).collect();
+                let array_els: Vec<String> = bbox
+                    .iter()
+                    .map(|a| a.to_sql_inner(params))
+                    .collect::<Result<_, _>>()?;
                 format!("[{}]", array_els.join(", "))
             }
-        }
+        })
     }
 
     /// Converts this expression to a JSON string.
@@ -571,10 +620,10 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
 /// let s = "landsat:scene_id = 'LC82030282019133LGN00'";
 /// let expr = cql2::parse(s);
 /// ```
-pub fn parse(cql2: &str) -> Expr {
+pub fn parse(cql2: &str) -> Result<Expr, Error> {
     // TODO impl FromStr
     if cql2.starts_with('{') {
-        parse_json(cql2)
+        parse_json(cql2).map_err(Error::from)
     } else {
         parse_text(cql2)
     }
@@ -588,9 +637,8 @@ pub fn parse(cql2: &str) -> Expr {
 /// let s = include_str!("../tests/fixtures/json/example01.json");
 /// let expr = cql2::parse_json(s);
 /// ```
-pub fn parse_json(cql2: &str) -> Expr {
-    // TODO don't unwrap
-    serde_json::from_str(cql2).unwrap()
+pub fn parse_json(cql2: &str) -> Result<Expr, serde_json::Error> {
+    serde_json::from_str(cql2)
 }
 
 /// Parses a cql2-text string into a CQL2 expression.
@@ -601,10 +649,17 @@ pub fn parse_json(cql2: &str) -> Expr {
 /// let s = "landsat:scene_id = 'LC82030282019133LGN00'";
 /// let expr = cql2::parse_text(s);
 /// ```
-pub fn parse_text(cql2: &str) -> Expr {
-    // TODO don't unwrap
-    let mut pairs = CQL2Parser::parse(Rule::Expr, cql2).unwrap();
-    parse_expr(pairs.next().unwrap().into_inner())
+pub fn parse_text(cql2: &str) -> Result<Expr, Error> {
+    let mut pairs = CQL2Parser::parse(Rule::Expr, cql2).map_err(Box::new)?;
+    if let Some(pair) = pairs.next() {
+        if pairs.next().is_some() {
+            Err(Error::InvalidCql2Text(cql2.to_string()))
+        } else {
+            Ok(parse_expr(pair.into_inner()))
+        }
+    } else {
+        Err(Error::InvalidCql2Text(cql2.to_string()))
+    }
 }
 
 /// Reads a file and returns its contents as a CQL2 expression;
@@ -614,13 +669,12 @@ pub fn parse_text(cql2: &str) -> Expr {
 /// ```no_run
 /// let expr = cql2::parse_file("tests/fixtures/json/example01.json");
 /// ```
-pub fn parse_file(path: impl AsRef<Path>) -> Expr {
-    // TODO don't unwrap
-    let cql2 = fs::read_to_string(path).unwrap();
+pub fn parse_file(path: impl AsRef<Path>) -> Result<Expr, Error> {
+    let cql2 = fs::read_to_string(path)?;
     parse(&cql2)
 }
 
-fn get_stdin() -> String {
+fn get_stdin() -> Result<String, std::io::Error> {
     use std::env;
     use std::io::{self, IsTerminal};
     let args: Vec<String> = env::args().collect();
@@ -630,29 +684,28 @@ fn get_stdin() -> String {
         buffer = args[1].to_string();
     } else if io::stdin().is_terminal() {
         println!("Enter CQL2 as Text or JSON, then hit return");
-        io::stdin().read_line(&mut buffer).unwrap();
+        io::stdin().read_line(&mut buffer)?;
     } else {
-        io::stdin().read_line(&mut buffer).unwrap();
+        io::stdin().read_line(&mut buffer)?;
     }
-    buffer
+    Ok(buffer)
 }
 
-fn parse_stderr(cql2: &str) -> Expr {
+fn parse_stderr(cql2: &str) -> Result<Expr, Error> {
     let debug_level: u8 = std::env::var("CQL2_DEBUG_LEVEL")
-        .map(|s| {
-            s.parse()
-                .unwrap_or_else(|_| panic!("CQL2_DEBUG_LEVEL should be an integer: {}", s))
-        })
+        .ok()
+        .map(|s| s.parse())
+        .transpose()?
         .unwrap_or(1);
     let validator = Validator::new().unwrap();
 
-    let parsed: Expr = parse(cql2).clone();
-    let value = serde_json::to_value(&parsed).unwrap();
+    let parsed: Expr = parse(cql2)?;
+    let value = serde_json::to_value(&parsed)?;
 
     let validation = validator.validate(&value);
 
     match validation {
-        Ok(()) => parsed,
+        Ok(()) => Ok(parsed),
         Err(err) => {
             eprintln!("Passed in CQL2 parsed to {value}.");
             eprintln!("This did not pass jsonschema validation for CQL2.");
@@ -669,7 +722,9 @@ fn parse_stderr(cql2: &str) -> Expr {
                     eprintln!("{detailed_output:#}");
                 }
             }
-            std::process::exit(1);
+            Err(Error::Validation(serde_json::to_value(
+                err.detailed_output(),
+            )?))
         }
     }
 }
@@ -681,9 +736,8 @@ fn parse_stderr(cql2: &str) -> Expr {
 /// ```no_run
 /// let expr = cql2::parse_stdin();
 /// ```
-pub fn parse_stdin() -> Expr {
-    // TODO don't unwrap
-    let buffer = get_stdin();
+pub fn parse_stdin() -> Result<Expr, Error> {
+    let buffer = get_stdin()?;
     parse_stderr(&buffer)
 }
 
