@@ -4,19 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-geozero = { git = "https://github.com/bitner/geozero.git", rev = "45828d7" }
-boon = "0.6.0"
-lazy_static = "1.5.0"
-pest = "2.7.11"
-pest_derive = "2.7.11"
-serde = "1.0.204"
-serde_derive = "1.0.204"
-thiserror = "1.0.63"
-serde_json = { version = "1.0.120", features = ["preserve_order"] }
+geozero = "0.14"
+boon = "0.6"
+lazy_static = "1.5"
+pest = "2.7"
+pest_derive = "2.7"
+serde = "1.0"
+serde_derive = "1.0"
+thiserror = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }
 
 [dev-dependencies]
-assert-json-diff = "2.0.2"
-rstest = "0.21.0"
+assert-json-diff = "2"
+rstest = "0.23"
 
 [[bin]]
 name = "cql2json"
