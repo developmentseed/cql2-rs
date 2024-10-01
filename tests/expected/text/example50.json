@@ -1,0 +1,1 @@
+{"op":"s_overlaps","args":[{"property":"geometry"},{"op":"bbox","args":[{"op":"*","args":[-1.0,179.912109]},1.9,180.0,16.897016]}]}

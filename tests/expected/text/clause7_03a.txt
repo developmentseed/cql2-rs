@@ -1,0 +1,1 @@
+in("cityName", ('Toronto', 'Frankfurt', 'Tokyo', 'New York'))

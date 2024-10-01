@@ -1,0 +1,1 @@
+{"op":"and","args":[{"op":"between","args":[{"property":"eo:cloud_cover"},0.1,0.2]},{"op":"=","args":[{"property":"landsat:wrs_row"},28.0]},{"op":"=","args":[{"property":"landsat:wrs_path"},203.0]}]}

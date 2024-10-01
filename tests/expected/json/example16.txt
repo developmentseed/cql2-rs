@@ -1,0 +1,1 @@
+(("swimming_pool" = true) AND (("floors" > 5) OR like("material", 'brick%') OR like("material", '%brick')))

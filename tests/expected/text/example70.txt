@@ -1,0 +1,1 @@
+(accenti("owner") = accenti('Beyoncé'))

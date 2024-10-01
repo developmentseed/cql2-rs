@@ -1,0 +1,1 @@
+(("floors" > 5) AND ("material" = 'brick') AND ("swimming_pool" = true))

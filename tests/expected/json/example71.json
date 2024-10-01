@@ -1,0 +1,1 @@
+{"op":"=","args":[{"op":"casei","args":[{"property":"owner"}]},{"op":"casei","args":["somebody else"]}]}

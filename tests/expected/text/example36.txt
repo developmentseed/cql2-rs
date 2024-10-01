@@ -1,0 +1,1 @@
+(NOT like("name", 'foo%'))

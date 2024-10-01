@@ -1,0 +1,1 @@
+{"op":"<>","args":[{"property":"value"},{"op":"*","args":[22.1,{"property":"foo"}]}]}
