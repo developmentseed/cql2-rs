@@ -1,4 +1,4 @@
-//! Parse and transform [Common Query Language 2 (CQL2)](https://docs.ogc.org/DRAFTS/21-065.html).
+//! Parse and transform [Common Query Language 2 (CQL2)](https://docs.ogc.org/is/21-065r2/21-065r2.html).
 
 #![deny(unused_crate_dependencies)]
 
