@@ -2,8 +2,7 @@ use assert_json_diff::assert_json_eq;
 use cql2::parse;
 use rstest::rstest;
 use serde_json::json;
-use std::fs;
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 pub fn validate_str(cql2: &str) {
     println!("CQL2: {}", cql2);
