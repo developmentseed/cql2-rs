@@ -15,7 +15,7 @@ use pest::{
 };
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{fs, path::Path};
+use std::{fs, io::Read, path::Path};
 use thiserror::Error;
 
 /// Crate-specific error enum.
@@ -691,7 +691,7 @@ fn get_stdin() -> Result<String, std::io::Error> {
         println!("Enter CQL2 as Text or JSON, then hit return");
         io::stdin().read_line(&mut buffer)?;
     } else {
-        io::stdin().read_line(&mut buffer)?;
+        io::stdin().read_to_string(&mut buffer)?;
     }
     Ok(buffer)
 }
