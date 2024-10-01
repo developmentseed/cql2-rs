@@ -3,16 +3,19 @@
 #![deny(unused_crate_dependencies)]
 
 use boon::{Compiler, SchemaIndex, Schemas, ValidationError};
-use geozero::geojson::{GeoJsonString, GeoJsonWriter};
-use geozero::wkt::Wkt;
-use geozero::{CoordDimensions, GeozeroGeometry, ToJson, ToWkt};
-use pest::iterators::{Pair, Pairs};
-use pest::pratt_parser::PrattParser;
-use pest::Parser;
+use geozero::{
+    geojson::{GeoJsonString, GeoJsonWriter},
+    wkt::Wkt,
+    CoordDimensions, GeozeroGeometry, ToJson, ToWkt,
+};
+use pest::{
+    iterators::{Pair, Pairs},
+    pratt_parser::PrattParser,
+    Parser,
+};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
-use std::fs;
-use std::path::Path;
+use std::{fs, io::Read, path::Path};
 use thiserror::Error;
 
 /// Crate-specific error enum.
@@ -675,8 +678,10 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Expr, Error> {
 }
 
 fn get_stdin() -> Result<String, std::io::Error> {
-    use std::env;
-    use std::io::{self, IsTerminal};
+    use std::{
+        env,
+        io::{self, IsTerminal},
+    };
     let args: Vec<String> = env::args().collect();
     let mut buffer = String::new();
 
@@ -686,7 +691,7 @@ fn get_stdin() -> Result<String, std::io::Error> {
         println!("Enter CQL2 as Text or JSON, then hit return");
         io::stdin().read_line(&mut buffer)?;
     } else {
-        io::stdin().read_line(&mut buffer)?;
+        io::stdin().read_to_string(&mut buffer)?;
     }
     Ok(buffer)
 }

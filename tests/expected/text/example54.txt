@@ -1,0 +1,1 @@
+t_before("updated_at", TIMESTAMP('2012-08-10T05:30:00.000000Z'))

@@ -1,0 +1,1 @@
+{"op":"=","args":[1.0,{"op":"div","args":[{"property":"foo"},2.0]}]}

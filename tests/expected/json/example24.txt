@@ -1,0 +1,1 @@
+s_intersects("geometry", POLYGON((-10 -10,10 -10,10 10,-10 -10)))

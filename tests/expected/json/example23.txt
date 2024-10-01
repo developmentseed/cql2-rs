@@ -1,0 +1,1 @@
+s_within("location", BBOX(-118, 33.8, -117.9, 34))

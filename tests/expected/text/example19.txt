@@ -1,0 +1,1 @@
+((like("owner", 'mike%') OR like("owner", 'Mike%')) AND ("floors" < 4))
