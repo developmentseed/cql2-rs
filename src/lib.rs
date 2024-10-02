@@ -430,12 +430,12 @@ lazy_static::lazy_static! {
 }
 
 fn normalize_op(op: &str) -> String {
-    let oper = op.to_lowercase();
-    let operator: &str = match oper.as_str() {
-        "eq" => "=",
-        _ => &oper,
-    };
-    operator.to_string()
+    let op = op.to_lowercase();
+    if op == "eq" {
+        "=".to_string()
+    } else {
+        op
+    }
 }
 
 fn strip_quotes(quoted_string: &str) -> String {
