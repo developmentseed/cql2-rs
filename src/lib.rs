@@ -147,9 +147,9 @@ impl Expr {
     /// use cql2::Expr;
     ///
     /// let expr = Expr::Bool(true);
-    /// assert_eq!(expr.to_cql2_text().unwrap(), "true");
+    /// assert_eq!(expr.to_text().unwrap(), "true");
     /// ```
-    pub fn to_cql2_text(&self) -> Result<String, geozero::error::GeozeroError> {
+    pub fn to_text(&self) -> Result<String, geozero::error::GeozeroError> {
         Ok(match self {
             Expr::Bool(v) => v.to_string(),
             Expr::Float(v) => v.to_string(),
@@ -157,27 +157,22 @@ impl Expr {
             Expr::Property { property } => format!("\"{property}\""),
             Expr::Interval { interval } => format!(
                 "INTERVAL({},{})",
-                interval[0].to_cql2_text()?,
-                interval[1].to_cql2_text()?
+                interval[0].to_text()?,
+                interval[1].to_text()?
             ),
-            Expr::Date { date } => format!("DATE({})", date.to_cql2_text()?),
-            Expr::Timestamp { timestamp } => format!("TIMESTAMP({})", timestamp.to_cql2_text()?),
+            Expr::Date { date } => format!("DATE({})", date.to_text()?),
+            Expr::Timestamp { timestamp } => format!("TIMESTAMP({})", timestamp.to_text()?),
             Expr::Geometry(v) => {
                 let gj = GeoJsonString(v.to_string());
                 gj.to_wkt()?
             }
             Expr::Array(v) => {
-                let array_els: Vec<String> = v
-                    .iter()
-                    .map(|a| a.to_cql2_text())
-                    .collect::<Result<_, _>>()?;
+                let array_els: Vec<String> =
+                    v.iter().map(|a| a.to_text()).collect::<Result<_, _>>()?;
                 format!("({})", array_els.join(", "))
             }
             Expr::Operation { op, args } => {
-                let a: Vec<String> = args
-                    .iter()
-                    .map(|x| x.to_cql2_text())
-                    .collect::<Result<_, _>>()?;
+                let a: Vec<String> = args.iter().map(|x| x.to_text()).collect::<Result<_, _>>()?;
                 match op.as_str() {
                     "and" => format!("({})", a.join(" AND ")),
                     "or" => format!("({})", a.join(" OR ")),
@@ -191,10 +186,8 @@ impl Expr {
                 }
             }
             Expr::BBox { bbox } => {
-                let array_els: Vec<String> = bbox
-                    .iter()
-                    .map(|a| a.to_cql2_text())
-                    .collect::<Result<_, _>>()?;
+                let array_els: Vec<String> =
+                    bbox.iter().map(|a| a.to_text()).collect::<Result<_, _>>()?;
                 format!("BBOX({})", array_els.join(", "))
             }
         })

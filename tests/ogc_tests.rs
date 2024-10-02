@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 fn validate_str(s: &str) -> Expr {
     let expr = cql2::parse(s).unwrap();
     assert!(expr.is_valid());
-    let expr_from_txt = cql2::parse(&expr.to_cql2_text().unwrap()).unwrap();
+    let expr_from_txt = cql2::parse(&expr.to_text().unwrap()).unwrap();
     assert!(expr_from_txt.is_valid());
     let json = expr.to_json().unwrap();
     let expr_from_json = cql2::parse(&json).unwrap();
@@ -27,7 +27,7 @@ fn validate_path(path: impl AsRef<Path>) {
     assert_eq!(json.trim(), expr.to_json().unwrap());
 
     let text = std::fs::read_to_string(expected.join(file_name).with_extension("txt")).unwrap();
-    assert_eq!(text.trim(), expr.to_cql2_text().unwrap());
+    assert_eq!(text.trim(), expr.to_text().unwrap());
 }
 
 #[rstest]
