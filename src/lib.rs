@@ -153,7 +153,7 @@ impl Expr {
         Ok(match self {
             Expr::Bool(v) => v.to_string(),
             Expr::Float(v) => v.to_string(),
-            Expr::Literal(v) => format!("'{}'", v.as_str()),
+            Expr::Literal(v) => format!("'{}'", v),
             Expr::Property { property } => format!("\"{property}\""),
             Expr::Interval { interval } => format!(
                 "INTERVAL({},{})",
