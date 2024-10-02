@@ -438,15 +438,11 @@ fn normalize_op(op: &str) -> String {
     }
 }
 
-fn strip_quotes(quoted_string: &str) -> String {
-    let len = quoted_string.len();
-    let bytes = quoted_string.as_bytes();
-    if (bytes[0] == b'"' && bytes[len - 1] == b'"')
-        || (bytes[0] == b'\'' && bytes[len - 1] == b'\'')
-    {
-        quoted_string[1..len - 1].to_string()
+fn strip_quotes(s: &str) -> &str {
+    if (s.starts_with('"') && s.ends_with('"')) || (s.starts_with('\'') && s.ends_with('\'')) {
+        &s[1..s.len() - 1]
     } else {
-        quoted_string.to_string()
+        s
     }
 }
 
@@ -470,13 +466,13 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                     .parse::<f64>()
                     .expect("Could not cast value to float"),
             ),
-            Rule::SingleQuotedString => Expr::Literal(strip_quotes(primary.as_str())),
+            Rule::SingleQuotedString => Expr::Literal(strip_quotes(primary.as_str()).to_string()),
             Rule::True | Rule::False => {
                 let bool_value = primary.as_str().to_lowercase().parse::<bool>().unwrap();
                 Expr::Bool(bool_value)
             }
             Rule::Identifier => Expr::Property {
-                property: strip_quotes(primary.as_str()),
+                property: strip_quotes(primary.as_str()).to_string(),
             },
             Rule::GEOMETRY => {
                 let geom_wkt = Wkt(primary.as_str());
