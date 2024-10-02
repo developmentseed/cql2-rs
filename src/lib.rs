@@ -25,9 +25,21 @@ pub enum Error {
     #[error(transparent)]
     BoonCompile(#[from] boon::CompileError),
 
+    /// [geozero::error::GeozeroError]
+    #[error(transparent)]
+    Geozero(#[from] geozero::error::GeozeroError),
+
     /// Invalid CQL2 text
     #[error("invalid cql2-text: {0}")]
     InvalidCql2Text(String),
+
+    /// Invalid number of arguments for the expression
+    #[error("invalid number of arguments for {name}: {actual} (expected {expected})")]
+    InvalidNumberOfArguments {
+        name: String,
+        actual: usize,
+        expected: usize,
+    },
 
     /// [std::io::Error]
     #[error(transparent)]
@@ -147,57 +159,82 @@ impl Expr {
     /// use cql2::Expr;
     ///
     /// let expr = Expr::Bool(true);
-    /// assert_eq!(expr.to_cql2_text().unwrap(), "true");
+    /// assert_eq!(expr.to_text().unwrap(), "true");
     /// ```
-    pub fn to_cql2_text(&self) -> Result<String, geozero::error::GeozeroError> {
-        Ok(match self {
-            Expr::Bool(v) => v.to_string(),
-            Expr::Float(v) => v.to_string(),
-            Expr::Literal(v) => format!("'{}'", v.as_str()),
-            Expr::Property { property } => format!("\"{property}\""),
-            Expr::Interval { interval } => format!(
-                "INTERVAL({},{})",
-                interval[0].to_cql2_text()?,
-                interval[1].to_cql2_text()?
-            ),
-            Expr::Date { date } => format!("DATE({})", date.to_cql2_text()?),
-            Expr::Timestamp { timestamp } => format!("TIMESTAMP({})", timestamp.to_cql2_text()?),
+    pub fn to_text(&self) -> Result<String, Error> {
+        macro_rules! check_len {
+            ($name:expr, $args:expr, $len:expr, $text:expr) => {
+                if $args.len() == $len {
+                    Ok($text)
+                } else {
+                    Err(Error::InvalidNumberOfArguments {
+                        name: $name.to_string(),
+                        actual: $args.len(),
+                        expected: $len,
+                    })
+                }
+            };
+        }
+
+        match self {
+            Expr::Bool(v) => Ok(v.to_string()),
+            Expr::Float(v) => Ok(v.to_string()),
+            Expr::Literal(v) => Ok(format!("'{}'", v)),
+            Expr::Property { property } => Ok(format!("\"{property}\"")),
+            Expr::Interval { interval } => {
+                check_len!(
+                    "interval",
+                    interval,
+                    2,
+                    format!(
+                        "INTERVAL({},{})",
+                        interval[0].to_text()?,
+                        interval[1].to_text()?
+                    )
+                )
+            }
+            Expr::Date { date } => Ok(format!("DATE({})", date.to_text()?)),
+            Expr::Timestamp { timestamp } => Ok(format!("TIMESTAMP({})", timestamp.to_text()?)),
             Expr::Geometry(v) => {
                 let gj = GeoJsonString(v.to_string());
-                gj.to_wkt()?
+                gj.to_wkt().map_err(Error::from)
             }
             Expr::Array(v) => {
-                let array_els: Vec<String> = v
-                    .iter()
-                    .map(|a| a.to_cql2_text())
-                    .collect::<Result<_, _>>()?;
-                format!("({})", array_els.join(", "))
+                let array_els: Vec<String> =
+                    v.iter().map(|a| a.to_text()).collect::<Result<_, _>>()?;
+                Ok(format!("({})", array_els.join(", ")))
             }
             Expr::Operation { op, args } => {
-                let a: Vec<String> = args
-                    .iter()
-                    .map(|x| x.to_cql2_text())
-                    .collect::<Result<_, _>>()?;
+                let a: Vec<String> = args.iter().map(|x| x.to_text()).collect::<Result<_, _>>()?;
                 match op.as_str() {
-                    "and" => format!("({})", a.join(" AND ")),
-                    "or" => format!("({})", a.join(" OR ")),
-                    "between" => format!("({} BETWEEN {} AND {})", a[0], a[1], a[2]),
-                    "not" => format!("(NOT {})", a[0]),
-                    "is null" => format!("({} IS NULL)", a[0]),
-                    "+" | "-" | "*" | "/" | "%" | "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
-                        format!("({} {} {})", a[0], op, a[1])
+                    "and" => Ok(format!("({})", a.join(" AND "))),
+                    "or" => Ok(format!("({})", a.join(" OR "))),
+                    "between" => {
+                        check_len!(
+                            "between",
+                            a,
+                            3,
+                            format!("({} BETWEEN {} AND {})", a[0], a[1], a[2])
+                        )
                     }
-                    _ => format!("{}({})", op, a.join(", ")),
+                    "not" => {
+                        check_len!("not", a, 1, format!("(NOT {})", a[0]))
+                    }
+                    "is null" => {
+                        check_len!("is null", a, 1, format!("({} IS NULL)", a[0]))
+                    }
+                    "+" | "-" | "*" | "/" | "%" | "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
+                        check_len!(op, a, 2, format!("({} {} {})", a[0], op, a[1]))
+                    }
+                    _ => Ok(format!("{}({})", op, a.join(", "))),
                 }
             }
             Expr::BBox { bbox } => {
-                let array_els: Vec<String> = bbox
-                    .iter()
-                    .map(|a| a.to_cql2_text())
-                    .collect::<Result<_, _>>()?;
-                format!("BBOX({})", array_els.join(", "))
+                let array_els: Vec<String> =
+                    bbox.iter().map(|a| a.to_text()).collect::<Result<_, _>>()?;
+                Ok(format!("BBOX({})", array_els.join(", ")))
             }
-        })
+        }
     }
 
     /// Converts this expression to a [SqlQuery] struct with parameters
@@ -393,23 +430,19 @@ lazy_static::lazy_static! {
 }
 
 fn normalize_op(op: &str) -> String {
-    let oper = op.to_lowercase();
-    let operator: &str = match oper.as_str() {
-        "eq" => "=",
-        _ => &oper,
-    };
-    operator.to_string()
+    let op = op.to_lowercase();
+    if op == "eq" {
+        "=".to_string()
+    } else {
+        op
+    }
 }
 
-fn strip_quotes(quoted_string: &str) -> String {
-    let len = quoted_string.len();
-    let bytes = quoted_string.as_bytes();
-    if (bytes[0] == b'"' && bytes[len - 1] == b'"')
-        || (bytes[0] == b'\'' && bytes[len - 1] == b'\'')
-    {
-        quoted_string[1..len - 1].to_string()
+fn strip_quotes(s: &str) -> &str {
+    if (s.starts_with('"') && s.ends_with('"')) || (s.starts_with('\'') && s.ends_with('\'')) {
+        &s[1..s.len() - 1]
     } else {
-        quoted_string.to_string()
+        s
     }
 }
 
@@ -433,13 +466,13 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                     .parse::<f64>()
                     .expect("Could not cast value to float"),
             ),
-            Rule::SingleQuotedString => Expr::Literal(strip_quotes(primary.as_str())),
+            Rule::SingleQuotedString => Expr::Literal(strip_quotes(primary.as_str()).to_string()),
             Rule::True | Rule::False => {
                 let bool_value = primary.as_str().to_lowercase().parse::<bool>().unwrap();
                 Expr::Bool(bool_value)
             }
             Rule::Identifier => Expr::Property {
-                property: strip_quotes(primary.as_str()),
+                property: strip_quotes(primary.as_str()).to_string(),
             },
             Rule::GEOMETRY => {
                 let geom_wkt = Wkt(primary.as_str());
