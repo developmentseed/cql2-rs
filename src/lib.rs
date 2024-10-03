@@ -45,6 +45,18 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
+    /// Missing argument from a function that requires one.
+    #[error("function {0} is missing a required argument")]
+    MissingArgument(&'static str),
+
+    /// [std::str::ParseBoolError]
+    #[error(transparent)]
+    ParseBool(#[from] std::str::ParseBoolError),
+
+    /// [std::num::ParseFloatError]
+    #[error(transparent)]
+    ParseFloat(#[from] std::num::ParseFloatError),
+
     /// [std::num::ParseIntError]
     #[error(transparent)]
     ParseInt(#[from] std::num::ParseIntError),
@@ -450,67 +462,73 @@ fn opstr(op: Pair<Rule>) -> String {
     return normalize_op(op.as_str());
 }
 
-fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
+fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
     PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {
             Rule::Expr | Rule::ExpressionInParentheses => parse_expr(primary.into_inner()),
-            Rule::Unsigned => Expr::Float(
-                primary
-                    .as_str()
-                    .parse::<f64>()
-                    .expect("Could not cast value to float"),
-            ),
-            Rule::DECIMAL => Expr::Float(
-                primary
-                    .as_str()
-                    .parse::<f64>()
-                    .expect("Could not cast value to float"),
-            ),
-            Rule::SingleQuotedString => Expr::Literal(strip_quotes(primary.as_str()).to_string()),
-            Rule::True | Rule::False => {
-                let bool_value = primary.as_str().to_lowercase().parse::<bool>().unwrap();
-                Expr::Bool(bool_value)
+            Rule::Unsigned => Ok(Expr::Float(primary.as_str().parse::<f64>()?)),
+            Rule::DECIMAL => Ok(Expr::Float(primary.as_str().parse::<f64>()?)),
+            Rule::SingleQuotedString => {
+                Ok(Expr::Literal(strip_quotes(primary.as_str()).to_string()))
             }
-            Rule::Identifier => Expr::Property {
+            Rule::True | Rule::False => {
+                let bool_value = primary.as_str().to_lowercase().parse::<bool>()?;
+                Ok(Expr::Bool(bool_value))
+            }
+            Rule::Identifier => Ok(Expr::Property {
                 property: strip_quotes(primary.as_str()).to_string(),
-            },
+            }),
             Rule::GEOMETRY => {
                 let geom_wkt = Wkt(primary.as_str());
                 let mut out: Vec<u8> = Vec::new();
                 let mut p = GeoJsonWriter::with_dims(&mut out, CoordDimensions::xyz());
                 let _ = geom_wkt.process_geom(&mut p);
-                Expr::Geometry(serde_json::from_str(&geom_wkt.to_json().unwrap()).unwrap())
+                Ok(Expr::Geometry(serde_json::from_str(&geom_wkt.to_json()?)?))
             }
             Rule::Function => {
                 let mut pairs = primary.into_inner();
-                let op = strip_quotes(pairs.next().unwrap().as_str()).to_lowercase();
+                let op = strip_quotes(
+                    pairs
+                        .next()
+                        .expect("the grammar guarantees that there is always an op")
+                        .as_str(),
+                )
+                .to_lowercase();
                 let mut args = Vec::new();
                 for pair in pairs {
-                    args.push(Box::new(parse_expr(pair.into_inner())))
+                    args.push(Box::new(parse_expr(pair.into_inner())?))
                 }
                 match op.as_str() {
-                    "interval" => Expr::Interval { interval: args },
-                    "date" => Expr::Date {
-                        date: args.into_iter().next().unwrap(),
-                    },
-                    "timestamp" => Expr::Timestamp {
-                        timestamp: args.into_iter().next().unwrap(),
-                    },
-                    _ => Expr::Operation { op, args },
+                    "interval" => Ok(Expr::Interval { interval: args }),
+                    "date" => Ok(Expr::Date {
+                        date: args
+                            .into_iter()
+                            .next()
+                            .ok_or(Error::MissingArgument("date"))?,
+                    }),
+                    "timestamp" => Ok(Expr::Timestamp {
+                        timestamp: args
+                            .into_iter()
+                            .next()
+                            .ok_or(Error::MissingArgument("timestamp"))?,
+                    }),
+                    _ => Ok(Expr::Operation { op, args }),
                 }
             }
             Rule::Array => {
                 let pairs = primary.into_inner();
                 let mut array_elements = Vec::new();
                 for pair in pairs {
-                    array_elements.push(Box::new(parse_expr(pair.into_inner())))
+                    array_elements.push(Box::new(parse_expr(pair.into_inner())?))
                 }
-                Expr::Array(array_elements)
+                Ok(Expr::Array(array_elements))
             }
 
             rule => unreachable!("Expr::parse expected atomic rule, found {:?}", rule),
         })
         .map_infix(|lhs, op, rhs| {
+            let lhs = lhs?;
+            let rhs = rhs?;
             let mut opstring = opstr(op);
 
             let mut notflag: bool = false;
@@ -571,7 +589,7 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                 };
 
                 if lhsargs.is_empty() || rhsargs.is_empty() {
-                    return retexpr;
+                    return Ok(retexpr);
                 }
 
                 let mut andargs: Vec<Box<Expr>> = Vec::new();
@@ -589,10 +607,10 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                     }
                 }
 
-                return Expr::Operation {
+                return Ok(Expr::Operation {
                     op: "and".to_string(),
                     args: andargs,
-                };
+                });
             } else {
                 let mut outargs: Vec<Box<Expr>> = Vec::new();
 
@@ -602,10 +620,10 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
                             outargs.push(arg.clone());
                         }
                         outargs.push(Box::new(rhsclone));
-                        return Expr::Operation {
+                        return Ok(Expr::Operation {
                             op: "and".to_string(),
                             args: outargs,
-                        };
+                        });
                     }
                     _ => (),
                 }
@@ -616,30 +634,36 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Expr {
             }
 
             if notflag {
-                return Expr::Operation {
+                return Ok(Expr::Operation {
                     op: "not".to_string(),
                     args: vec![Box::new(retexpr)],
-                };
+                });
             }
-            retexpr
+            Ok(retexpr)
         })
-        .map_prefix(|op, child| match op.as_rule() {
-            Rule::UnaryNot => Expr::Operation {
-                op: "not".to_string(),
-                args: vec![Box::new(child)],
-            },
-            Rule::Negative => Expr::Operation {
-                op: "*".to_string(),
-                args: vec![Box::new(Expr::Float(-1.0)), Box::new(child)],
-            },
-            rule => unreachable!("Expr::parse expected prefix operator, found {:?}", rule),
+        .map_prefix(|op, child| {
+            let child = child?;
+            match op.as_rule() {
+                Rule::UnaryNot => Ok(Expr::Operation {
+                    op: "not".to_string(),
+                    args: vec![Box::new(child)],
+                }),
+                Rule::Negative => Ok(Expr::Operation {
+                    op: "*".to_string(),
+                    args: vec![Box::new(Expr::Float(-1.0)), Box::new(child)],
+                }),
+                rule => unreachable!("Expr::parse expected prefix operator, found {:?}", rule),
+            }
         })
-        .map_postfix(|child, op| match op.as_rule() {
-            Rule::IsNullPostfix => Expr::Operation {
-                op: "isNull".to_string(),
-                args: vec![Box::new(child)],
-            },
-            rule => unreachable!("Expr::parse expected postfix operator, found {:?}", rule),
+        .map_postfix(|child, op| {
+            let child = child?;
+            match op.as_rule() {
+                Rule::IsNullPostfix => Ok(Expr::Operation {
+                    op: "isNull".to_string(),
+                    args: vec![Box::new(child)],
+                }),
+                rule => unreachable!("Expr::parse expected postfix operator, found {:?}", rule),
+            }
         })
         .parse(expression_pairs)
 }
@@ -691,7 +715,7 @@ pub fn parse_text(cql2: &str) -> Result<Expr, Error> {
         if pairs.next().is_some() {
             Err(Error::InvalidCql2Text(cql2.to_string()))
         } else {
-            Ok(parse_expr(pair.into_inner()))
+            parse_expr(pair.into_inner())
         }
     } else {
         Err(Error::InvalidCql2Text(cql2.to_string()))
