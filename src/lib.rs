@@ -15,7 +15,7 @@ use pest::{
 };
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{fs, io::Read, path::Path};
+use std::{fs, io::Read, path::Path, str::FromStr};
 use thiserror::Error;
 
 /// Crate-specific error enum.
@@ -668,24 +668,15 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
         .parse(expression_pairs)
 }
 
-/// Parses a string into a CQL2 expression.
-///
-/// The string can be cql2-text or cql2-json — the type will be auto-detected.
-/// Use [parse_text] and [parse_json] if you already know the CQL2 type of the
-/// string.
-///
-/// # Examples
-///
-/// ```
-/// let s = "landsat:scene_id = 'LC82030282019133LGN00'";
-/// let expr = cql2::parse(s);
-/// ```
-pub fn parse(cql2: &str) -> Result<Expr, Error> {
-    // TODO impl FromStr
-    if cql2.starts_with('{') {
-        parse_json(cql2).map_err(Error::from)
-    } else {
-        parse_text(cql2)
+impl FromStr for Expr {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Expr, Error> {
+        if s.starts_with('{') {
+            parse_json(s).map_err(Error::from)
+        } else {
+            parse_text(s)
+        }
     }
 }
 
@@ -697,8 +688,8 @@ pub fn parse(cql2: &str) -> Result<Expr, Error> {
 /// let s = include_str!("../tests/fixtures/json/example01.json");
 /// let expr = cql2::parse_json(s);
 /// ```
-pub fn parse_json(cql2: &str) -> Result<Expr, serde_json::Error> {
-    serde_json::from_str(cql2)
+pub fn parse_json(s: &str) -> Result<Expr, serde_json::Error> {
+    serde_json::from_str(s)
 }
 
 /// Parses a cql2-text string into a CQL2 expression.
@@ -709,16 +700,16 @@ pub fn parse_json(cql2: &str) -> Result<Expr, serde_json::Error> {
 /// let s = "landsat:scene_id = 'LC82030282019133LGN00'";
 /// let expr = cql2::parse_text(s);
 /// ```
-pub fn parse_text(cql2: &str) -> Result<Expr, Error> {
-    let mut pairs = CQL2Parser::parse(Rule::Expr, cql2).map_err(Box::new)?;
+pub fn parse_text(s: &str) -> Result<Expr, Error> {
+    let mut pairs = CQL2Parser::parse(Rule::Expr, s).map_err(Box::new)?;
     if let Some(pair) = pairs.next() {
         if pairs.next().is_some() {
-            Err(Error::InvalidCql2Text(cql2.to_string()))
+            Err(Error::InvalidCql2Text(s.to_string()))
         } else {
             parse_expr(pair.into_inner())
         }
     } else {
-        Err(Error::InvalidCql2Text(cql2.to_string()))
+        Err(Error::InvalidCql2Text(s.to_string()))
     }
 }
 
@@ -730,8 +721,8 @@ pub fn parse_text(cql2: &str) -> Result<Expr, Error> {
 /// let expr = cql2::parse_file("tests/fixtures/json/example01.json");
 /// ```
 pub fn parse_file(path: impl AsRef<Path>) -> Result<Expr, Error> {
-    let cql2 = fs::read_to_string(path)?;
-    parse(&cql2)
+    let s = fs::read_to_string(path)?;
+    s.parse()
 }
 
 fn get_stdin() -> Result<String, std::io::Error> {
@@ -753,7 +744,7 @@ fn get_stdin() -> Result<String, std::io::Error> {
     Ok(buffer)
 }
 
-fn parse_stderr(cql2: &str) -> Result<Expr, Error> {
+fn parse_stderr(s: &str) -> Result<Expr, Error> {
     let debug_level: u8 = std::env::var("CQL2_DEBUG_LEVEL")
         .ok()
         .map(|s| s.parse())
@@ -761,7 +752,7 @@ fn parse_stderr(cql2: &str) -> Result<Expr, Error> {
         .unwrap_or(1);
     let validator = Validator::new().unwrap();
 
-    let parsed: Expr = parse(cql2)?;
+    let parsed: Expr = s.parse()?;
     let value = serde_json::to_value(&parsed)?;
 
     let validation = validator.validate(&value);

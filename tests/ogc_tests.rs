@@ -5,12 +5,12 @@ use serde_json::json;
 use std::path::{Path, PathBuf};
 
 fn validate_str(s: &str) -> Expr {
-    let expr = cql2::parse(s).unwrap();
+    let expr: Expr = s.parse().unwrap();
     assert!(expr.is_valid());
-    let expr_from_txt = cql2::parse(&expr.to_text().unwrap()).unwrap();
+    let expr_from_txt: Expr = expr.to_text().unwrap().parse().unwrap();
     assert!(expr_from_txt.is_valid());
     let json = expr.to_json().unwrap();
-    let expr_from_json = cql2::parse(&json).unwrap();
+    let expr_from_json: Expr = json.parse().unwrap();
     assert_json_eq!(json!(json), json!(expr_from_json.to_json().unwrap()));
     expr
 }
