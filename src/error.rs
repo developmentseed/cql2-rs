@@ -7,6 +7,10 @@ pub enum Error {
     #[error(transparent)]
     BoonCompile(#[from] boon::CompileError),
 
+    /// [geojson::Error]
+    #[error(transparent)]
+    GeoJSON(#[from] geojson::Error),
+
     /// [geozero::error::GeozeroError]
     #[error(transparent)]
     Geozero(#[from] geozero::error::GeozeroError),
