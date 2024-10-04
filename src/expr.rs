@@ -5,6 +5,19 @@ use serde_json::Value;
 use std::str::FromStr;
 
 /// A CQL2 expression.
+///
+/// # Examples
+///
+/// [Expr] implements [FromStr]:
+///
+/// ```
+/// use cql2::Expr;
+///
+/// let expr: Expr = "landsat:scene_id = 'LC82030282019133LGN00'".parse().unwrap();
+/// ```
+///
+/// Use [Expr::to_text], [Expr::to_json], and [Expr::to_sql] to use the CQL2,
+/// and use [Expr::is_valid] to check validity.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum Expr {
