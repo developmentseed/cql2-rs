@@ -285,3 +285,14 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
         })
         .parse(expression_pairs)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{CQL2Parser, Rule};
+    use pest::Parser;
+
+    #[test]
+    fn point_zm() {
+        CQL2Parser::parse(Rule::GEOMETRY, "POINT ZM(-105.1019 40.1672 4981 42)").unwrap();
+    }
+}
