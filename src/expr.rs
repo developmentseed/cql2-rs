@@ -281,7 +281,6 @@ impl FromStr for Expr {
         }
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::Expr;
@@ -289,6 +288,12 @@ mod tests {
     #[test]
     fn keep_z() {
         let point: Expr = "POINT Z(-105.1019 40.1672 4981)".parse().unwrap();
+        assert_eq!("POINT Z(-105.1019 40.1672 4981)", point.to_text().unwrap());
+    }
+
+    #[test]
+    fn implicit_z() {
+        let point: Expr = "POINT (-105.1019 40.1672 4981)".parse().unwrap();
         assert_eq!("POINT Z(-105.1019 40.1672 4981)", point.to_text().unwrap());
     }
 

@@ -1,7 +1,11 @@
-# Expected test output
+# Tests
+
+The `fixtures` directory is copied directly from <https://github.com/opengeospatial/ogcapi-features/tree/cql2-1.0.0/cql2/standard/schema/examples>.
+
+## Expected test output
 
 To generate:
 
 ```shell
-tests/expected/generate
+tests/generate-expected
 ```

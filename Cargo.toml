@@ -10,7 +10,7 @@ geojson = "0.24.1"
 geozero = "0.14.0"
 lazy_static = "1.5"
 pest = "2.7"
-pest_derive = "2.7"
+pest_derive = { version = "2.7", features = ["grammar-extras"] }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
