@@ -102,7 +102,30 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
             Rule::Identifier => Ok(Expr::Property {
                 property: strip_quotes(primary.as_str()).to_string(),
             }),
-            Rule::GEOMETRY => Ok(Expr::Geometry(Geometry::Wkt(primary.as_str().to_string()))),
+            Rule::GEOMETRY => {
+                // These are some incredibly annoying backflips to handle
+                // geometries without `Z` but that have 3D coordinates. It's
+                // not part of OGC WKT, but CQL2 demands 🤦‍♀️.
+                let start = primary.as_span().start();
+                let s = primary.as_str().to_string();
+                let pairs = primary.into_inner();
+                if pairs.find_first_tagged("three_d").is_some() {
+                    let zm = pairs
+                        .flatten()
+                        .find(|pair| matches!(pair.as_rule(), Rule::ZM))
+                        .expect("all geometries should have a ZM rule");
+                    if zm.as_str().chars().all(|c| c.is_ascii_whitespace()) {
+                        let span = zm.as_span();
+                        let s = format!(
+                            "{} Z{}",
+                            &s[0..span.start() - start],
+                            &s[span.end() - start..]
+                        );
+                        return Ok(Expr::Geometry(Geometry::Wkt(s)));
+                    }
+                }
+                Ok(Expr::Geometry(Geometry::Wkt(s)))
+            }
             Rule::Function => {
                 let mut pairs = primary.into_inner();
                 let op = strip_quotes(
