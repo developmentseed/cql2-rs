@@ -1,75 +1,50 @@
-# CQL2-RS
+# cql2-rs
 
-## WORK IN PROGRESS, NOT READY FOR USE
+[![CI](https://github.com/developmentseed/cql2-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/developmentseed/cql2-rs/actions/workflows/ci.yml)
 
-Parse, validate, and convert CQL2-Text and CQL2-JSON.
+Parse, validate, and convert [Common Query Language (CQL2)](https://www.ogc.org/standard/cql2/) text and JSON.
+
+## Usage
+
+### API
+
+```toml
+[dependencies]
+cql = "0.1"
+```
+
+Then:
+
+```rust
+use cql2::Expr;
+
+let expr: Expr = "landsat:scene_id = 'LC82030282019133LGN00'".parse().unwrap();
+assert!(expr.is_valid());
+println!("{}", expr.to_json().unwrap());
+```
+
+See [the documentation](https://docs.rs/cql2) for more.
 
 ## CLI
 
-At its simplest, the command-line interface (CLI) is a pass-through validator:
+See [the cql-cli README](./cli/README.md) for details.
 
-```shell
-$ cql2 < tests/fixtures/text/example01.txt # will succeed if the CQL2 is valid
-("landsat:scene_id" = 'LC82030282019133LGN00')
-```
-
-You can convert formats:
-
-```shell
-$ cql2 -o json < tests/fixtures/text/example01.txt
-{"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]}
-```
-
-Use `-v` to get detailed validation information:
-
-```shell
-$ cql2 'wrong' -v  
-[ERROR] Invalid CQL2: wrong
-For more detailed validation information, use -vv
-jsonschema validation failed with file:///tmp/cql2.json#
-- at '': oneOf failed, none matched
-  - at '': missing properties 'op', 'args'
-  - at '': missing properties 'op', 'args'
-  - at '': oneOf failed, none matched
-    - at '': missing properties 'op', 'args'
-    - at '': missing properties 'op', 'args'
-    - at '': missing properties 'op', 'args'
-    - at '': missing properties 'op', 'args'
-    - at '': missing properties 'op', 'args'
-  - at '': missing properties 'op', 'args'
-  - at '': missing properties 'op', 'args'
-  - at '': missing properties 'op', 'args'
-  - at '': missing properties 'op', 'args'
-  - at '': want boolean, but got object
-```
-
-cql2-text parsing errors are pretty-printed:
-
-```shell
-$ cql2 '(foo ~= "bar")' 
-[ERROR] Parsing error: (foo ~= "bar")
- --> 1:6
-  |
-1 | (foo ~= "bar")
-  |      ^---
-  |
-  = expected NotFlag, And, Or, ConcatInfixOp, Add, Subtract, Multiply, Divide, Modulo, Power, Eq, Gt, GtEq, Lt, LtEq, NotEq, Is, or IsNullPostfix
-```
-
-Use `cql2 --help` to get a complete listing of the CLI arguments and formats.
-
-## Response
+## Responses
 
 Responses may not match the input.
 
-### CQL2-Text Differences
+### cql2-text differences
 
-- all identifiers in output are double quoted
-- position of "NOT" keywords is standardized to be before the expression (ie "... NOT LIKE ..." will become "NOT ... LIKE ..."
-- The Negative operator on anything besides a literal number becomes "* -1"
+- All identifiers in output are double quoted
+- The position of "NOT" keywords is standardized to be before the expression (ie "... NOT LIKE ..." will become "NOT ... LIKE ..."
+- The negative operator on anything besides a literal number becomes "* -1"
 - Parentheses are added around all expressions
 
-Tasks to get to ready-to-use state:
-- [x] Parse all examples from CQL2 examples into json that passes json schema validation.
-- [x] Add tests that compare OGC examples to parsed/standardized/validated CQL2-Text and CQL2-JSON
-- [ ] Fix issues with Z, ZM, and M WKT variants
+## Development
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for information about contributing to this project.
+
+## License
+
+**cql2-rs** is licensed under the MIT license.
+See [LICENSE](./LICENSE) for details.

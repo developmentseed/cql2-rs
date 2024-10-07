@@ -1,7 +1,15 @@
 [package]
 name = "cql2-cli"
 version = "0.1.0"
+authors = ["David Bitner <bitner@dbspatial.com>"]
 edition = "2021"
+description = "Command line interface (CLI) for Common Query Language (CQL2)"
+readme = "README.md"
+homepage = "https://github.com/developmentseed/cql2-rs"
+repository = "https://github.com/developmentseed/cql2-rs"
+license = "MIT"
+keywords = ["cql2"]
+
 
 [dependencies]
 cql2 = { path = "..", version = "0.1.0" }
