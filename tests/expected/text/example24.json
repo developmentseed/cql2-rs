@@ -1,1 +1,1 @@
-{"op":"s_intersects","args":[{"property":"geometry"},{"type":"Polygon","coordinates":[[[-10,-10],[10,-10],[10,10],[-10,-10]]]}]}
+{"op":"s_intersects","args":[{"property":"geometry"},{"type":"Polygon","coordinates":[[[-10.0,-10.0],[10.0,-10.0],[10.0,10.0],[-10.0,-10.0]]]}]}

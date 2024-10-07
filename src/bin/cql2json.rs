@@ -1,6 +1,9 @@
 use cql2::parse_stdin;
 
 fn main() {
-    let parsed = parse_stdin().unwrap();
-    println!("{}", parsed.to_json().unwrap());
+    if let Ok(parsed) = parse_stdin() {
+        println!("{}", parsed.to_json().unwrap());
+    } else {
+        std::process::exit(1)
+    }
 }

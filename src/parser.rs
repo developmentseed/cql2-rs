@@ -1,5 +1,4 @@
-use crate::{Error, Expr};
-use geozero::{geojson::GeoJsonWriter, wkt::Wkt, CoordDimensions, GeozeroGeometry, ToJson};
+use crate::{Error, Expr, Geometry};
 use pest::{
     iterators::{Pair, Pairs},
     pratt_parser::PrattParser,
@@ -103,13 +102,7 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
             Rule::Identifier => Ok(Expr::Property {
                 property: strip_quotes(primary.as_str()).to_string(),
             }),
-            Rule::GEOMETRY => {
-                let geom_wkt = Wkt(primary.as_str());
-                let mut out: Vec<u8> = Vec::new();
-                let mut p = GeoJsonWriter::with_dims(&mut out, CoordDimensions::xyz());
-                let _ = geom_wkt.process_geom(&mut p);
-                Ok(Expr::Geometry(serde_json::from_str(&geom_wkt.to_json()?)?))
-            }
+            Rule::GEOMETRY => Ok(Expr::Geometry(Geometry::Wkt(primary.as_str().to_string()))),
             Rule::Function => {
                 let mut pairs = primary.into_inner();
                 let op = strip_quotes(
@@ -291,4 +284,15 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
             }
         })
         .parse(expression_pairs)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{CQL2Parser, Rule};
+    use pest::Parser;
+
+    #[test]
+    fn point_zm() {
+        CQL2Parser::parse(Rule::GEOMETRY, "POINT ZM(-105.1019 40.1672 4981 42)").unwrap();
+    }
 }

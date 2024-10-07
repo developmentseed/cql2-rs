@@ -1,5 +1,4 @@
-use crate::{Error, SqlQuery, Validator};
-use geozero::{geojson::GeoJsonString, ToWkt};
+use crate::{Error, Geometry, SqlQuery, Validator};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
@@ -31,7 +30,7 @@ pub enum Expr {
     Literal(String),
     Bool(bool),
     Array(Vec<Box<Expr>>),
-    Geometry(serde_json::Value),
+    Geometry(Geometry),
 }
 
 impl Expr {
@@ -79,10 +78,7 @@ impl Expr {
             }
             Expr::Date { date } => Ok(format!("DATE({})", date.to_text()?)),
             Expr::Timestamp { timestamp } => Ok(format!("TIMESTAMP({})", timestamp.to_text()?)),
-            Expr::Geometry(v) => {
-                let gj = GeoJsonString(v.to_string());
-                gj.to_wkt().map_err(Error::from)
-            }
+            Expr::Geometry(v) => v.to_wkt(),
             Expr::Array(v) => {
                 let array_els: Vec<String> =
                     v.iter().map(|a| a.to_text()).collect::<Result<_, _>>()?;
@@ -132,7 +128,7 @@ impl Expr {
     /// let expr = Expr::Bool(true);
     /// let s = expr.to_sql().unwrap();
     /// ```
-    pub fn to_sql(&self) -> Result<SqlQuery, geozero::error::GeozeroError> {
+    pub fn to_sql(&self) -> Result<SqlQuery, Error> {
         let params: &mut Vec<String> = &mut vec![];
         let query = self.to_sql_inner(params)?;
         Ok(SqlQuery {
@@ -141,10 +137,7 @@ impl Expr {
         })
     }
 
-    fn to_sql_inner(
-        &self,
-        params: &mut Vec<String>,
-    ) -> Result<String, geozero::error::GeozeroError> {
+    fn to_sql_inner(&self, params: &mut Vec<String>) -> Result<String, Error> {
         Ok(match self {
             Expr::Bool(v) => {
                 params.push(v.to_string());
@@ -169,8 +162,7 @@ impl Expr {
                 format!("TSTZRANGE({},{})", a[0], a[1],)
             }
             Expr::Geometry(v) => {
-                let gj = GeoJsonString(v.to_string());
-                params.push(format!("EPSG:4326;{}", gj.to_wkt()?));
+                params.push(format!("EPSG:4326;{}", v.to_wkt()?));
                 format!("${}", params.len())
             }
             Expr::Array(v) => {
@@ -287,5 +279,31 @@ impl FromStr for Expr {
         } else {
             crate::parse_text(s)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Expr;
+
+    #[test]
+    fn keep_z() {
+        let point: Expr = "POINT Z(-105.1019 40.1672 4981)".parse().unwrap();
+        assert_eq!("POINT Z(-105.1019 40.1672 4981)", point.to_text().unwrap());
+    }
+
+    #[test]
+    fn keep_m() {
+        let point: Expr = "POINT M(-105.1019 40.1672 42)".parse().unwrap();
+        assert_eq!("POINT M(-105.1019 40.1672 42)", point.to_text().unwrap());
+    }
+
+    #[test]
+    fn keep_zm() {
+        let point: Expr = "POINT ZM(-105.1019 40.1672 4981 42)".parse().unwrap();
+        assert_eq!(
+            "POINT ZM(-105.1019 40.1672 4981 42)",
+            point.to_text().unwrap()
+        );
     }
 }
