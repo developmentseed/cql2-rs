@@ -20,14 +20,6 @@ thiserror = "1.0"
 assert-json-diff = "2"
 rstest = "0.23"
 
-[[bin]]
-name = "cql2json"
-path = "src/bin/cql2json.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "cql2text"
-path = "src/bin/cql2text.rs"
-test = false
-doc = false
+[workspace]
+default-members = ["cli"]
+members = ["cli"]

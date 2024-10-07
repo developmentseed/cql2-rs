@@ -20,10 +20,8 @@ for input_format in json text; do
     for path in "$fixtures/$input_format"/*.$input_extension; do
         for output_format in json text; do
             if [ $output_format = "json" ]; then
-                bin="target/debug/cql2json"
                 output_extension="json"
             else
-                bin="target/debug/cql2text"
                 output_extension="txt"
             fi
 
@@ -31,7 +29,7 @@ for input_format in json text; do
             file_stem="${file_name%.*}"
             mkdir -p "$expected/$output_format"
 
-            $bin <$path > "$expected/$input_format/$file_stem.$output_extension"
+            target/debug/cql2 --output-format $output_format <$path > "$expected/$input_format/$file_stem.$output_extension"
         done
     done
 done
