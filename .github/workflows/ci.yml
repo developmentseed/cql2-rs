@@ -24,4 +24,4 @@ jobs:
       - name: cargo check
         run: cargo check
       - name: cargo test
-        run: cargo test
+        run: cargo test --package cql
