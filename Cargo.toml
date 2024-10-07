@@ -4,15 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-geozero = "0.14"
-boon = "0.6"
+boon = "0.6.0"
+geo-types = "0.7.13"
+geojson = "0.24.1"
+geozero = "0.14.0"
 lazy_static = "1.5"
 pest = "2.7"
 pest_derive = "2.7"
 serde = "1.0"
 serde_derive = "1.0"
-thiserror = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
+thiserror = "1.0"
 
 [dev-dependencies]
 assert-json-diff = "2"

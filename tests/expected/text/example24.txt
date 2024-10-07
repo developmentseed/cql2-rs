@@ -1,1 +1,1 @@
-s_intersects("geometry", POLYGON((-10 -10,10 -10,10 10,-10 -10)))
+s_intersects("geometry", POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))
