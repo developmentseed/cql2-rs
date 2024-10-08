@@ -27,7 +27,7 @@ See [the documentation](https://docs.rs/cql2) for more.
 
 ## CLI
 
-See [the cql-cli README](./cli/README.md) for details.
+See [the cql2-cli README](./cli/README.md) for details.
 
 ## Responses
 
