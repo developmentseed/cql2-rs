@@ -31,11 +31,11 @@ fn validate_path(path: impl AsRef<Path>) {
 }
 
 #[rstest]
-fn validate_text_fixtures(#[files("tests/fixtures/text/*.txt")] path: PathBuf) {
+fn validate_text_fixtures(#[files("fixtures/text/*.txt")] path: PathBuf) {
     validate_path(path);
 }
 
 #[rstest]
-fn validate_json_fixtures(#[files("tests/fixtures/json/*.json")] path: PathBuf) {
+fn validate_json_fixtures(#[files("fixtures/json/*.json")] path: PathBuf) {
     validate_path(path);
 }
