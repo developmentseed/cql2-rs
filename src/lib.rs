@@ -24,7 +24,7 @@ pub struct SqlQuery {
 /// # Examples
 ///
 /// ```
-/// let s = include_str!("../tests/fixtures/json/example01.json");
+/// let s = include_str!("../fixtures/json/example01.json");
 /// let expr = cql2::parse_json(s);
 /// ```
 pub fn parse_json(s: &str) -> Result<Expr, serde_json::Error> {
