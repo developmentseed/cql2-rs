@@ -15,8 +15,11 @@ pub use {error::Error, expr::Expr, geometry::Geometry, parser::parse_text, valid
 /// A SQL query, broken into the query and parameters.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SqlQuery {
-    query: String,
-    params: Vec<String>,
+    /// The SQL query, with placeholders for parameters.
+    pub query: String,
+
+    /// The SQL parameters, as strings.
+    pub params: Vec<String>,
 }
 
 /// Parses a cql2-json string into a CQL2 expression.
