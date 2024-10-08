@@ -1,0 +1,20 @@
+[package]
+name = "cql2-python"
+version = "0.1.0"
+authors = ["David Bitner <bitner@dbspatial.com>"]
+edition = "2021"
+description = "Parse, validate, and convert Common Query Language (CQL2) text and JSON"
+readme = "README.md"
+homepage = "https://github.com/developmentseed/cql2-rs"
+repository = "https://github.com/developmentseed/cql2-rs"
+license = "MIT"
+keywords = ["cql2"]
+
+[lib]
+name = "cql2"
+crate-type = ["cdylib"]
+
+[dependencies]
+cql2 = { path = ".." }
+pyo3 = { version = "0.22.0", features = ["extension-module"] }
+pythonize = "0.22.0"
