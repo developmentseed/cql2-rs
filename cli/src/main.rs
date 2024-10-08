@@ -99,7 +99,7 @@ fn main() {
             std::process::exit(1)
         }
     }
-    let output_format = cli.output_format.unwrap_or_else(|| match input_format {
+    let output_format = cli.output_format.unwrap_or(match input_format {
         InputFormat::Json => OutputFormat::Json,
         InputFormat::Text => OutputFormat::Text,
     });
