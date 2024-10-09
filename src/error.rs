@@ -22,8 +22,13 @@ pub enum Error {
     /// Invalid number of arguments for the expression
     #[error("invalid number of arguments for {name}: {actual} (expected {expected})")]
     InvalidNumberOfArguments {
+        /// The name of the expression or operation
         name: String,
+
+        /// The actual number of arguments
         actual: usize,
+
+        /// The number of arguments the expression or operation expected
         expected: usize,
     },
 

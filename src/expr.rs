@@ -19,6 +19,7 @@ use std::str::FromStr;
 /// and use [Expr::is_valid] to check validity.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
+#[allow(missing_docs)]
 pub enum Expr {
     Operation { op: String, args: Vec<Box<Expr>> },
     Interval { interval: Vec<Box<Expr>> },
