@@ -82,7 +82,7 @@ fn strip_quotes(s: &str) -> &str {
     }
 }
 
-fn opstr(op: Pair<Rule>) -> String {
+fn opstr(op: Pair<'_, Rule>) -> String {
     return normalize_op(op.as_str());
 }
 
@@ -316,6 +316,6 @@ mod tests {
 
     #[test]
     fn point_zm() {
-        CQL2Parser::parse(Rule::GEOMETRY, "POINT ZM(-105.1019 40.1672 4981 42)").unwrap();
+        let _ = CQL2Parser::parse(Rule::GEOMETRY, "POINT ZM(-105.1019 40.1672 4981 42)").unwrap();
     }
 }

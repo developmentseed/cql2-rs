@@ -3,6 +3,7 @@ use boon::{Compiler, SchemaIndex, Schemas, ValidationError};
 use serde_json::Value;
 
 /// A re-usable json-schema validator for CQL2.
+#[allow(missing_debug_implementations)]
 pub struct Validator {
     schemas: Schemas,
     index: SchemaIndex,
