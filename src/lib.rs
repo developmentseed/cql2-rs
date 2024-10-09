@@ -8,9 +8,13 @@ mod geometry;
 mod parser;
 mod validator;
 
+pub use error::Error;
+pub use expr::Expr;
+pub use geometry::Geometry;
+pub use parser::parse_text;
 use serde_derive::{Deserialize, Serialize};
 use std::{fs, path::Path};
-pub use {error::Error, expr::Expr, geometry::Geometry, parser::parse_text, validator::Validator};
+pub use validator::Validator;
 
 /// A SQL query, broken into the query and parameters.
 #[derive(Debug, Serialize, Deserialize, Clone)]
