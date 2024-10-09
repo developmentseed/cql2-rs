@@ -48,3 +48,17 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Expr, Error> {
 
 #[cfg(test)]
 use {assert_json_diff as _, rstest as _};
+
+// From https://github.com/rust-lang/cargo/issues/383#issuecomment-720873790,
+// may they be forever blessed.
+#[cfg(doctest)]
+mod readme {
+    macro_rules! external_doc_test {
+        ($x:expr) => {
+            #[doc = $x]
+            extern "C" {}
+        };
+    }
+
+    external_doc_test!(include_str!("../README.md"));
+}
