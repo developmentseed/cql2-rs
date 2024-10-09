@@ -43,7 +43,7 @@ impl Expr {
     }
 
     /// Converts this expression to cql2-text.
-    fn to_text<'py>(&self) -> PyResult<String> {
+    fn to_text(&self) -> PyResult<String> {
         self.0.to_text().map_err(to_py_error)
     }
 
