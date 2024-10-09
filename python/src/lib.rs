@@ -1,7 +1,6 @@
 use pyo3::{
     exceptions::{PyException, PyIOError, PyValueError},
     prelude::*,
-    types::PyDict,
 };
 use std::path::PathBuf;
 
