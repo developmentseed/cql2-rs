@@ -25,7 +25,7 @@ jobs:
       - name: Install Python
         run: uv python install # we use uv instead of setup-python so we get python-version resolution between our two packages
       - name: Sync
-        run: uv sync
+        run: uv sync && uv sync --no-dev --inexact --directory python
       - name: Deploy
         run: |
           VERSION=$(git describe --tags --match="v*" --abbrev=0)
