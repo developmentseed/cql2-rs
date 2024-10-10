@@ -33,7 +33,7 @@ nav:
   - cql2-rs: index.md
   - Python: python.md
   - CLI: cli.md
-  - Rust: rust.md
+  - Rust: https://docs.rs/cql2
 plugins:
   - search
   - social

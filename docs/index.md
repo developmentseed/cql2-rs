@@ -1,6 +1,6 @@
 # cql2-rs
 
-**cql2-rs** is [Python package](./python.md), [command-line interface (CLI)](./cli.md), and [Rust crate](./rust.md) for parsing, validating, and converting [Common Query Language (CQL2)](https://www.ogc.org/standard/cql2/).
+**cql2-rs** is [Python package](./python.md), [command-line interface (CLI)](./cli.md), and [Rust crate](https://docs.rs/cql2) for parsing, validating, and converting [Common Query Language (CQL2)](https://www.ogc.org/standard/cql2/).
 
 ## Python
 
