@@ -41,6 +41,18 @@ class Expr:
             >>> expr = Expr({"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]})
         """
 
+    def validate(self) -> None:
+        """Validates this expression using json-schema.
+
+        Raises:
+            ValidationError: Raised if the validation fails
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> expr = Expr("landsat:scene_id = 'LC82030282019133LGN00'")
+            >>> expr.validate()
+        """
+
     def to_json(self) -> dict[str, Any]:
         """Converts this cql2 expression to a cql2-json dictionary.
 
@@ -81,3 +93,6 @@ class Expr:
             >>> q.params
             ['LC82030282019133LGN00']
         """
+
+class ValidationError(Exception):
+    """An error raised when cql2 json-schema validation fails."""

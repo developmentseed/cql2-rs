@@ -48,7 +48,8 @@ impl Validator {
     /// validator.validate(&valid).unwrap();
     ///
     /// let invalid = json!({
-    ///     "op": "not an operator!",
+    ///     "op": "t_before",
+    ///     "args": [{"property": "updated_at"}, {"timestamp": "invalid-timestamp"}],
     /// });
     /// validator.validate(&invalid).unwrap_err();
     /// ```
