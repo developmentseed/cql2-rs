@@ -1,14 +1,14 @@
 [package]
 name = "cql2"
-version = "0.2.0"
-authors = ["David Bitner <bitner@dbspatial.com>"]
-edition = "2021"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
 description = "Parse, validate, and convert Common Query Language (CQL2) text and JSON"
-documentation = "https://docs.rs/cql2"
+documentation = { workspace = true }
 readme = "README.md"
 homepage = "https://github.com/developmentseed/cql2-rs"
-repository = "https://github.com/developmentseed/cql2-rs"
-license = "MIT"
+repository = { workspace = true }
+license = { workspace = true }
 keywords = ["cql2"]
 
 [dependencies]
@@ -31,6 +31,14 @@ rstest = "0.23"
 [workspace]
 default-members = [".", "cli"]
 members = ["cli", "python"]
+
+[workspace.package]
+version = "0.2.0"
+authors = ["David Bitner <bitner@dbspatial.com>"]
+edition = "2021"
+documentation = "https://docs.rs/cql2"
+repository = "https://github.com/developmentseed/cql2-rs"
+license = "MIT"
 
 [workspace.dependencies]
 clap = "4.5"
