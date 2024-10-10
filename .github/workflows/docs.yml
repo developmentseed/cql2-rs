@@ -1,0 +1,32 @@
+name: Docs
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    env:
+      GIT_COMMITTER_NAME: ci-bot
+      GIT_COMMITTER_EMAIL: ci-bot@example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Install Python
+        run: uv python install # we use uv instead of setup-python so we get python-version resolution between our two packages
+      - name: Sync
+        run: uv sync
+      - name: Deploy
+        run: |
+          VERSION=$(git describe --tags --match="v*" --abbrev=0)
+          uv run mike deploy $VERSION latest --update-aliases --push

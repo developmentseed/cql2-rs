@@ -13,4 +13,4 @@ classifiers = [
 dynamic = ["version"]
 
 [tool.uv]
-dev-dependencies = ["mypy", "pytest", "ruff"]
+dev-dependencies = ["mypy>=1.11.2", "pytest>=8.3.3", "ruff>=0.6.9"]

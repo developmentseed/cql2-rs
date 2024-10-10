@@ -1,0 +1,65 @@
+site_name: cql2-rs
+site_url: https://developmentseed.org/cql2-rs/
+site_description: Command-line interface (CLI), Python package, and Rust crate for parsing, validating, and converting Common Query Language (CQL2)
+site_author: David Bitner
+repo_name: developmentseed/cql2-rs
+repo_url: https://github.com/developmentseed/cql2-rs
+edit_uri: edit/main/docs/
+
+extra:
+  social:
+    - icon: "fontawesome/brands/github"
+  version:
+    provider: mike
+
+theme:
+  name: material
+  logo: ds-logo-hor--pos.svg
+  favicon: favicon.png
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    primary: blue
+  features:
+    - content.action.edit
+    - navigation.indexes
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tracking
+    - search.share
+    - search.suggest
+    - toc.integrate
+nav:
+  - cql2-rs: index.md
+  - Python: python.md
+  - CLI: cli.md
+  - Rust: https://docs.rs/cql2
+plugins:
+  - search
+  - social
+  - mike:
+      alias_type: "copy"
+      canonical_version: "latest"
+  - mkdocstrings:
+      enable_inventory: true
+      handlers:
+        python:
+          options:
+            allow_inspection: false
+            show_root_heading: true
+            separate_signature: false
+            docstring_style: google
+            docstring_section_style: list
+            show_symbol_type_toc: true
+            signature_crossrefs: true
+            merge_init_into_class: true
+            docstring_options:
+              ignore_init_summary: false
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
