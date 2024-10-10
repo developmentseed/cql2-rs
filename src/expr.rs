@@ -211,8 +211,8 @@ impl Expr {
     /// let expr = Expr::Bool(true);
     /// let s = expr.to_json().unwrap();
     /// ```
-    pub fn to_json(&self) -> Result<String, serde_json::Error> {
-        serde_json::to_string(&self)
+    pub fn to_json(&self) -> Result<String, Error> {
+        serde_json::to_string(&self).map_err(Error::from)
     }
 
     /// Converts this expression to a pretty JSON string.
@@ -225,8 +225,8 @@ impl Expr {
     /// let expr = Expr::Bool(true);
     /// let s = expr.to_json_pretty().unwrap();
     /// ```
-    pub fn to_json_pretty(&self) -> Result<String, serde_json::Error> {
-        serde_json::to_string_pretty(&self)
+    pub fn to_json_pretty(&self) -> Result<String, Error> {
+        serde_json::to_string_pretty(&self).map_err(Error::from)
     }
 
     /// Converts this expression to a [serde_json::Value].
@@ -239,8 +239,8 @@ impl Expr {
     /// let expr = Expr::Bool(true);
     /// let value = expr.to_value().unwrap();
     /// ```
-    pub fn to_value(&self) -> Result<Value, serde_json::Error> {
-        serde_json::to_value(self)
+    pub fn to_value(&self) -> Result<Value, Error> {
+        serde_json::to_value(self).map_err(Error::from)
     }
 
     /// Returns true if this expression is valid CQL2.
