@@ -4,11 +4,10 @@
 
 ## CLI
 
-To install the CLI, you'll need [Rust](https://rustup.rs/).
-Then:
+To use, install from [PyPI](https://pypi.org/project/cql2/) or via cargo:
 
 ```shell
-$ cargo install cql2-cli
+$ pip install cql2 # or `cargo install cql2-cli`
 $ cql2 -o json "landsat:scene_id = 'LC82030282019133LGN00'"
 {"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]}
 ```

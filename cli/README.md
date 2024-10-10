@@ -4,11 +4,16 @@ A Command Line Interface (CLI) for [Common Query Language (CQL2)](https://www.og
 
 ## Installation
 
-Install [Rust](https://rustup.rs/).
-Then:
+With cargo:
 
 ```shell
 cargo install cql2-cli
+```
+
+Or from [PyPI](https://pypi.org/project/cql2/):
+
+```shell
+pip install cql2
 ```
 
 ## CLI

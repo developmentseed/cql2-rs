@@ -23,8 +23,12 @@ impl Validator {
         let mut schemas = Schemas::new();
         let mut compiler = Compiler::new();
         let schema_json = serde_json::from_str(include_str!("cql2.json"))?;
-        compiler.add_resource("/tmp/cql2.json", schema_json)?;
-        let index = compiler.compile("/tmp/cql2.json", &mut schemas)?;
+        compiler
+            .add_resource("/tmp/cql2.json", schema_json)
+            .expect("the cql2 json-schema should compile");
+        let index = compiler
+            .compile("/tmp/cql2.json", &mut schemas)
+            .expect("the cql2 json-schema should compile");
         Ok(Validator { schemas, index })
     }
 

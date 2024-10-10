@@ -31,3 +31,6 @@ rstest = "0.23"
 [workspace]
 default-members = [".", "cli"]
 members = ["cli", "python"]
+
+[workspace.dependencies]
+clap = "4.5"

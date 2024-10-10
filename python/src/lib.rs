@@ -76,10 +76,28 @@ fn to_py_error(error: ::cql2::Error) -> PyErr {
     }
 }
 
+#[pyfunction]
+fn main(py: Python<'_>) {
+    use clap::Parser;
+
+    // https://github.com/PyO3/pyo3/issues/3218
+    py.run_bound(
+        "import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)",
+        None,
+        None,
+    )
+    .unwrap();
+
+    let args: Vec<_> = std::env::args().skip(1).collect();
+    ::cql2_cli::Cli::parse_from(args).run()
+}
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn cql2(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Expr>()?;
     m.add_class::<SqlQuery>()?;
+    m.add_function(wrap_pyfunction!(main, m)?)?;
     Ok(())
 }
