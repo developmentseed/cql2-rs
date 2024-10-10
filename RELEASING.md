@@ -12,5 +12,4 @@ Then:
 4. Update each README 
 5. Open a PR
 6. Once approved, merge the PR
-7. (if releasing the main crate) Run `cargo release -p cql2`, then `cargo release -p cql2 --execute`
-8. (if releasing the cli crate) run `cargo release -p cql2-cli`, then `cargo release -p cql2-cli --execute`
+7. `cargo release -p cql2 --execute`, then `cargo release -p cql2-cli --execute`
