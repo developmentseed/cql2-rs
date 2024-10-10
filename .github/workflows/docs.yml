@@ -18,6 +18,8 @@ jobs:
       GIT_COMMITTER_EMAIL: ci-bot@example.com
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # for git describe
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v3
         with:
