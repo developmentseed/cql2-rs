@@ -8,6 +8,10 @@ def test_from_path(fixtures: Path) -> None:
     Expr.from_path(fixtures / "text" / "example01.txt")
 
 
+def test_from_path_str(fixtures: Path) -> None:
+    Expr.from_path(str(fixtures / "text" / "example01.txt"))
+
+
 def test_init(example01_text: str) -> None:
     Expr(example01_text)
 
