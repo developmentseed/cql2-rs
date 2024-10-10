@@ -1,6 +1,6 @@
 # cql2
 
-Python library for parsing and converting [Common Query Language (CQL2)](https://www.ogc.org/standard/cql2/), with Rust under the hood.
+Python library and command-line interface (CLI) for parsing and converting [Common Query Language (CQL2)](https://www.ogc.org/standard/cql2/), with Rust under the hood.
 
 ## Usage
 
@@ -20,6 +20,13 @@ d = expr.to_json()
 sql = expr.to_sql()
 print("SQL query:", sql.query)
 print("SQL params:", sql.params)
+```
+
+Or from via the command-line interface:
+
+```shell
+$ cql2 -o json "landsat:scene_id = 'LC82030282019133LGN00'"
+{"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]}
 ```
 
 ## Developing

@@ -15,6 +15,8 @@ name = "cql2"
 crate-type = ["cdylib"]
 
 [dependencies]
+clap = { workspace = true }
 cql2 = { path = ".." }
+cql2-cli = { path = "../cli" }
 pyo3 = { version = "0.22.0", features = ["extension-module"] }
 pythonize = "0.22.0"

@@ -114,11 +114,29 @@ impl From<pythonize::PythonizeError> for Error {
     }
 }
 
+#[pyfunction]
+fn main(py: Python<'_>) {
+    use clap::Parser;
+
+    // https://github.com/PyO3/pyo3/issues/3218
+    py.run_bound(
+        "import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)",
+        None,
+        None,
+    )
+    .unwrap();
+
+    let args: Vec<_> = std::env::args().skip(1).collect();
+    ::cql2_cli::Cli::parse_from(args).run()
+}
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn cql2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Expr>()?;
     m.add_class::<SqlQuery>()?;
+    m.add_function(wrap_pyfunction!(main, m)?)?;
     m.add("ValidationError", py.get_type_bound::<ValidationError>())?;
     Ok(())
 }

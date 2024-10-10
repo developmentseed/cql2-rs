@@ -3,10 +3,6 @@ use thiserror::Error;
 /// Crate-specific error enum.
 #[derive(Debug, Error)]
 pub enum Error {
-    /// [boon::CompileError]
-    #[error(transparent)]
-    BoonCompile(#[from] boon::CompileError),
-
     /// [geojson::Error]
     #[error(transparent)]
     GeoJSON(#[from] geojson::Error),
