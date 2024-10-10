@@ -1,8 +1,11 @@
 use pyo3::{
+    create_exception,
     exceptions::{PyException, PyIOError, PyValueError},
     prelude::*,
 };
 use std::path::PathBuf;
+
+create_exception!(cql2, ValidationError, PyException);
 
 /// Crate-specific error enum.
 enum Error {
@@ -43,6 +46,15 @@ impl Expr {
         } else {
             let expr: ::cql2::Expr = pythonize::depythonize(&cql2)?;
             Ok(Expr(expr))
+        }
+    }
+
+    fn validate(&self) -> PyResult<()> {
+        let validator = ::cql2::Validator::new().map_err(Error::from)?;
+        if let Err(error) = validator.validate(&self.0.to_value().map_err(Error::from)?) {
+            Err(ValidationError::new_err(error.to_string()))
+        } else {
+            Ok(())
         }
     }
 
@@ -104,8 +116,9 @@ impl From<pythonize::PythonizeError> for Error {
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn cql2(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn cql2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Expr>()?;
     m.add_class::<SqlQuery>()?;
+    m.add("ValidationError", py.get_type_bound::<ValidationError>())?;
     Ok(())
 }
