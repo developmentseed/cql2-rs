@@ -12,11 +12,11 @@ class SqlQuery:
 
 class Expr:
     @staticmethod
-    def from_path(path: PathLike) -> Expr:
+    def from_path(path: PathLike | str) -> Expr:
         """Reads CQL2 from a filesystem path.
 
         Args:
-            path (PathLike): The input path
+            path (PathLike | str): The input path
 
         Returns:
             Expr: The CQL2 expression
@@ -39,6 +39,18 @@ class Expr:
             >>> from cql2 import Expr
             >>> expr = Expr("landsat:scene_id = 'LC82030282019133LGN00'")
             >>> expr = Expr({"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]})
+        """
+
+    def validate(self) -> None:
+        """Validates this expression using json-schema.
+
+        Raises:
+            ValidationError: Raised if the validation fails
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> expr = Expr("landsat:scene_id = 'LC82030282019133LGN00'")
+            >>> expr.validate()
         """
 
     def to_json(self) -> dict[str, Any]:
@@ -81,3 +93,6 @@ class Expr:
             >>> q.params
             ['LC82030282019133LGN00']
         """
+
+class ValidationError(Exception):
+    """An error raised when cql2 json-schema validation fails."""

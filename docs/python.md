@@ -11,3 +11,4 @@ python -m pip install cql2
 
 ::: cql2.Expr
 ::: cql2.SqlQuery
+::: cql2.ValidationError

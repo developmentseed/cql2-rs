@@ -4,6 +4,7 @@ site_description: Command-line interface (CLI), Python package, and Rust crate f
 site_author: David Bitner
 repo_name: developmentseed/cql2-rs
 repo_url: https://github.com/developmentseed/cql2-rs
+edit_uri: edit/main/docs/
 
 extra:
   social:
@@ -15,17 +16,24 @@ theme:
   name: material
   logo: ds-logo-hor--pos.svg
   favicon: favicon.png
+  icon:
+    repo: fontawesome/brands/github
   palette:
     primary: blue
   features:
+    - content.action.edit
     - navigation.indexes
     - navigation.instant
+    - navigation.tabs
     - navigation.tracking
-    - search.suggest
     - search.share
+    - search.suggest
+    - toc.integrate
 nav:
   - cql2-rs: index.md
   - Python: python.md
+  - CLI: cli.md
+  - Rust: https://docs.rs/cql2
 plugins:
   - search
   - social
