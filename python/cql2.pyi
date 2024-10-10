@@ -12,11 +12,11 @@ class SqlQuery:
 
 class Expr:
     @staticmethod
-    def from_path(path: PathLike) -> Expr:
+    def from_path(path: PathLike | str) -> Expr:
         """Reads CQL2 from a filesystem path.
 
         Args:
-            path (PathLike): The input path
+            path (PathLike | str): The input path
 
         Returns:
             Expr: The CQL2 expression
