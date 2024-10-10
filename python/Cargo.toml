@@ -1,13 +1,13 @@
 [package]
 name = "cql2-python"
-version = "0.1.0"
-authors = ["David Bitner <bitner@dbspatial.com>"]
-edition = "2021"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
 description = "Parse, validate, and convert Common Query Language (CQL2) text and JSON"
 readme = "README.md"
 homepage = "https://github.com/developmentseed/cql2-rs"
-repository = "https://github.com/developmentseed/cql2-rs"
-license = "MIT"
+repository = { workspace = true }
+license = { workspace = true }
 keywords = ["cql2"]
 
 [lib]
