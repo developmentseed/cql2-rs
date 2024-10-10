@@ -4,8 +4,13 @@
 
 ## Installation
 
-Install [Rust](https://rustup.rs/).
-Then:
+Install from [PyPI](https://pypi.org/project/cql2/):
+
+```shell
+pip install cql2
+```
+
+Or, if you have [Rust](https://rustup.rs/):
 
 ```shell
 cargo install cql2-cli
