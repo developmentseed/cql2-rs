@@ -18,6 +18,8 @@ jobs:
       GIT_COMMITTER_EMAIL: ci-bot@example.com
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # for git describe
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v3
         with:
@@ -25,7 +27,7 @@ jobs:
       - name: Install Python
         run: uv python install # we use uv instead of setup-python so we get python-version resolution between our two packages
       - name: Sync
-        run: uv sync
+        run: uv sync && uv sync --no-dev --inexact --directory python
       - name: Deploy
         run: |
           VERSION=$(git describe --tags --match="v*" --abbrev=0)
