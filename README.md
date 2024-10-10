@@ -10,7 +10,7 @@ Parse, validate, and convert [Common Query Language (CQL2)](https://www.ogc.org/
 
 ```toml
 [dependencies]
-cql = "0.1"
+cql = "0.2"
 ```
 
 Then:

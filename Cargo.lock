@@ -214,7 +214,7 @@ dependencies = [
 
 [[package]]
 name = "cql2"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "assert-json-diff",
  "boon",
@@ -233,7 +233,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -243,7 +243,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-python"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "cql2",

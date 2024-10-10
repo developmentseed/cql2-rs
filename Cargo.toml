@@ -1,6 +1,6 @@
 [package]
 name = "cql2"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["David Bitner <bitner@dbspatial.com>"]
 edition = "2021"
 description = "Parse, validate, and convert Common Query Language (CQL2) text and JSON"
