@@ -13,7 +13,7 @@ Then:
 ```python
 expr = Expr("landsat:scene_id = 'LC82030282019133LGN00'")
 # or
-expr = Expr.from_path("fixtures/text/example01.txt")
+expr = cql2.parse_file("fixtures/text/example01.txt")
 
 s = expr.to_text()
 d = expr.to_json()
