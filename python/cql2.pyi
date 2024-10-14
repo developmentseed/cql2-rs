@@ -130,5 +130,8 @@ class Expr:
             ['LC82030282019133LGN00']
         """
 
+class ParseError(Exception):
+    """An error raised when cql2 parsing fails."""
+
 class ValidationError(Exception):
     """An error raised when cql2 json-schema validation fails."""
