@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
+from typing import Any
 
 import pytest
-from cql2 import Expr, ValidationError
+from cql2 import Expr, ParseError, ValidationError
 
 
 def test_from_path(fixtures: Path) -> None:
@@ -16,6 +18,18 @@ def test_init(example01_text: str) -> None:
     Expr(example01_text)
 
 
+def test_parse_json(example01_text: str, example01_json: dict[str, Any]) -> None:
+    Expr.parse_json(json.dumps(example01_json))
+    with pytest.raises(ParseError):
+        Expr.parse_json(example01_text)
+
+
+def test_parse_text(example01_text: str, example01_json: dict[str, Any]) -> None:
+    Expr.parse_text(example01_text)
+    with pytest.raises(ParseError):
+        Expr.parse_text(json.dumps(example01_json))
+
+
 def test_to_json(example01_text: str) -> None:
     Expr(example01_text).to_json() == {
         "op": "=",
@@ -23,7 +37,7 @@ def test_to_json(example01_text: str) -> None:
     }
 
 
-def test_to_text(example01_json: str) -> None:
+def test_to_text(example01_json: dict[str, Any]) -> None:
     Expr(example01_json).to_text() == "landsat:scene_id = 'LC82030282019133LGN00'"
 
 

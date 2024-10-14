@@ -26,6 +26,42 @@ class Expr:
             >>> expr = Expr.from_path("fixtures/text/example01.txt")
         """
 
+    @staticmethod
+    def parse_text(s: str) -> Expr:
+        """Parses cql2-text.
+
+        Args:
+            s (str): The cql2-text
+
+        Returns:
+            Expr: The CQL2 expression
+
+        Raises:
+            ParseError: Raised if the string does not parse as cql2-text
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> expr = Expr.parse_text("landsat:scene_id = 'LC82030282019133LGN00'")
+        """
+
+    @staticmethod
+    def parse_json(s: str) -> Expr:
+        """Parses cql2-json.
+
+        Args:
+            s (str): The cql2-json string
+
+        Returns:
+            Expr: The CQL2 expression
+
+        Raises:
+            ParseError: Raised if the string does not parse as cql2-json
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> expr = Expr.parse_json('{"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]}')
+        """
+
     def __init__(self, cql2: str | dict[str, Any]) -> None:
         """A CQL2 expression.
 
