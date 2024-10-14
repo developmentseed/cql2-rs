@@ -1,31 +1,55 @@
 from typing import Any
 from os import PathLike
 
-class SqlQuery:
-    """A SQL query"""
+def parse_file(path: PathLike | str) -> Expr:
+    """Parses CQL2 from a filesystem path.
 
-    query: str
-    """The query, with parameterized fields."""
+    Args:
+        path (PathLike | str): The input path
 
-    params: list[str]
-    """The parameters, to use for binding."""
+    Returns:
+        Expr: The CQL2 expression
+
+    Examples:
+        >>> from cql2 import Expr
+        >>> expr = Expr.parse_file("fixtures/text/example01.txt")
+    """
+
+def parse_text(s: str) -> Expr:
+    """Parses cql2-text.
+
+    Args:
+        s (str): The cql2-text
+
+    Returns:
+        Expr: The CQL2 expression
+
+    Raises:
+        ParseError: Raised if the string does not parse as cql2-text
+
+    Examples:
+        >>> from cql2 import Expr
+        >>> expr = Expr.parse_text("landsat:scene_id = 'LC82030282019133LGN00'")
+    """
+
+def parse_json(s: str) -> Expr:
+    """Parses cql2-json.
+
+    Args:
+        s (str): The cql2-json string
+
+    Returns:
+        Expr: The CQL2 expression
+
+    Raises:
+        ParseError: Raised if the string does not parse as cql2-json
+
+    Examples:
+        >>> from cql2 import Expr
+        >>> expr = Expr.parse_json('{"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]}')
+    """
 
 class Expr:
-    @staticmethod
-    def from_path(path: PathLike | str) -> Expr:
-        """Reads CQL2 from a filesystem path.
-
-        Args:
-            path (PathLike | str): The input path
-
-        Returns:
-            Expr: The CQL2 expression
-
-        Examples:
-            >>> from cql2 import Expr
-            >>> expr = Expr.from_path("fixtures/text/example01.txt")
-        """
-
     def __init__(self, cql2: str | dict[str, Any]) -> None:
         """A CQL2 expression.
 
@@ -93,6 +117,18 @@ class Expr:
             >>> q.params
             ['LC82030282019133LGN00']
         """
+
+class SqlQuery:
+    """A SQL query"""
+
+    query: str
+    """The query, with parameterized fields."""
+
+    params: list[str]
+    """The parameters, to use for binding."""
+
+class ParseError(Exception):
+    """An error raised when cql2 parsing fails."""
 
 class ValidationError(Exception):
     """An error raised when cql2 json-schema validation fails."""
