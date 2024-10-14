@@ -1,3 +1,14 @@
+[workspace.package]
+version = "0.3.0"
+authors = [
+    "David Bitner <bitner@dbspatial.com>",
+    "Pete Gadomski <pete.gadomski@gmail.com>",
+]
+edition = "2021"
+documentation = "https://docs.rs/cql2"
+repository = "https://github.com/developmentseed/cql2-rs"
+license = "MIT"
+
 [package]
 name = "cql2"
 version = { workspace = true }
@@ -31,14 +42,6 @@ rstest = "0.23"
 [workspace]
 default-members = [".", "cli"]
 members = ["cli", "python"]
-
-[workspace.package]
-version = "0.2.0"
-authors = ["David Bitner <bitner@dbspatial.com>"]
-edition = "2021"
-documentation = "https://docs.rs/cql2"
-repository = "https://github.com/developmentseed/cql2-rs"
-license = "MIT"
 
 [workspace.dependencies]
 clap = "4.5"

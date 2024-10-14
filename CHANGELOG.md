@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2024-10-14
+
+### Changed
+
+- Use free functions (instead of staticmethods) in the Python API ([#41](https://github.com/developmentseed/cql2-rs/pull/41))
+
 ## [0.2.0] - 2024-10-10
 
 ### Added
@@ -23,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Initial release.
 
-[Unreleased]: https://github.com/developmentseed/cql-rs/compare/v0.2.0...main
+[Unreleased]: https://github.com/developmentseed/cql-rs/compare/v0.3.0...main
+[0.3.0]: https://github.com/developmentseed/cql-rs/releases/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/developmentseed/cql-rs/releases/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/developmentseed/cql-rs/releases/tag/v0.1.0
