@@ -9,6 +9,7 @@ homepage = "https://github.com/developmentseed/cql2-rs"
 repository = { workspace = true }
 license = { workspace = true }
 keywords = ["cql2"]
+publish = false
 
 [lib]
 name = "cql2"
