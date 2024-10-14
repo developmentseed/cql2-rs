@@ -46,13 +46,14 @@ plugins:
         python:
           options:
             allow_inspection: false
-            show_root_heading: true
-            separate_signature: false
-            docstring_style: google
             docstring_section_style: list
+            docstring_style: google
+            merge_init_into_class: true
+            separate_signature: false
+            show_root_heading: true
+            show_source: false
             show_symbol_type_toc: true
             signature_crossrefs: true
-            merge_init_into_class: true
             docstring_options:
               ignore_init_summary: false
 markdown_extensions:

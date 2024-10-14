@@ -3,15 +3,16 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import cql2
 from cql2 import Expr, ParseError, ValidationError
 
 
-def test_from_path(fixtures: Path) -> None:
-    Expr.from_path(fixtures / "text" / "example01.txt")
+def test_parse_file(fixtures: Path) -> None:
+    cql2.parse_file(fixtures / "text" / "example01.txt")
 
 
-def test_from_path_str(fixtures: Path) -> None:
-    Expr.from_path(str(fixtures / "text" / "example01.txt"))
+def test_parse_file_str(fixtures: Path) -> None:
+    cql2.parse_file(str(fixtures / "text" / "example01.txt"))
 
 
 def test_init(example01_text: str) -> None:
@@ -19,15 +20,15 @@ def test_init(example01_text: str) -> None:
 
 
 def test_parse_json(example01_text: str, example01_json: dict[str, Any]) -> None:
-    Expr.parse_json(json.dumps(example01_json))
+    cql2.parse_json(json.dumps(example01_json))
     with pytest.raises(ParseError):
-        Expr.parse_json(example01_text)
+        cql2.parse_json(example01_text)
 
 
 def test_parse_text(example01_text: str, example01_json: dict[str, Any]) -> None:
-    Expr.parse_text(example01_text)
+    cql2.parse_text(example01_text)
     with pytest.raises(ParseError):
-        Expr.parse_text(json.dumps(example01_json))
+        cql2.parse_text(json.dumps(example01_json))
 
 
 def test_to_json(example01_text: str) -> None:

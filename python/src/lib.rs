@@ -31,31 +31,27 @@ struct SqlQuery {
     params: Vec<String>,
 }
 
+#[pyfunction]
+fn parse_file(path: PathBuf) -> Result<Expr> {
+    ::cql2::parse_file(path).map(Expr).map_err(Error::from)
+}
+
+#[pyfunction]
+fn parse_json(s: &str) -> PyResult<Expr> {
+    ::cql2::parse_json(s)
+        .map(Expr)
+        .map_err(|err| ParseError::new_err(err.to_string()))
+}
+
+#[pyfunction]
+fn parse_text(s: &str) -> PyResult<Expr> {
+    ::cql2::parse_text(s)
+        .map(Expr)
+        .map_err(|err| ParseError::new_err(err.to_string()))
+}
+
 #[pymethods]
 impl Expr {
-    /// Parses a CQL2 expression from a file path.
-    #[staticmethod]
-    fn from_path(path: PathBuf) -> Result<Expr> {
-        ::cql2::parse_file(path).map(Expr).map_err(Error::from)
-    }
-
-    /// Parses a CQL2 expression from json.
-    #[staticmethod]
-    fn parse_json(s: &str) -> PyResult<Expr> {
-        ::cql2::parse_json(s)
-            .map(Expr)
-            .map_err(|err| ParseError::new_err(err.to_string()))
-    }
-
-    /// Parses a CQL2 expression from text.
-    #[staticmethod]
-    fn parse_text(s: &str) -> PyResult<Expr> {
-        ::cql2::parse_text(s)
-            .map(Expr)
-            .map_err(|err| ParseError::new_err(err.to_string()))
-    }
-
-    /// Parses a CQL2 expression.
     #[new]
     fn new(cql2: Bound<'_, PyAny>) -> Result<Self> {
         if let Ok(s) = cql2.extract::<&str>() {
@@ -75,17 +71,14 @@ impl Expr {
         }
     }
 
-    /// Converts this expression to a cql2-json dictionary.
     fn to_json<'py>(&self, py: Python<'py>) -> Result<Bound<'py, PyAny>> {
         pythonize::pythonize(py, &self.0).map_err(Error::from)
     }
 
-    /// Converts this expression to cql2-text.
     fn to_text(&self) -> Result<String> {
         self.0.to_text().map_err(Error::from)
     }
 
-    /// Converts this expression to SQL query.
     fn to_sql(&self) -> Result<SqlQuery> {
         self.0.to_sql().map(SqlQuery::from).map_err(Error::from)
     }
@@ -154,6 +147,9 @@ fn cql2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Expr>()?;
     m.add_class::<SqlQuery>()?;
     m.add_function(wrap_pyfunction!(main, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_file, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_text, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_json, m)?)?;
     m.add("ParseError", py.get_type_bound::<ParseError>())?;
     m.add("ValidationError", py.get_type_bound::<ValidationError>())?;
     Ok(())
