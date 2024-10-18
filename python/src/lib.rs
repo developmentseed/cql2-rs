@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyIOError, PyValueError},
@@ -9,6 +11,7 @@ create_exception!(cql2, ValidationError, PyException);
 create_exception!(cql2, ParseError, PyException);
 
 /// Crate-specific error enum.
+#[allow(clippy::large_enum_variant)]
 enum Error {
     Cql2(::cql2::Error),
     Pythonize(pythonize::PythonizeError),
