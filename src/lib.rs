@@ -28,6 +28,7 @@
     unused_qualifications,
     unused_results
 )]
+#![allow(clippy::result_large_err)]
 
 mod error;
 mod expr;
