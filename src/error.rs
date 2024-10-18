@@ -2,6 +2,7 @@ use thiserror::Error;
 
 /// Crate-specific error enum.
 #[derive(Debug, Error)]
+#[allow(clippy::large_enum_variant)]
 pub enum Error {
     /// [geojson::Error]
     #[error(transparent)]

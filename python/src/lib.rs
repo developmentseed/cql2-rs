@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyIOError, PyValueError},
@@ -9,6 +11,7 @@ create_exception!(cql2, ValidationError, PyException);
 create_exception!(cql2, ParseError, PyException);
 
 /// Crate-specific error enum.
+#[allow(clippy::large_enum_variant)]
 enum Error {
     Cql2(::cql2::Error),
     Pythonize(pythonize::PythonizeError),
@@ -128,15 +131,15 @@ impl From<pythonize::PythonizeError> for Error {
 fn main(py: Python<'_>) {
     use clap::Parser;
 
-    // https://github.com/PyO3/pyo3/issues/3218
-    py.run_bound(
-        "import signal
-signal.signal(signal.SIGINT, signal.SIG_DFL)",
-        None,
-        None,
-    )
-    .unwrap();
-
+    let signal = py.import_bound("signal").unwrap();
+    signal
+        .getattr("signal")
+        .unwrap()
+        .call1((
+            signal.getattr("SIGINT").unwrap(),
+            signal.getattr("SIG_DFL").unwrap(),
+        ))
+        .unwrap();
     let args: Vec<_> = std::env::args().skip(1).collect();
     ::cql2_cli::Cli::parse_from(args).run()
 }
