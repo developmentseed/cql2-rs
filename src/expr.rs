@@ -312,4 +312,16 @@ mod tests {
             point.to_text().unwrap()
         );
     }
+
+    #[test]
+    fn issues_44() {
+        // https://github.com/developmentseed/cql2-rs/issues/44
+        let expr: Expr = include_str!("../fixtures/text/example17.txt")
+            .parse()
+            .unwrap();
+        assert_eq!(
+            expr.to_text().unwrap(),
+            "((\"floors\" > 5) AND (\"material\" = 'brick')) OR (\"swimming_pool\" = true)"
+        )
+    }
 }
