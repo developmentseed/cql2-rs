@@ -1,8 +1,8 @@
 use crate::{Error, Geometry, SqlQuery, Validator};
+use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
-use pg_escape::{quote_identifier, quote_literal};
 
 /// A CQL2 expression.
 ///
@@ -65,7 +65,7 @@ impl Expr {
             Expr::Bool(v) => Ok(v.to_string()),
             Expr::Float(v) => Ok(v.to_string()),
             Expr::Literal(v) => Ok(format!("{}", quote_literal(v))),
-            Expr::Property { property } => Ok(format!("{}",quote_identifier(property))),
+            Expr::Property { property } => Ok(format!("{}", quote_identifier(property))),
             Expr::Interval { interval } => {
                 check_len!(
                     "interval",

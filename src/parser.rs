@@ -257,8 +257,6 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
             } else {
                 let mut outargs: Vec<Box<Expr>> = Vec::new();
 
-
-
                 match lhsclone {
                     Expr::Operation { ref op, ref args } if op == "and" && op == &opstring => {
                         for arg in args.iter() {
@@ -330,5 +328,4 @@ mod tests {
     fn point_zm() {
         let _ = CQL2Parser::parse(Rule::GEOMETRY, "POINT ZM(-105.1019 40.1672 4981 42)").unwrap();
     }
-
 }

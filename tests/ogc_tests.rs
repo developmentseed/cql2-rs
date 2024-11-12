@@ -22,10 +22,10 @@ fn validate_example_path(path: impl AsRef<Path>) {
 
 fn read_lines(filename: impl AsRef<Path>) -> Vec<String> {
     std::fs::read_to_string(filename)
-        .unwrap()  // panic on possible file-reading errors
-        .lines()  // split the string into an iterator of string slices
-        .map(String::from)  // make each slice into a string
-        .collect()  // gather them together into a vector
+        .unwrap() // panic on possible file-reading errors
+        .lines() // split the string into an iterator of string slices
+        .map(String::from) // make each slice into a string
+        .collect() // gather them together into a vector
 }
 
 fn validate_expected_path(path: impl AsRef<Path>) {
@@ -40,7 +40,6 @@ fn validate_expected_path(path: impl AsRef<Path>) {
 
     assert_eq!(*outtext, expr.to_text().unwrap());
     assert_eq!(*outjson, expr.to_json().unwrap());
-
 }
 
 #[rstest]
