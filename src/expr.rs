@@ -109,8 +109,7 @@ impl Expr {
                     }
                     "+" | "-" | "*" | "/" | "%" => {
                         let paddedop = format!(" {} ", op);
-                        Ok(format!("{}", a.join(&paddedop)))
-                        //check_len!(op, a, 2, format!("({} {} {})", a[0], op, a[1]))
+                        Ok(a.join(&paddedop).to_string())
                     }
                     "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
                         check_len!(op, a, 2, format!("({} {} {})", a[0], op, a[1]))
