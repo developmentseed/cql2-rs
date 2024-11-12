@@ -9,7 +9,7 @@ cargo build
 tests=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 root=$(dirname "$tests")
 expected="$tests/expected"
-fixtures="$root/fixtures"
+fixtures="$root/examples"
 
 for input_format in json text; do
     if [ $input_format = "json" ]; then

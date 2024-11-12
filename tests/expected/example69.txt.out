@@ -1,0 +1,3 @@
+FALSE <> Bar("geometry", 100, 'a', 'b', FALSE) 
+(false <> bar(geometry, 100, 'a', 'b', false))
+{"op":"<>","args":[false,{"op":"bar","args":[{"property":"geometry"},100.0,"a","b",false]}]}

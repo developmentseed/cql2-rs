@@ -17,11 +17,13 @@ pub fn parse_text(s: &str) -> Result<Expr, Error> {
     let mut pairs = CQL2Parser::parse(Rule::Expr, s).map_err(Box::new)?;
     if let Some(pair) = pairs.next() {
         if pairs.next().is_some() {
+            dbg!(1, s, pairs);
             Err(Error::InvalidCql2Text(s.to_string()))
         } else {
             parse_expr(pair.into_inner())
         }
     } else {
+        dbg!(2, s, pairs);
         Err(Error::InvalidCql2Text(s.to_string()))
     }
 }
@@ -255,14 +257,16 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
             } else {
                 let mut outargs: Vec<Box<Expr>> = Vec::new();
 
+
+
                 match lhsclone {
-                    Expr::Operation { ref op, ref args } if op == "and" => {
+                    Expr::Operation { ref op, ref args } if op == "and" && op == &opstring => {
                         for arg in args.iter() {
                             outargs.push(arg.clone());
                         }
                         outargs.push(Box::new(rhsclone));
                         return Ok(Expr::Operation {
-                            op: "and".to_string(),
+                            op: opstring,
                             args: outargs,
                         });
                     }
@@ -298,13 +302,21 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
         })
         .map_postfix(|child, op| {
             let child = child?;
-            match op.as_rule() {
-                Rule::IsNullPostfix => Ok(Expr::Operation {
+            let notflag = &op.clone().into_inner().next().is_some();
+            let retexpr = match op.as_rule() {
+                Rule::IsNullPostfix => Expr::Operation {
                     op: "isNull".to_string(),
                     args: vec![Box::new(child)],
-                }),
+                },
                 rule => unreachable!("Expr::parse expected postfix operator, found {:?}", rule),
-            }
+            };
+            if *notflag {
+                return Ok(Expr::Operation {
+                    op: "not".to_string(),
+                    args: vec![Box::new(retexpr)],
+                });
+            };
+            Ok(retexpr)
         })
         .parse(expression_pairs)
 }
@@ -318,4 +330,5 @@ mod tests {
     fn point_zm() {
         let _ = CQL2Parser::parse(Rule::GEOMETRY, "POINT ZM(-105.1019 40.1672 4981 42)").unwrap();
     }
+
 }

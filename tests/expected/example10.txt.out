@@ -1,0 +1,3 @@
+taxes <= 500 
+(taxes <= 500)
+{"op":"<=","args":[{"property":"taxes"},500.0]}

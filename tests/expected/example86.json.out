@@ -1,0 +1,3 @@
+{"op":"like","args":[{"property":"name"},{"op":"casei","args":["FOO%"]}]}
+(name LIKE casei('FOO%'))
+{"op":"like","args":[{"property":"name"},{"op":"casei","args":["FOO%"]}]}

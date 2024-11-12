@@ -1,0 +1,3 @@
+1 = ("foo" div 2) 
+(1 = div(foo, 2))
+{"op":"=","args":[1.0,{"op":"div","args":[{"property":"foo"},2.0]}]}

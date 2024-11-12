@@ -1,0 +1,3 @@
+geometry IS NOT NULL 
+(NOT (geometry IS NULL))
+{"op":"not","args":[{"op":"isNull","args":[{"property":"geometry"}]}]}

@@ -1,0 +1,3 @@
+owner LIKE 'Mike%' 
+(owner LIKE 'Mike%')
+{"op":"like","args":[{"property":"owner"},"Mike%"]}

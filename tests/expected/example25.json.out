@@ -1,0 +1,3 @@
+{"op":"and","args":[{"op":">","args":[{"property":"floors"},5]},{"op":"s_within","args":[{"property":"geometry"},{"bbox":[-118,33.8,-117.9,34]}]}]}
+((floors > 5) AND s_within(geometry, BBOX(-118, 33.8, -117.9, 34)))
+{"op":"and","args":[{"op":">","args":[{"property":"floors"},5.0]},{"op":"s_within","args":[{"property":"geometry"},{"bbox":[-118.0,33.8,-117.9,34.0]}]}]}

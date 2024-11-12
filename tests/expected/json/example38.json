@@ -1,1 +1,0 @@
-{"op":"not","args":[{"op":"between","args":[{"property":"value"},10.0,20.0]}]}

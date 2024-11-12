@@ -1,0 +1,3 @@
+{"op":"=","args":[0,{"op":"%","args":[{"property":"foo"},2]}]}
+(0 = foo % 2)
+{"op":"=","args":[0.0,{"op":"%","args":[{"property":"foo"},2.0]}]}

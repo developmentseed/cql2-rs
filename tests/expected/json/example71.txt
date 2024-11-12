@@ -1,1 +1,0 @@
-(casei("owner") = casei('somebody else'))

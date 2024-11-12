@@ -1,0 +1,3 @@
+{"op":"in","args":[{"property":"cityName"},["Toronto","Frankfurt","Tokyo","New York"]]}
+("cityName" IN ('Toronto', 'Frankfurt', 'Tokyo', 'New York'))
+{"op":"in","args":[{"property":"cityName"},["Toronto","Frankfurt","Tokyo","New York"]]}

@@ -1,0 +1,3 @@
+"value" NOT IN ('a', 'b', 'c') 
+(NOT (value IN ('a', 'b', 'c')))
+{"op":"not","args":[{"op":"in","args":[{"property":"value"},["a","b","c"]]}]}

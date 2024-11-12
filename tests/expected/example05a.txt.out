@@ -1,0 +1,3 @@
+eo:cloud_cover=0.1 OR eo:cloud_cover=0.2 
+(("eo:cloud_cover" = 0.1) OR ("eo:cloud_cover" = 0.2))
+{"op":"or","args":[{"op":"=","args":[{"property":"eo:cloud_cover"},0.1]},{"op":"=","args":[{"property":"eo:cloud_cover"},0.2]}]}

@@ -1,0 +1,3 @@
+{"op":"a_containedBy","args":[{"property":"values"},["a","b","c"]]}
+"a_containedBy"("values", ('a', 'b', 'c'))
+{"op":"a_containedBy","args":[{"property":"values"},["a","b","c"]]}

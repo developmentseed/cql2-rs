@@ -1,0 +1,3 @@
+{"op":"t_metBy","args":[{"interval":["2010-02-10T05:29:20.073225Z","2010-10-07"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}
+"t_metBy"(INTERVAL('2010-02-10T05:29:20.073225Z','2010-10-07'), INTERVAL(starts_at,ends_at))
+{"op":"t_metBy","args":[{"interval":["2010-02-10T05:29:20.073225Z","2010-10-07"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}

@@ -1,0 +1,3 @@
+{"op":"and","args":[{"op":"not","args":[{"op":"like","args":[{"property":"name"},"foo%"]}]},{"op":">","args":[{"property":"value"},10]}]}
+((NOT (name LIKE 'foo%')) AND (value > 10))
+{"op":"and","args":[{"op":"not","args":[{"op":"like","args":[{"property":"name"},"foo%"]}]},{"op":">","args":[{"property":"value"},10.0]}]}

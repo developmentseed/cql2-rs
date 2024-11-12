@@ -59,7 +59,7 @@ pub struct SqlQuery {
 /// # Examples
 ///
 /// ```
-/// let s = include_str!("../fixtures/json/example01.json");
+/// let s = include_str!("../examples/json/example01.json");
 /// let expr = cql2::parse_json(s);
 /// ```
 pub fn parse_json(s: &str) -> Result<Expr, serde_json::Error> {
@@ -71,7 +71,7 @@ pub fn parse_json(s: &str) -> Result<Expr, serde_json::Error> {
 /// # Examples
 ///
 /// ```no_run
-/// let expr = cql2::parse_file("tests/fixtures/json/example01.json");
+/// let expr = cql2::parse_file("tests/examples/json/example01.json");
 /// ```
 pub fn parse_file(path: impl AsRef<Path>) -> Result<Expr, Error> {
     let s = fs::read_to_string(path)?;

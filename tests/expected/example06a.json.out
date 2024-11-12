@@ -1,0 +1,3 @@
+{"op":"and","args":[{"op":"between","args":[{"property":"eo:cloud_cover"},0.1,0.2]},{"op":"=","args":[{"property":"landsat:wrs_row"},28]},{"op":"=","args":[{"property":"landsat:wrs_path"},203]}]}
+(("eo:cloud_cover" BETWEEN 0.1 AND 0.2) AND ("landsat:wrs_row" = 28) AND ("landsat:wrs_path" = 203))
+{"op":"and","args":[{"op":"between","args":[{"property":"eo:cloud_cover"},0.1,0.2]},{"op":"=","args":[{"property":"landsat:wrs_row"},28.0]},{"op":"=","args":[{"property":"landsat:wrs_path"},203.0]}]}

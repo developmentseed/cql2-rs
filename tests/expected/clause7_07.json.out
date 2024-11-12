@@ -1,0 +1,3 @@
+{"op":"s_intersects","args":[{"property":"geometry"},{"type":"Point","coordinates":[36.319836,32.288087]}]}
+s_intersects(geometry, POINT(36.319836 32.288087))
+{"op":"s_intersects","args":[{"property":"geometry"},{"type":"Point","coordinates":[36.319836,32.288087]}]}

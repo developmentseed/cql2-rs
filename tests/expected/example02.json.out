@@ -1,0 +1,3 @@
+{"op":"like","args":[{"property":"eo:instrument"},"OLI%"]}
+("eo:instrument" LIKE 'OLI%')
+{"op":"like","args":[{"property":"eo:instrument"},"OLI%"]}

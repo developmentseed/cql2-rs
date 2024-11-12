@@ -1,0 +1,3 @@
+"value" IS NOT NULL 
+(NOT (value IS NULL))
+{"op":"not","args":[{"op":"isNull","args":[{"property":"value"}]}]}

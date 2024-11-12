@@ -1,0 +1,3 @@
+owner NOT LIKE '%Mike%' 
+(NOT (owner LIKE '%Mike%'))
+{"op":"not","args":[{"op":"like","args":[{"property":"owner"},"%Mike%"]}]}

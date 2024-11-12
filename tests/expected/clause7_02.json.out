@@ -1,0 +1,3 @@
+{"op":"between","args":[{"property":"depth"},100.0,150.0]}
+(depth BETWEEN 100 AND 150)
+{"op":"between","args":[{"property":"depth"},100.0,150.0]}

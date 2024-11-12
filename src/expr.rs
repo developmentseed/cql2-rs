@@ -2,6 +2,7 @@ use crate::{Error, Geometry, SqlQuery, Validator};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
+use pg_escape::{quote_identifier, quote_literal};
 
 /// A CQL2 expression.
 ///
@@ -63,8 +64,8 @@ impl Expr {
         match self {
             Expr::Bool(v) => Ok(v.to_string()),
             Expr::Float(v) => Ok(v.to_string()),
-            Expr::Literal(v) => Ok(format!("'{}'", v)),
-            Expr::Property { property } => Ok(format!("\"{property}\"")),
+            Expr::Literal(v) => Ok(format!("{}", quote_literal(v))),
+            Expr::Property { property } => Ok(format!("{}",quote_identifier(property))),
             Expr::Interval { interval } => {
                 check_len!(
                     "interval",
@@ -90,6 +91,8 @@ impl Expr {
                 match op.as_str() {
                     "and" => Ok(format!("({})", a.join(" AND "))),
                     "or" => Ok(format!("({})", a.join(" OR "))),
+                    "like" => Ok(format!("({} LIKE {})", a[0], a[1])),
+                    "in" => Ok(format!("({} IN {})", a[0], a[1])),
                     "between" => {
                         check_len!(
                             "between",
@@ -101,13 +104,18 @@ impl Expr {
                     "not" => {
                         check_len!("not", a, 1, format!("(NOT {})", a[0]))
                     }
-                    "is null" => {
+                    "isNull" => {
                         check_len!("is null", a, 1, format!("({} IS NULL)", a[0]))
                     }
-                    "+" | "-" | "*" | "/" | "%" | "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
+                    "+" | "-" | "*" | "/" | "%" => {
+                        let paddedop = format!(" {} ", op);
+                        Ok(format!("{}", a.join(&paddedop)))
+                        //check_len!(op, a, 2, format!("({} {} {})", a[0], op, a[1]))
+                    }
+                    "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
                         check_len!(op, a, 2, format!("({} {} {})", a[0], op, a[1]))
                     }
-                    _ => Ok(format!("{}({})", op, a.join(", "))),
+                    _ => Ok(format!("{}({})", quote_identifier(op), a.join(", "))),
                 }
             }
             Expr::BBox { bbox } => {

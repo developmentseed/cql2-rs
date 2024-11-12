@@ -1,0 +1,3 @@
+{"op":"a_contains","args":[{"property":"values"},["a","b","c"]]}
+a_contains("values", ('a', 'b', 'c'))
+{"op":"a_contains","args":[{"property":"values"},["a","b","c"]]}

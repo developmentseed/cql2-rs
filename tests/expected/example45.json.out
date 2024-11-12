@@ -1,0 +1,3 @@
+{"op":"s_intersects","args":[{"property":"geometry"},{"bbox":[-128.098193,-1.1,-99999.0,180.0,90.0,100000.0]}]}
+s_intersects(geometry, BBOX(-128.098193, -1.1, -99999, 180, 90, 100000))
+{"op":"s_intersects","args":[{"property":"geometry"},{"bbox":[-128.098193,-1.1,-99999.0,180.0,90.0,100000.0]}]}
