@@ -17,13 +17,11 @@ pub fn parse_text(s: &str) -> Result<Expr, Error> {
     let mut pairs = CQL2Parser::parse(Rule::Expr, s).map_err(Box::new)?;
     if let Some(pair) = pairs.next() {
         if pairs.next().is_some() {
-            dbg!(1, s, pairs);
             Err(Error::InvalidCql2Text(s.to_string()))
         } else {
             parse_expr(pair.into_inner())
         }
     } else {
-        dbg!(2, s, pairs);
         Err(Error::InvalidCql2Text(s.to_string()))
     }
 }
