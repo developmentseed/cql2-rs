@@ -36,7 +36,7 @@ fn validate_expected_path(path: impl AsRef<Path>) {
     let outtext = &lines[1];
     let outjson = &lines[2];
 
-    let expr = validate_str(&input);
+    let expr = validate_str(input);
 
     assert_eq!(*outtext, expr.to_text().unwrap());
     assert_eq!(*outjson, expr.to_json().unwrap());
