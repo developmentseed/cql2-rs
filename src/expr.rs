@@ -64,8 +64,8 @@ impl Expr {
         match self {
             Expr::Bool(v) => Ok(v.to_string()),
             Expr::Float(v) => Ok(v.to_string()),
-            Expr::Literal(v) => Ok(format!("{}", quote_literal(v))),
-            Expr::Property { property } => Ok(format!("{}", quote_identifier(property))),
+            Expr::Literal(v) => Ok(quote_literal(v).to_string()),
+            Expr::Property { property } => Ok(quote_identifier(property).to_string()),
             Expr::Interval { interval } => {
                 check_len!(
                     "interval",
