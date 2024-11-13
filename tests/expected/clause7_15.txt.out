@@ -1,0 +1,3 @@
+A_CONTAINS(layer:ids, ('layers-ca','layers-us')) 
+a_contains("layer:ids", ('layers-ca', 'layers-us'))
+{"op":"a_contains","args":[{"property":"layer:ids"},["layers-ca","layers-us"]]}

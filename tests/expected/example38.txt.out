@@ -1,0 +1,3 @@
+NOT "value" BETWEEN 10 AND 20 
+(NOT (value BETWEEN 10 AND 20))
+{"op":"not","args":[{"op":"between","args":[{"property":"value"},10.0,20.0]}]}

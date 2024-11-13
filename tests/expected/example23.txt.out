@@ -1,0 +1,3 @@
+S_WITHIN(location,BBOX(-118,33.8,-117.9,34)) 
+s_within(location, bbox(-1 * 118, 33.8, -1 * 117.9, 34))
+{"op":"s_within","args":[{"property":"location"},{"op":"bbox","args":[{"op":"*","args":[-1.0,118.0]},33.8,{"op":"*","args":[-1.0,117.9]},34.0]}]}

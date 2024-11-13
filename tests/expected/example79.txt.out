@@ -1,0 +1,3 @@
+A_CONTAINEDBY("values", ('a', 'b', 'c')) 
+a_containedby("values", ('a', 'b', 'c'))
+{"op":"a_containedby","args":[{"property":"values"},["a","b","c"]]}

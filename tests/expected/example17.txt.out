@@ -1,0 +1,3 @@
+(floors>5 AND material='brick') OR swimming_pool=true 
+(((floors > 5) AND (material = 'brick')) OR (swimming_pool = true))
+{"op":"or","args":[{"op":"and","args":[{"op":">","args":[{"property":"floors"},5.0]},{"op":"=","args":[{"property":"material"},"brick"]}]},{"op":"=","args":[{"property":"swimming_pool"},true]}]}

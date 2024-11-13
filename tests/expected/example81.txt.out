@@ -1,0 +1,3 @@
+A_EQUALS(('a', TRUE, 1.0, 8), "values") 
+a_equals(('a', true, 1, 8), "values")
+{"op":"a_equals","args":[["a",true,1.0,8.0],{"property":"values"}]}

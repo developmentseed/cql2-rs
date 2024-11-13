@@ -15,27 +15,48 @@ fn validate_str(s: &str) -> Expr {
     expr
 }
 
-fn validate_path(path: impl AsRef<Path>) {
+fn validate_example_path(path: impl AsRef<Path>) {
     let path = path.as_ref();
-    let file_name = path.file_name().unwrap();
-    let expr = validate_str(&std::fs::read_to_string(path).unwrap());
+    validate_str(&std::fs::read_to_string(path).unwrap());
+}
 
-    let input_format = path.parent().unwrap().file_stem().unwrap();
-    let expected = Path::new("tests/expected").join(input_format);
+fn read_lines(filename: impl AsRef<Path>) -> Vec<String> {
+    std::fs::read_to_string(filename)
+        .unwrap() // panic on possible file-reading errors
+        .lines() // split the string into an iterator of string slices
+        .map(String::from) // make each slice into a string
+        .collect() // gather them together into a vector
+}
 
-    let json = std::fs::read_to_string(expected.join(file_name).with_extension("json")).unwrap();
-    assert_eq!(json.trim(), expr.to_json().unwrap());
+fn validate_expected_path(path: impl AsRef<Path>) {
+    let path = path.as_ref();
+    let lines = read_lines(path);
 
-    let text = std::fs::read_to_string(expected.join(file_name).with_extension("txt")).unwrap();
-    assert_eq!(text.trim(), expr.to_text().unwrap());
+    let input = &lines[0];
+    let outtext = &lines[1];
+    let outjson = &lines[2];
+
+    let expr = validate_str(input);
+
+    assert_eq!(*outtext, expr.to_text().unwrap());
+    assert_eq!(*outjson, expr.to_json().unwrap());
 }
 
 #[rstest]
-fn validate_text_fixtures(#[files("fixtures/text/*.txt")] path: PathBuf) {
-    validate_path(path);
+fn validate_text_fixtures(#[files("examples/text/*.txt")] path: PathBuf) {
+    validate_example_path(path);
 }
 
 #[rstest]
-fn validate_json_fixtures(#[files("fixtures/json/*.json")] path: PathBuf) {
-    validate_path(path);
+fn validate_json_fixtures(#[files("examples/json/*.json")] path: PathBuf) {
+    validate_example_path(path);
+}
+
+// Expected tests should have three lines.
+// Line 1: input in text or json.
+// Line 2: expected output in text.
+// Line 3: expected output in json.
+#[rstest]
+fn validate_expected(#[files("tests/expected/*.out")] path: PathBuf) {
+    validate_expected_path(path);
 }

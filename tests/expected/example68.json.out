@@ -1,0 +1,3 @@
+{"op":"=","args":[{"op":"Foo","args":[{"property":"geometry"}]},true]}
+("Foo"(geometry) = true)
+{"op":"=","args":[{"op":"Foo","args":[{"property":"geometry"}]},true]}

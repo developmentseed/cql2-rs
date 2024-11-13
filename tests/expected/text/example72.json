@@ -1,1 +1,0 @@
-{"op":">","args":[{"property":"value"},{"op":"+","args":[{"property":"foo"},10.0]}]}

@@ -1,1 +1,0 @@
-like("eo:instrument", 'OLI%')

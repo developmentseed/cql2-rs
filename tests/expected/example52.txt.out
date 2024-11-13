@@ -1,0 +1,3 @@
+S_CONTAINS("geometry", POINT (-3.508362 -1.754181)) 
+s_contains(geometry, POINT (-3.508362 -1.754181))
+{"op":"s_contains","args":[{"property":"geometry"},{"type":"Point","coordinates":[-3.508362,-1.754181]}]}

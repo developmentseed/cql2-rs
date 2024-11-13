@@ -1,1 +1,0 @@
-("eo:cloud_cover" BETWEEN 0.1 AND 0.2)

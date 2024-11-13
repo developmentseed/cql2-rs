@@ -1,0 +1,3 @@
+{"op":"=","args":[{"op":"accenti","args":[{"property":"owner"}]},{"op":"accenti","args":["Beyoncé"]}]}
+(accenti(owner) = accenti('Beyoncé'))
+{"op":"=","args":[{"op":"accenti","args":[{"property":"owner"}]},{"op":"accenti","args":["Beyoncé"]}]}

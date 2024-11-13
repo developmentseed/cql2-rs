@@ -1,0 +1,3 @@
+floors>5 
+(floors > 5)
+{"op":">","args":[{"property":"floors"},5.0]}

@@ -1,0 +1,3 @@
+{"op":"t_starts","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07T08:21:06.393262Z",".."]}]}
+t_starts(INTERVAL(starts_at,ends_at), INTERVAL('1991-10-07T08:21:06.393262Z','..'))
+{"op":"t_starts","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07T08:21:06.393262Z",".."]}]}

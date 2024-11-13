@@ -1,0 +1,3 @@
+{"op":"like","args":[{"op":"casei","args":[{"property":"geophys:SURVEY_NAME"}]},{"op":"casei","args":["%calcutta%"]}]}
+(casei("geophys:SURVEY_NAME") LIKE casei('%calcutta%'))
+{"op":"like","args":[{"op":"casei","args":[{"property":"geophys:SURVEY_NAME"}]},{"op":"casei","args":["%calcutta%"]}]}

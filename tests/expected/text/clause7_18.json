@@ -1,1 +1,0 @@
-{"op":"s_within","args":[{"property":"road"},{"op":"buffer","args":[{"property":"geometry"},10.0,"m"]}]}

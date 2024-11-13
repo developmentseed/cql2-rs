@@ -1,0 +1,3 @@
+CASEI("owner") = CASEI('somebody else') 
+(casei(owner) = casei('somebody else'))
+{"op":"=","args":[{"op":"casei","args":[{"property":"owner"}]},{"op":"casei","args":["somebody else"]}]}

@@ -1,0 +1,3 @@
+"name" LIKE 'foo%' 
+(name LIKE 'foo%')
+{"op":"like","args":[{"property":"name"},"foo%"]}

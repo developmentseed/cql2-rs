@@ -1,0 +1,3 @@
+{"op":"not","args":[{"op":"like","args":[{"property":"name"},"foo%"]}]}
+(NOT (name LIKE 'foo%'))
+{"op":"not","args":[{"op":"like","args":[{"property":"name"},"foo%"]}]}

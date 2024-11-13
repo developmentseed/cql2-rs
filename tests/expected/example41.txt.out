@@ -1,0 +1,3 @@
+"value" IS NULL 
+(value IS NULL)
+{"op":"isNull","args":[{"property":"value"}]}

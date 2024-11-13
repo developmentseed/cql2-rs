@@ -1,1 +1,0 @@
-("swimming_pool" = true)

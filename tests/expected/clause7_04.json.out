@@ -1,0 +1,3 @@
+{"op":"in","args":[{"op":"casei","args":[{"property":"road_class"}]},[{"op":"casei","args":["Οδος"]},{"op":"casei","args":["Straße"]}]]}
+(casei(road_class) IN (casei('Οδος'), casei('Straße')))
+{"op":"in","args":[{"op":"casei","args":[{"property":"road_class"}]},[{"op":"casei","args":["Οδος"]},{"op":"casei","args":["Straße"]}]]}

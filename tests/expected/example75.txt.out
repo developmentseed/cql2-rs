@@ -1,0 +1,3 @@
+"value" = (2 / "foo") 
+(value = 2 / foo)
+{"op":"=","args":[{"property":"value"},{"op":"/","args":[2.0,{"property":"foo"}]}]}

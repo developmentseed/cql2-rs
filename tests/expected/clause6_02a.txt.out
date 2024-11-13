@@ -1,0 +1,3 @@
+city='Toronto' 
+(city = 'Toronto')
+{"op":"=","args":[{"property":"city"},"Toronto"]}
