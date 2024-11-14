@@ -1,12 +1,13 @@
-import pytest
 import json
-from typing import Any
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 
 @pytest.fixture
 def fixtures() -> Path:
-    return Path(__file__).parents[2] / "fixtures"
+    return Path(__file__).parents[2] / "examples"
 
 
 @pytest.fixture
