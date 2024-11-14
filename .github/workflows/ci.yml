@@ -29,3 +29,25 @@ jobs:
         run: cargo check --workspace
       - name: cargo test
         run: cargo test
+  python-test:
+    name: Test Python
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: python/.python-version
+      - name: Install
+        run: uv sync --dev
+      - name: Check
+        run: uv run mypy . && uv run ruff check && uv run ruff format --check
+      - name: Test
+        run: uv run pytest
+      - name: CLI smoke test
+        run: uv run cql2 < ../examples/text/example01.txt

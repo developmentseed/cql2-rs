@@ -5,7 +5,7 @@ on:
     branches:
       - main
     tags:
-      - 'v*'
+      - "v*"
     paths:
       - python/**
   pull_request:
@@ -21,27 +21,6 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: python
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version-file: python/.python-version
-      - name: Install
-        run: uv sync --dev
-      - name: Check
-        run: uv run mypy . && uv run ruff check && uv run ruff format --check
-      - name: Test
-        run: uv run pytest 
-      - name: CLI smoke test
-        run: uv run cql2 < ../fixtures/text/example01.txt
   linux:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
@@ -69,7 +48,7 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter -m python/Cargo.toml
-          sccache: 'true'
+          sccache: "true"
           manylinux: auto
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -100,7 +79,7 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter -m python/Cargo.toml
-          sccache: 'true'
+          sccache: "true"
           manylinux: musllinux_1_2
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -128,7 +107,7 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter -m python/Cargo.toml
-          sccache: 'true'
+          sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -154,7 +133,7 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter -m python/Cargo.toml
-          sccache: 'true'
+          sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -194,9 +173,9 @@ jobs:
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
         with:
-          subject-path: 'wheels-*/*'
+          subject-path: "wheels-*/*"
       - name: Publish to PyPI
-        if: "startsWith(github.ref, 'refs/tags/')"
+        if: startsWith(github.ref, 'refs/tags/')
         uses: PyO3/maturin-action@v1
         env:
           MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
