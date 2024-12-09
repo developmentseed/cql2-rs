@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-import pytest
 import cql2
+import pytest
 from cql2 import Expr, ParseError, ValidationError
 
 

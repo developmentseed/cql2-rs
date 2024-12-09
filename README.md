@@ -42,7 +42,29 @@ Responses may not match the input.
 
 ## Development
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for information about contributing to this project.
+Get [uv](https://docs.astral.sh/uv/getting-started/installation/) and [Rust](https://rustup.rs/).
+Then:
+
+```shell
+git clone git@github.com:developmentseed/cql2-rs.git
+cd cql2-rs
+uv sync
+scripts/test
+```
+
+To lint all files:
+
+```shell
+scripts/lint
+```
+
+To serve the docs locally:
+
+```shell
+uv run mkdocs serve  # http://127.0.0.1:8000/cql2-rs/
+```
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for more information about contributing to this project.
 
 ## License
 
