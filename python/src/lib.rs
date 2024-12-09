@@ -131,7 +131,7 @@ impl From<pythonize::PythonizeError> for Error {
 fn main(py: Python<'_>) {
     use clap::Parser;
 
-    let signal = py.import_bound("signal").unwrap();
+    let signal = py.import("signal").unwrap();
     signal
         .getattr("signal")
         .unwrap()
@@ -153,7 +153,7 @@ fn cql2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_file, m)?)?;
     m.add_function(wrap_pyfunction!(parse_text, m)?)?;
     m.add_function(wrap_pyfunction!(parse_json, m)?)?;
-    m.add("ParseError", py.get_type_bound::<ParseError>())?;
-    m.add("ValidationError", py.get_type_bound::<ValidationError>())?;
+    m.add("ParseError", py.get_type::<ParseError>())?;
+    m.add("ValidationError", py.get_type::<ValidationError>())?;
     Ok(())
 }
