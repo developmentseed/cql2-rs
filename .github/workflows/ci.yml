@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint-test:
-    name: Lint and Test
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -21,33 +21,10 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
-      - name: cargo fmt
-        run: cargo fmt --all --check
-      - name: cargo clippy
-        run: cargo clippy --tests --workspace -- -D warnings
-      - name: cargo check
-        run: cargo check --workspace
-      - name: cargo test
-        run: cargo test
-  python-test:
-    name: Test Python
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: python
-    steps:
-      - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version-file: python/.python-version
-      - name: Install
-        run: uv sync --dev
-      - name: Check
-        run: uv run mypy . && uv run ruff check && uv run ruff format --check
+      - name: Lint
+        run: scripts/lint
       - name: Test
-        run: uv run pytest
+        run: scripts/test
       - name: CLI smoke test
         run: uv run cql2 < ../examples/text/example01.txt

@@ -83,7 +83,7 @@ fn strip_quotes(s: &str) -> &str {
 }
 
 fn opstr(op: Pair<'_, Rule>) -> String {
-    return normalize_op(op.as_str());
+    normalize_op(op.as_str())
 }
 
 fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {

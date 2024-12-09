@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+set -e
+
+cargo test
+uv run maturin dev --uv -m python/Cargo.toml && uv run pytest
