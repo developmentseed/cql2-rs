@@ -2,7 +2,7 @@
 
 set -e
 
-cargo +nightly fmt --check
+cargo fmt --check 
 cargo check --workspace
 cargo clippy --workspace --tests -- -D warnings
 uv run mypy python
