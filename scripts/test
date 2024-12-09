@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+set -e
+
+cargo test
+uv run maturin dev --uv
+uv run pytest

@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+set -e
+
+cargo fmt --check 
+cargo check --workspace
+cargo clippy --workspace --tests -- -D warnings
+uv run mypy python
+uv run ruff check
+uv run ruff format --check

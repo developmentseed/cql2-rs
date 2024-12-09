@@ -2,15 +2,8 @@ name: Python
 
 on:
   push:
-    branches:
-      - main
     tags:
       - "v*"
-    paths:
-      - python/**
-  pull_request:
-    paths:
-      - python/**
   workflow_dispatch:
 
 concurrency:
@@ -47,7 +40,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter -m python/Cargo.toml
+          args: --release --out dist --find-interpreter
           sccache: "true"
           manylinux: auto
       - name: Upload wheels
@@ -78,7 +71,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter -m python/Cargo.toml
+          args: --release --out dist --find-interpreter
           sccache: "true"
           manylinux: musllinux_1_2
       - name: Upload wheels
@@ -106,7 +99,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter -m python/Cargo.toml
+          args: --release --out dist --find-interpreter
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -132,7 +125,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter -m python/Cargo.toml
+          args: --release --out dist --find-interpreter
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -148,8 +141,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           command: sdist
-          args: --out dist -m python/Cargo.toml
-          maturin-version: "v1.6.0" # pinned below 1.7 until https://github.com/PyO3/maturin/issues/2244 is resolved
+          args: --out dist
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
@@ -162,11 +154,8 @@ jobs:
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     needs: [linux, musllinux, windows, macos, sdist]
     permissions:
-      # Use to sign the release artifacts
       id-token: write
-      # Used to upload release artifacts
       contents: write
-      # Used to generate artifact attestation
       attestations: write
     steps:
       - uses: actions/download-artifact@v4
