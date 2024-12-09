@@ -3,4 +3,4 @@
 set -e
 
 cargo test
-uv run maturin dev --uv -m python/Cargo.toml && uv run pytest
+uv run maturin dev --uv && uv run pytest
