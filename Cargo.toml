@@ -27,6 +27,7 @@ boon = "0.6.0"
 geo-types = "0.7.13"
 geojson = "0.24.1"
 geozero = "0.14.0"
+json_dotpath = "1.1.0"
 lazy_static = "1.5"
 pest = "2.7"
 pest_derive = { version = "2.7", features = ["grammar-extras"] }

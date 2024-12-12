@@ -3,6 +3,7 @@ use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
+use json_dotpath::DotPaths;
 
 /// A CQL2 expression.
 ///
@@ -35,7 +36,157 @@ pub enum Expr {
     Geometry(Geometry),
 }
 
+impl From<Value> for Expr{
+    fn from(v: Value)-> Expr {
+        let e: Expr = serde_json::from_value(v).unwrap();
+        e
+    }
+}
+
+impl Into<Value> for Expr{
+    fn into(self) -> Value {
+        let v: Value = serde_json::to_value(self).unwrap();
+        v
+    }
+}
+
+impl TryInto<f64> for Expr{
+    type Error = ();
+    fn try_into(self) -> Result<f64, Self::Error> {
+        match self {
+            Expr::Float(v) => Ok(v),
+            Expr::Literal(v) => f64::from_str(&v).or(Err(())),
+            _ => Err(())
+        }
+    }
+}
+
 impl Expr {
+    /// Insert values from properties from json
+    ///
+    ///  # Examples
+    ///
+    /// ```
+    /// use serde_json::{json, Value};
+    /// use cql2::Expr;
+    /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z"}});
+    /// let mut expr_json = json!(
+    ///     {
+    ///         "op": "+",
+    ///         "args": [
+    ///             {"property": "eo:cloud_cover"},
+    ///             10
+    ///         ]
+    ///     }
+    /// );
+    ///
+    /// let mut expr: Expr = serde_json::from_value(expr_json).unwrap();
+    /// println!("Initial {:?}", expr);
+    /// expr.reduce(&item);
+    ///
+    /// let output: f64;
+    /// if let Expr::Float(v) = expr {
+    ///     output = v;
+    /// } else {
+    ///     assert!(false);
+    ///     output = 0.0;
+    /// }
+    /// println!("Modified {:?}", expr);
+    ///
+    /// assert_eq!(20.0, output);
+    ///
+    /// ```
+    pub fn reduce(&mut self, j:&Value) {
+        match self {
+            Expr::Property{property} => {
+                let mut prefixproperty: String = "properties.".to_string();
+                prefixproperty.push_str(property);
+
+                let propexpr: Option<Value>;
+                if j.dot_has(&property) {
+                    propexpr = j.dot_get(&property).unwrap();
+                } else {
+                    let mut prefixproperty: String = "properties.".to_string();
+                    prefixproperty.push_str(property);
+                    propexpr = j.dot_get(&prefixproperty).unwrap();
+                }
+                if let Some(v) = propexpr {
+                    *self = Expr::from(v);
+                }
+
+            },
+            Expr::Operation{op, args} => {
+                for arg in args.iter_mut() {
+                    arg.reduce(j);
+                };
+
+                // binary operations
+                if args.len() == 2 {
+                    // numerical binary operations
+                    let left: Result<f64, ()> = (*args[0].clone()).try_into();
+                    let right: Result<f64, ()> = (*args[1].clone()).try_into();
+                    if let (Ok(l),Ok(r)) = (left, right)  {
+                        match op.as_str() {
+                            "+" => {*self = Expr::Float(l + r);},
+                            "-" => {*self = Expr::Float(l - r);},
+                            "*" => {*self = Expr::Float(l * r);},
+                            "/" => {*self = Expr::Float(l / r);},
+                            "%" => {*self = Expr::Float(l % r);},
+                            "^" => {*self = Expr::Float(l.powf(r));},
+                            "=" => {*self = Expr::Bool(l == r);},
+                            "<=" => {*self = Expr::Bool(l <= r);},
+                            "<" => {*self = Expr::Bool(l < r);},
+                            ">=" => {*self = Expr::Bool(l >= r);},
+                            ">" => {*self = Expr::Bool(l > r);},
+                            "<>" => {*self = Expr::Bool(l != r);},
+                            _ => ()
+                        }
+                    }
+
+                }
+            },
+            _ => ()
+        }
+    }
+    /// Run CQL against a JSON Value
+    ///
+    ///  # Examples
+    ///
+    /// ```
+    /// use serde_json::{json, Value};
+    /// use cql2::Expr;
+    /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z"}});
+    /// let mut expr_json = json!(
+    ///     {
+    ///         "op" : ">",
+    ///         "args" : [
+    ///             {
+    ///                  "op": "+",
+    ///                  "args": [
+    ///                     {"property": "eo:cloud_cover"},
+    ///                     17
+    ///                  ]
+    ///             },
+    ///             2
+    ///         ]
+    ///     }
+    /// );
+    ///
+    ///
+    /// let mut expr: Expr = serde_json::from_value(expr_json).unwrap();
+    ///
+    ///
+    /// assert_eq!(true, expr.matches(&item).unwrap());
+    ///
+    /// ```
+    pub fn matches(&self, j: &Value) -> Result<bool,()> {
+        let mut e = self.clone();
+        e.reduce(j);
+        match e {
+            Expr::Bool(v) => Ok(v),
+            _ => Err(())
+        }
+    }
     /// Converts this expression to CQL2 text.
     ///
     /// # Examples
