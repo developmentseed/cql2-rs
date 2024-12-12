@@ -1,9 +1,10 @@
 use crate::{Error, Geometry, SqlQuery, Validator};
+use derive_is_enum_variant::is_enum_variant;
+use json_dotpath::DotPaths;
 use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
-use json_dotpath::DotPaths;
 
 /// A CQL2 expression.
 ///
@@ -19,7 +20,7 @@ use json_dotpath::DotPaths;
 ///
 /// Use [Expr::to_text], [Expr::to_json], and [Expr::to_sql] to use the CQL2,
 /// and use [Expr::is_valid] to check validity.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, is_enum_variant)]
 #[serde(untagged)]
 #[allow(missing_docs)]
 pub enum Expr {
@@ -36,27 +37,38 @@ pub enum Expr {
     Geometry(Geometry),
 }
 
-impl From<Value> for Expr{
-    fn from(v: Value)-> Expr {
+impl From<Value> for Expr {
+    fn from(v: Value) -> Expr {
         let e: Expr = serde_json::from_value(v).unwrap();
         e
     }
 }
 
-impl Into<Value> for Expr{
-    fn into(self) -> Value {
-        let v: Value = serde_json::to_value(self).unwrap();
+impl From<Expr> for Value {
+    fn from(v: Expr) -> Value {
+        let v: Value = serde_json::to_value(v).unwrap();
         v
     }
 }
 
-impl TryInto<f64> for Expr{
+
+impl TryInto<f64> for Expr {
     type Error = ();
     fn try_into(self) -> Result<f64, Self::Error> {
         match self {
             Expr::Float(v) => Ok(v),
             Expr::Literal(v) => f64::from_str(&v).or(Err(())),
-            _ => Err(())
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryInto<bool> for Expr {
+    type Error = ();
+    fn try_into(self) -> Result<bool, Self::Error> {
+        match self {
+            Expr::Bool(v) => Ok(v),
+            _ => Err(()),
         }
     }
 }
@@ -69,7 +81,7 @@ impl Expr {
     /// ```
     /// use serde_json::{json, Value};
     /// use cql2::Expr;
-    /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z"}});
+    /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z", "boolfield": true}});
     /// let mut expr_json = json!(
     ///     {
     ///         "op": "+",
@@ -95,16 +107,17 @@ impl Expr {
     ///
     /// assert_eq!(20.0, output);
     ///
+    ///
     /// ```
-    pub fn reduce(&mut self, j:&Value) {
+    pub fn reduce(&mut self, j: &Value) {
         match self {
-            Expr::Property{property} => {
+            Expr::Property { property } => {
                 let mut prefixproperty: String = "properties.".to_string();
                 prefixproperty.push_str(property);
 
-                let propexpr: Option<Value>;
-                if j.dot_has(&property) {
-                    propexpr = j.dot_get(&property).unwrap();
+                let mut propexpr: Option<Value> = None;
+                if j.dot_has(property) {
+                    propexpr = j.dot_get(property).unwrap();
                 } else {
                     let mut prefixproperty: String = "properties.".to_string();
                     prefixproperty.push_str(property);
@@ -113,39 +126,89 @@ impl Expr {
                 if let Some(v) = propexpr {
                     *self = Expr::from(v);
                 }
-
-            },
-            Expr::Operation{op, args} => {
+            }
+            Expr::Operation { op, args } => {
+                let mut alltrue: bool = true;
+                let mut anytrue: bool = false;
+                let mut allbool: bool = true;
                 for arg in args.iter_mut() {
                     arg.reduce(j);
-                };
+                    let b: Result<bool, _> = arg.as_ref().clone().try_into();
+                    match b {
+                        Ok(true) => anytrue = true,
+                        Ok(false) => {
+                            alltrue = false;
+                        }
+                        _ => {
+                            alltrue = false;
+                            allbool = false;
+                        }
+                    }
+                }
+
+                // boolean operators
+                if allbool {
+                    match op.as_str() {
+                        "and" => {
+                            *self = Expr::Bool(alltrue);
+                        }
+                        "or" => {
+                            *self = Expr::Bool(anytrue);
+                        }
+                        _ => (),
+                    }
+                    return;
+                }
 
                 // binary operations
                 if args.len() == 2 {
                     // numerical binary operations
                     let left: Result<f64, ()> = (*args[0].clone()).try_into();
                     let right: Result<f64, ()> = (*args[1].clone()).try_into();
-                    if let (Ok(l),Ok(r)) = (left, right)  {
+                    if let (Ok(l), Ok(r)) = (left, right) {
                         match op.as_str() {
-                            "+" => {*self = Expr::Float(l + r);},
-                            "-" => {*self = Expr::Float(l - r);},
-                            "*" => {*self = Expr::Float(l * r);},
-                            "/" => {*self = Expr::Float(l / r);},
-                            "%" => {*self = Expr::Float(l % r);},
-                            "^" => {*self = Expr::Float(l.powf(r));},
-                            "=" => {*self = Expr::Bool(l == r);},
-                            "<=" => {*self = Expr::Bool(l <= r);},
-                            "<" => {*self = Expr::Bool(l < r);},
-                            ">=" => {*self = Expr::Bool(l >= r);},
-                            ">" => {*self = Expr::Bool(l > r);},
-                            "<>" => {*self = Expr::Bool(l != r);},
-                            _ => ()
+                            "+" => {
+                                *self = Expr::Float(l + r);
+                            }
+                            "-" => {
+                                *self = Expr::Float(l - r);
+                            }
+                            "*" => {
+                                *self = Expr::Float(l * r);
+                            }
+                            "/" => {
+                                *self = Expr::Float(l / r);
+                            }
+                            "%" => {
+                                *self = Expr::Float(l % r);
+                            }
+                            "^" => {
+                                *self = Expr::Float(l.powf(r));
+                            }
+                            "=" => {
+                                *self = Expr::Bool(l == r);
+                            }
+                            "<=" => {
+                                *self = Expr::Bool(l <= r);
+                            }
+                            "<" => {
+                                *self = Expr::Bool(l < r);
+                            }
+                            ">=" => {
+                                *self = Expr::Bool(l >= r);
+                            }
+                            ">" => {
+                                *self = Expr::Bool(l > r);
+                            }
+                            "<>" => {
+                                *self = Expr::Bool(l != r);
+                            }
+                            _ => (),
                         }
                     }
-
                 }
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
     /// Run CQL against a JSON Value
@@ -155,7 +218,7 @@ impl Expr {
     /// ```
     /// use serde_json::{json, Value};
     /// use cql2::Expr;
-    /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z"}});
+    /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z", "boolfield": true}});
     /// let mut expr_json = json!(
     ///     {
     ///         "op" : ">",
@@ -178,13 +241,16 @@ impl Expr {
     ///
     /// assert_eq!(true, expr.matches(&item).unwrap());
     ///
+    ///
+    /// let mut expr2: Expr = "boolfield and 1 + 2 = 3".parse().unwrap();
+    /// assert_eq!(true, expr2.matches(&item).unwrap());
     /// ```
-    pub fn matches(&self, j: &Value) -> Result<bool,()> {
+    pub fn matches(&self, j: &Value) -> Result<bool, ()> {
         let mut e = self.clone();
         e.reduce(j);
         match e {
             Expr::Bool(v) => Ok(v),
-            _ => Err(())
+            _ => Err(()),
         }
     }
     /// Converts this expression to CQL2 text.

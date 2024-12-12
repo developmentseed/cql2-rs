@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use clap::{ArgAction, Parser, ValueEnum};
 use cql2::{Expr, Validator};
+use serde_json::json;
 use std::io::Read;
 
 /// The CQL2 command-line interface.
@@ -29,6 +30,10 @@ pub struct Cli {
     /// Validate the CQL2
     #[arg(long, default_value_t = true, action = ArgAction::Set)]
     validate: bool,
+
+    /// Reduce the CQL2
+    #[arg(long, default_value_t = false, action = ArgAction::Set)]
+    reduce: bool,
 
     /// Verbosity.
     ///
@@ -95,7 +100,7 @@ impl Cli {
                 InputFormat::Text
             }
         });
-        let expr: Expr = match input_format {
+        let mut expr: Expr = match input_format {
             InputFormat::Json => cql2::parse_json(&input)?,
             InputFormat::Text => match cql2::parse_text(&input) {
                 Ok(expr) => expr,
@@ -104,6 +109,9 @@ impl Cli {
                 }
             },
         };
+        if self.reduce {
+            expr.reduce(&json!({}));
+        }
         if self.validate {
             let validator = Validator::new().unwrap();
             let value = serde_json::to_value(&expr).unwrap();
