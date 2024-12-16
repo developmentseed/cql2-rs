@@ -112,17 +112,7 @@ impl Expr {
     pub fn reduce(&mut self, j: &Value) {
         match self {
             Expr::Property { property } => {
-                let mut prefixproperty: String = "properties.".to_string();
-                prefixproperty.push_str(property);
-
-                let mut propexpr: Option<Value> = None;
-                if j.dot_has(property) {
-                    propexpr = j.dot_get(property).unwrap();
-                } else {
-                    let mut prefixproperty: String = "properties.".to_string();
-                    prefixproperty.push_str(property);
-                    propexpr = j.dot_get(&prefixproperty).unwrap();
-                }
+                let propexpr = j.dot_get(property).or_else(|_| j.dot_get(&format!("properties.{}", property)))?;
                 if let Some(v) = propexpr {
                     *self = Expr::from(v);
                 }
