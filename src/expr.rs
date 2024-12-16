@@ -74,7 +74,7 @@ impl TryInto<bool> for Expr {
 }
 
 impl Expr {
-    /// Insert values from properties from json
+    /// Update this expression with values from the `properties` attribute of a JSON object
     ///
     ///  # Examples
     ///
