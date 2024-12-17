@@ -1,7 +1,7 @@
 use crate::Error;
+use geos::{Geom, Geometry as GGeom};
 use geozero::{wkt::Wkt, CoordDimensions, ToGeo, ToWkt};
 use serde::{Deserialize, Serialize, Serializer};
-use geos::{Geometry as GGeom, Geom};
 
 const DEFAULT_NDIM: usize = 2;
 

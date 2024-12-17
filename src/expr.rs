@@ -1,4 +1,6 @@
-use crate::{DateRange, Error, Geometry, SqlQuery, Validator, geometry::spatial_op, temporal::temporal_op};
+use crate::{
+    geometry::spatial_op, temporal::temporal_op, DateRange, Error, Geometry, SqlQuery, Validator,
+};
 use enum_as_inner::EnumAsInner;
 use geos::Geometry as GGeom;
 use json_dotpath::DotPaths;
@@ -123,7 +125,7 @@ fn arith(left: &f64, right: &f64, op: &str) -> Result<f64, Error> {
         "/" => Ok(left / right),
         "%" => Ok(left % right),
         "^" => Ok(left.powf(*right)),
-        _ => Err(Error::OpNotImplemented("Arith"))
+        _ => Err(Error::OpNotImplemented("Arith")),
     }
 }
 
@@ -203,11 +205,11 @@ impl Expr {
                     match op.as_str() {
                         "and" => {
                             *self = Expr::Bool(alltrue);
-                            return
+                            return;
                         }
                         "or" => {
                             *self = Expr::Bool(anytrue);
-                            return
+                            return;
                         }
                         _ => (),
                     }

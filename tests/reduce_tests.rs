@@ -1,7 +1,7 @@
 use cql2::Expr;
 use rstest::rstest;
+use serde_json::{json, Value};
 use std::path::Path;
-use serde_json::{Value, json};
 
 fn read_lines(filename: impl AsRef<Path>) -> Vec<String> {
     std::fs::read_to_string(filename)
@@ -10,7 +10,7 @@ fn read_lines(filename: impl AsRef<Path>) -> Vec<String> {
         .map(String::from) // make each slice into a string
         .collect() // gather them together into a vector
 }
-fn validate_reduction(a: String, b: String){
+fn validate_reduction(a: String, b: String) {
     let properties: Value = json!(
         {
             "properties": {
@@ -36,7 +36,7 @@ fn validate_reduce_fixtures() {
     let a = lines.clone().into_iter().step_by(2);
     let b = lines.clone().into_iter().skip(1).step_by(2);
     let zipped = a.zip(b);
-    for (a,b) in zipped{
+    for (a, b) in zipped {
         validate_reduction(a, b);
     }
 }

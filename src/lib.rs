@@ -39,11 +39,11 @@ mod validator;
 
 pub use error::Error;
 pub use expr::Expr;
-pub use geometry::{Geometry, spatial_op};
+pub use geometry::{spatial_op, Geometry};
 pub use parser::parse_text;
 use serde_derive::{Deserialize, Serialize};
 use std::{fs, path::Path};
-pub use temporal::{DateRange, temporal_op};
+pub use temporal::{temporal_op, DateRange};
 pub use validator::Validator;
 
 /// A SQL query, broken into the query and parameters.

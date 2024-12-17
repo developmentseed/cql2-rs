@@ -2,7 +2,7 @@ use crate::{Error, Expr};
 use jiff::{Timestamp, ToSpan};
 
 /// Struct to hold a range of timestamps.
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DateRange {
     start: Timestamp,
     end: Timestamp,
@@ -11,29 +11,28 @@ pub struct DateRange {
 impl TryFrom<Expr> for DateRange {
     type Error = Error;
     fn try_from(v: Expr) -> Result<DateRange, Error> {
-
         match v {
-            Expr::Interval{interval} => {
+            Expr::Interval { interval } => {
                 let start_str: String = interval[0].to_text()?;
                 let end_str: String = interval[1].to_text()?;
                 let start: Timestamp = start_str.parse().unwrap();
                 let end: Timestamp = end_str.parse().unwrap();
-                Ok(DateRange{start, end})
+                Ok(DateRange { start, end })
             }
-            Expr::Timestamp{timestamp} => {
+            Expr::Timestamp { timestamp } => {
                 let start_str: String = timestamp.to_text()?;
                 let start: Timestamp = start_str.parse().unwrap();
-                Ok(DateRange{start, end: start})
+                Ok(DateRange { start, end: start })
             }
-            Expr::Date{date} => {
+            Expr::Date { date } => {
                 let start_str: String = date.to_text()?;
                 let start: Timestamp = start_str.parse().unwrap();
                 let end: Timestamp = start + 1.day() - 1.nanosecond();
-                Ok(DateRange{start, end})
+                Ok(DateRange { start, end })
             }
             Expr::Literal(v) => {
                 let start: Timestamp = v.parse().unwrap();
-                Ok(DateRange{start, end: start})
+                Ok(DateRange { start, end: start })
             }
             _ => Err(Error::ExprToDateRange()),
         }
