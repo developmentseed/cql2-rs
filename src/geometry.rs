@@ -1,6 +1,7 @@
 use crate::Error;
 use geozero::{wkt::Wkt, CoordDimensions, ToGeo, ToWkt};
 use serde::{Deserialize, Serialize, Serializer};
+use geos::{Geometry as GGeom, Geom};
 
 const DEFAULT_NDIM: usize = 2;
 
@@ -78,5 +79,20 @@ fn geojson_ndims(geojson: &geojson::Geometry) -> usize {
             .map(|v| v.len())
             .unwrap_or(DEFAULT_NDIM),
         GeometryCollection(v) => v.first().map(geojson_ndims).unwrap_or(DEFAULT_NDIM),
+    }
+}
+
+/// Run a spatial operation.
+pub fn spatial_op(left: &GGeom, right: &GGeom, op: &str) -> Result<bool, Error> {
+    match op {
+        "s_equals" => Ok(left == right),
+        "s_intersects" | "intersects" => left.intersects(right).map_err(Error::from),
+        "s_disjoint" => left.disjoint(right).map_err(Error::from),
+        "s_touches" => left.touches(right).map_err(Error::from),
+        "s_within" => left.within(right).map_err(Error::from),
+        "s_overlaps" => left.overlaps(right).map_err(Error::from),
+        "s_crosses" => left.crosses(right).map_err(Error::from),
+        "s_contains" => left.contains(right).map_err(Error::from),
+        _ => Err(Error::OpNotImplemented("Spatial")),
     }
 }

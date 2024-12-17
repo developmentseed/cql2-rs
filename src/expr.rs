@@ -1,5 +1,6 @@
-use crate::{Error, Geometry, SqlQuery, Validator};
-use derive_is_enum_variant::is_enum_variant;
+use crate::{DateRange, Error, Geometry, SqlQuery, Validator, geometry::spatial_op, temporal::temporal_op};
+use enum_as_inner::EnumAsInner;
+use geos::Geometry as GGeom;
 use json_dotpath::DotPaths;
 use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
@@ -20,7 +21,7 @@ use std::str::FromStr;
 ///
 /// Use [Expr::to_text], [Expr::to_json], and [Expr::to_sql] to use the CQL2,
 /// and use [Expr::is_valid] to check validity.
-#[derive(Debug, Serialize, Deserialize, Clone, is_enum_variant)]
+#[derive(Debug, Serialize, Deserialize, Clone, EnumAsInner)]
 #[serde(untagged)]
 #[allow(missing_docs)]
 pub enum Expr {
@@ -37,39 +38,92 @@ pub enum Expr {
     Geometry(Geometry),
 }
 
-impl From<Value> for Expr {
-    fn from(v: Value) -> Expr {
-        let e: Expr = serde_json::from_value(v).unwrap();
-        e
+impl TryFrom<Value> for Expr {
+    type Error = Error;
+    fn try_from(v: Value) -> Result<Expr, Error> {
+        serde_json::from_value(v).map_err(Error::from)
     }
 }
 
-impl From<Expr> for Value {
-    fn from(v: Expr) -> Value {
-        let v: Value = serde_json::to_value(v).unwrap();
-        v
+impl TryFrom<Expr> for Value {
+    type Error = Error;
+    fn try_from(v: Expr) -> Result<Value, Error> {
+        serde_json::to_value(v).map_err(Error::from)
     }
 }
 
-
-impl TryInto<f64> for Expr {
-    type Error = ();
-    fn try_into(self) -> Result<f64, Self::Error> {
-        match self {
+impl TryFrom<Expr> for f64 {
+    type Error = Error;
+    fn try_from(v: Expr) -> Result<f64, Error> {
+        match v {
             Expr::Float(v) => Ok(v),
-            Expr::Literal(v) => f64::from_str(&v).or(Err(())),
-            _ => Err(()),
+            Expr::Literal(v) => f64::from_str(&v).map_err(Error::from),
+            _ => Err(Error::ExprToF64()),
         }
     }
 }
 
-impl TryInto<bool> for Expr {
-    type Error = ();
-    fn try_into(self) -> Result<bool, Self::Error> {
-        match self {
+impl TryFrom<Expr> for bool {
+    type Error = Error;
+    fn try_from(v: Expr) -> Result<bool, Error> {
+        match v {
             Expr::Bool(v) => Ok(v),
-            _ => Err(()),
+            Expr::Literal(v) => bool::from_str(&v).map_err(Error::from),
+            _ => Err(Error::ExprToBool()),
         }
+    }
+}
+
+impl TryFrom<Expr> for String {
+    type Error = Error;
+    fn try_from(v: Expr) -> Result<String, Error> {
+        match v {
+            Expr::Literal(v) => Ok(v),
+            Expr::Bool(v) => Ok(v.to_string()),
+            Expr::Float(v) => Ok(v.to_string()),
+            _ => Err(Error::ExprToBool()),
+        }
+    }
+}
+
+impl TryFrom<Expr> for GGeom {
+    type Error = Error;
+    fn try_from(v: Expr) -> Result<GGeom, Error> {
+        match v {
+            Expr::Geometry(v) => Ok(GGeom::new_from_wkt(&v.to_wkt().unwrap())
+                .expect("Failed to convert WKT to Geos Geometry")),
+            _ => Err(Error::ExprToGeom()),
+        }
+    }
+}
+
+impl PartialEq for Expr {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_text().unwrap() == other.to_text().unwrap()
+    }
+}
+
+fn binary_bool<T: PartialEq + PartialOrd>(left: &T, right: &T, op: &str) -> Result<bool, Error> {
+    match op {
+        "=" => Ok(left == right),
+        "<=" => Ok(left <= right),
+        "<" => Ok(left < right),
+        ">=" => Ok(left >= right),
+        ">" => Ok(left > right),
+        "<>" => Ok(left != right),
+        _ => Err(Error::OpNotImplemented("Binary Bool")),
+    }
+}
+
+fn arith(left: &f64, right: &f64, op: &str) -> Result<f64, Error> {
+    match op {
+        "+" => Ok(left + right),
+        "-" => Ok(left - right),
+        "*" => Ok(left * right),
+        "/" => Ok(left / right),
+        "%" => Ok(left % right),
+        "^" => Ok(left.powf(*right)),
+        _ => Err(Error::OpNotImplemented("Arith"))
     }
 }
 
@@ -81,40 +135,48 @@ impl Expr {
     /// ```
     /// use serde_json::{json, Value};
     /// use cql2::Expr;
+    /// use std::str::FromStr;
+    ///
     /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z", "boolfield": true}});
-    /// let mut expr_json = json!(
-    ///     {
-    ///         "op": "+",
-    ///         "args": [
-    ///             {"property": "eo:cloud_cover"},
-    ///             10
-    ///         ]
-    ///     }
-    /// );
     ///
-    /// let mut expr: Expr = serde_json::from_value(expr_json).unwrap();
-    /// println!("Initial {:?}", expr);
-    /// expr.reduce(&item);
+    /// let mut fromexpr: Expr = Expr::from_str("boolfield = true").unwrap();
+    /// fromexpr.reduce(Some(&item));
+    /// let mut toexpr: Expr = Expr::from_str("true").unwrap();
+    /// assert_eq!(fromexpr, toexpr);
     ///
-    /// let output: f64;
-    /// if let Expr::Float(v) = expr {
-    ///     output = v;
-    /// } else {
-    ///     assert!(false);
-    ///     output = 0.0;
-    /// }
-    /// println!("Modified {:?}", expr);
-    ///
-    /// assert_eq!(20.0, output);
-    ///
+    /// let mut fromexpr: Expr = Expr::from_str("\"eo:cloud_cover\" + 10").unwrap();
+    /// fromexpr.reduce(Some(&item));
+    /// let mut toexpr: Expr = Expr::from_str("20").unwrap();
+    /// assert_eq!(fromexpr, toexpr);
     ///
     /// ```
-    pub fn reduce(&mut self, j: &Value) {
+    pub fn reduce(&mut self, j: Option<&Value>) {
         match self {
+            Expr::Interval { interval } => {
+                for arg in interval.iter_mut() {
+                    arg.reduce(j);
+                }
+            }
+            Expr::Timestamp { timestamp } => {
+                timestamp.reduce(j);
+            }
+            Expr::Date { date } => {
+                date.reduce(j);
+            }
             Expr::Property { property } => {
-                let propexpr = j.dot_get(property).or_else(|_| j.dot_get(&format!("properties.{}", property)))?;
-                if let Some(v) = propexpr {
-                    *self = Expr::from(v);
+                if let Some(j) = j {
+                    let propexpr: Option<Value>;
+                    if j.dot_has(property) {
+                        propexpr = j.dot_get(property).unwrap();
+                    } else {
+                        propexpr = j.dot_get(&format!("properties.{}", property)).unwrap();
+                    }
+
+                    println!("j:{:?} property:{:?}", j, property);
+                    println!("propexpr: {:?}", propexpr);
+                    if let Some(v) = propexpr {
+                        *self = Expr::try_from(v).unwrap();
+                    }
                 }
             }
             Expr::Operation { op, args } => {
@@ -123,16 +185,16 @@ impl Expr {
                 let mut allbool: bool = true;
                 for arg in args.iter_mut() {
                     arg.reduce(j);
-                    let b: Result<bool, _> = arg.as_ref().clone().try_into();
-                    match b {
-                        Ok(true) => anytrue = true,
-                        Ok(false) => {
+
+                    if let Ok(bool) = arg.as_ref().clone().try_into() {
+                        if bool {
+                            anytrue = true;
+                        } else {
                             alltrue = false;
                         }
-                        _ => {
-                            alltrue = false;
-                            allbool = false;
-                        }
+                    } else {
+                        alltrue = false;
+                        allbool = false;
                     }
                 }
 
@@ -141,59 +203,63 @@ impl Expr {
                     match op.as_str() {
                         "and" => {
                             *self = Expr::Bool(alltrue);
+                            return
                         }
                         "or" => {
                             *self = Expr::Bool(anytrue);
+                            return
                         }
                         _ => (),
                     }
-                    return;
                 }
 
                 // binary operations
                 if args.len() == 2 {
-                    // numerical binary operations
-                    let left: Result<f64, ()> = (*args[0].clone()).try_into();
-                    let right: Result<f64, ()> = (*args[1].clone()).try_into();
-                    if let (Ok(l), Ok(r)) = (left, right) {
-                        match op.as_str() {
-                            "+" => {
-                                *self = Expr::Float(l + r);
-                            }
-                            "-" => {
-                                *self = Expr::Float(l - r);
-                            }
-                            "*" => {
-                                *self = Expr::Float(l * r);
-                            }
-                            "/" => {
-                                *self = Expr::Float(l / r);
-                            }
-                            "%" => {
-                                *self = Expr::Float(l % r);
-                            }
-                            "^" => {
-                                *self = Expr::Float(l.powf(r));
-                            }
-                            "=" => {
-                                *self = Expr::Bool(l == r);
-                            }
-                            "<=" => {
-                                *self = Expr::Bool(l <= r);
-                            }
-                            "<" => {
-                                *self = Expr::Bool(l < r);
-                            }
-                            ">=" => {
-                                *self = Expr::Bool(l >= r);
-                            }
-                            ">" => {
-                                *self = Expr::Bool(l > r);
-                            }
-                            "<>" => {
-                                *self = Expr::Bool(l != r);
-                            }
-                            _ => (),
+                    let left: &Expr = args[0].as_ref();
+                    let right: &Expr = args[1].as_ref();
+
+                    if let (Ok(l), Ok(r)) =
+                        (f64::try_from(left.clone()), f64::try_from(right.clone()))
+                    {
+                        if let Ok(v) = arith(&l, &r, op) {
+                            *self = Expr::Float(v);
+                            return;
+                        }
+                        if let Ok(v) = binary_bool(&l, &r, op) {
+                            *self = Expr::Bool(v);
+                            return;
+                        }
+                    } else if let (Ok(l), Ok(r)) =
+                        (bool::try_from(left.clone()), bool::try_from(right.clone()))
+                    {
+                        if let Ok(v) = binary_bool(&l, &r, op) {
+                            *self = Expr::Bool(v);
+                            return;
+                        }
+                    } else if let (Ok(l), Ok(r)) = (
+                        GGeom::try_from(left.clone()),
+                        GGeom::try_from(right.clone()),
+                    ) {
+                        println!("Is Spatial Op. {:?} ({:?}, {:?})", op, left, right);
+                        if let Ok(v) = spatial_op(&l, &r, op) {
+                            *self = Expr::Bool(v);
+                            return;
+                        }
+                    } else if let (Ok(l), Ok(r)) = (
+                        DateRange::try_from(left.clone()),
+                        DateRange::try_from(right.clone()),
+                    ) {
+                        if let Ok(v) = temporal_op(&l, &r, op) {
+                            *self = Expr::Bool(v);
+                            return;
+                        }
+                    } else if let (Ok(l), Ok(r)) = (
+                        String::try_from(left.clone()),
+                        String::try_from(right.clone()),
+                    ) {
+                        if let Ok(v) = binary_bool(&l, &r, op) {
+                            *self = Expr::Bool(v);
+                            return;
                         }
                     }
                 }
@@ -209,33 +275,11 @@ impl Expr {
     /// use serde_json::{json, Value};
     /// use cql2::Expr;
     /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z", "boolfield": true}});
-    /// let mut expr_json = json!(
-    ///     {
-    ///         "op" : ">",
-    ///         "args" : [
-    ///             {
-    ///                  "op": "+",
-    ///                  "args": [
-    ///                     {"property": "eo:cloud_cover"},
-    ///                     17
-    ///                  ]
-    ///             },
-    ///             2
-    ///         ]
-    ///     }
-    /// );
     ///
-    ///
-    /// let mut expr: Expr = serde_json::from_value(expr_json).unwrap();
-    ///
-    ///
-    /// assert_eq!(true, expr.matches(&item).unwrap());
-    ///
-    ///
-    /// let mut expr2: Expr = "boolfield and 1 + 2 = 3".parse().unwrap();
-    /// assert_eq!(true, expr2.matches(&item).unwrap());
+    /// let mut expr: Expr = "boolfield and 1 + 2 = 3".parse().unwrap();
+    /// assert_eq!(true, expr.matches(Some(&item)).unwrap());
     /// ```
-    pub fn matches(&self, j: &Value) -> Result<bool, ()> {
+    pub fn matches(&self, j: Option<&Value>) -> Result<bool, ()> {
         let mut e = self.clone();
         e.reduce(j);
         match e {

@@ -110,7 +110,7 @@ impl Cli {
             },
         };
         if self.reduce {
-            expr.reduce(&json!({}));
+            expr.reduce(Some(&json!({})));
         }
         if self.validate {
             let validator = Validator::new().unwrap();

@@ -12,6 +12,10 @@ pub enum Error {
     #[error(transparent)]
     Geozero(#[from] geozero::error::GeozeroError),
 
+    /// [geos::Error]
+    #[error(transparent)]
+    Geos(#[from] geos::Error),
+
     /// Invalid CQL2 text
     #[error("invalid cql2-text: {0}")]
     InvalidCql2Text(String),
@@ -65,4 +69,24 @@ pub enum Error {
     /// validator's data.
     #[error("validation error")]
     Validation(serde_json::Value),
+
+    /// Error Converting Expr to f64
+    #[error("Could not convert Expression to f64")]
+    ExprToF64(),
+
+    /// Error Converting Expr to bool
+    #[error("Could not convert Expression to bool")]
+    ExprToBool(),
+
+    /// Error Converting Expr to geos geometry
+    #[error("Could not convert Expression to Geos Geometry")]
+    ExprToGeom(),
+
+    /// Error Converting Expr to DateRange
+    #[error("Could not convert Expression to DateRange")]
+    ExprToDateRange(),
+
+    /// Operator not implemented.
+    #[error("Operator {0} is not implemented for this type.")]
+    OpNotImplemented(&'static str),
 }

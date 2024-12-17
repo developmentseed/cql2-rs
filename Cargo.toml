@@ -24,10 +24,12 @@ keywords = ["cql2"]
 
 [dependencies]
 boon = "0.6.0"
-derive_is_enum_variant = "0.1.1"
+enum-as-inner = "0.6.1"
 geo-types = "0.7.13"
 geojson = "0.24.1"
+geos = "9.1.1"
 geozero = "0.14.0"
+jiff = "0.1.15"
 json_dotpath = "1.1.0"
 lazy_static = "1.5"
 pest = "2.7"
