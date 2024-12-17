@@ -167,12 +167,11 @@ impl Expr {
             }
             Expr::Property { property } => {
                 if let Some(j) = j {
-                    let propexpr: Option<Value>;
-                    if j.dot_has(property) {
-                        propexpr = j.dot_get(property).unwrap();
+                    let propexpr: Option<Value> = if j.dot_has(property) {
+                        j.dot_get(property).unwrap()
                     } else {
-                        propexpr = j.dot_get(&format!("properties.{}", property)).unwrap();
-                    }
+                        j.dot_get(&format!("properties.{}", property)).unwrap()
+                    };
 
                     println!("j:{:?} property:{:?}", j, property);
                     println!("propexpr: {:?}", propexpr);
@@ -229,7 +228,6 @@ impl Expr {
                         }
                         if let Ok(v) = binary_bool(&l, &r, op) {
                             *self = Expr::Bool(v);
-                            return;
                         }
                     } else if let (Ok(l), Ok(r)) =
                         (bool::try_from(left.clone()), bool::try_from(right.clone()))
@@ -281,12 +279,12 @@ impl Expr {
     /// let mut expr: Expr = "boolfield and 1 + 2 = 3".parse().unwrap();
     /// assert_eq!(true, expr.matches(Some(&item)).unwrap());
     /// ```
-    pub fn matches(&self, j: Option<&Value>) -> Result<bool, ()> {
+    pub fn matches(&self, j: Option<&Value>) -> Result<bool, Error> {
         let mut e = self.clone();
         e.reduce(j);
         match e {
             Expr::Bool(v) => Ok(v),
-            _ => Err(()),
+            _ => Err(Error::NonReduced()),
         }
     }
     /// Converts this expression to CQL2 text.

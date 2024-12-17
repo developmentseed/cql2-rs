@@ -89,4 +89,8 @@ pub enum Error {
     /// Operator not implemented.
     #[error("Operator {0} is not implemented for this type.")]
     OpNotImplemented(&'static str),
+
+    /// Expression not reduced to boolean
+    #[error("Could not reduce expression to boolean")]
+    NonReduced(),
 }
