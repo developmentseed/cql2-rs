@@ -1,22 +1,44 @@
-use crate::{
-    geometry::spatial_op, temporal::temporal_op, Error, Geometry, SqlQuery, Validator,
-};
+use crate::{geometry::spatial_op, temporal::temporal_op, Error, Geometry, SqlQuery, Validator};
 use geos::Geometry as GGeom;
 use json_dotpath::DotPaths;
 use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::str::FromStr;
 use std::collections::HashSet;
-
+use std::str::FromStr;
 
 const BOOLOPS: &[&str] = &["and", "or"];
 const EQOPS: &[&str] = &["=", "<>"];
 const CMPOPS: &[&str] = &[">", ">=", "<", "<="];
-const SPATIALOPS: &[&str] = &["s_equals", "s_intersects","s_disjoint","s_touches","s_within","s_overlaps","s_crosses","s_contains"];
-const TEMPORALOPS: &[&str] = &["t_before","t_after","t_meets","t_metby","t_overlaps","t_overlappedby","t_starts","t_startedby","t_during","t_contains","t_finishes","to_finishedby","t_equals","t_disjoint","t_intersects"];
-const ARITHOPS: &[&str] = &["+","-","*","/","%","^","div"];
-const ARRAYOPS: &[&str] = &["a_equals","a_contains","a_containedby","a_overlaps"];
+const SPATIALOPS: &[&str] = &[
+    "s_equals",
+    "s_intersects",
+    "s_disjoint",
+    "s_touches",
+    "s_within",
+    "s_overlaps",
+    "s_crosses",
+    "s_contains",
+];
+const TEMPORALOPS: &[&str] = &[
+    "t_before",
+    "t_after",
+    "t_meets",
+    "t_metby",
+    "t_overlaps",
+    "t_overlappedby",
+    "t_starts",
+    "t_startedby",
+    "t_during",
+    "t_contains",
+    "t_finishes",
+    "to_finishedby",
+    "t_equals",
+    "t_disjoint",
+    "t_intersects",
+];
+const ARITHOPS: &[&str] = &["+", "-", "*", "/", "%", "^", "div"];
+const ARRAYOPS: &[&str] = &["a_equals", "a_contains", "a_containedby", "a_overlaps"];
 
 // todo: array ops, in, casei, accenti, between, not, like
 
@@ -120,7 +142,6 @@ impl TryFrom<Expr> for HashSet<String> {
                     let _ = h.insert(el.to_text()?);
                 }
                 Ok(h)
-
             }
             _ => Err(Error::ExprToGeom()),
         }
@@ -139,7 +160,7 @@ fn cmp_op<T: PartialEq + PartialOrd>(left: T, right: T, op: &str) -> Result<Expr
     };
     match out {
         Ok(v) => Ok(Expr::Bool(v)),
-        _ => Err(Error::OperationError())
+        _ => Err(Error::OperationError()),
     }
 }
 
@@ -157,7 +178,7 @@ fn arith_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
     };
     match out {
         Ok(v) => Ok(Expr::Float(v)),
-        _ => Err(Error::OperationError())
+        _ => Err(Error::OperationError()),
     }
 }
 
@@ -167,17 +188,15 @@ fn array_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
     let out = match op {
         "a_equals" => Ok(left == right),
         "a_contains" => Ok(left.is_superset(&right)),
-        "a_containedby" =>  Ok(left.is_subset(&right)),
-        "a_overlaps" =>  Ok(!left.is_disjoint(&right)),
+        "a_containedby" => Ok(left.is_subset(&right)),
+        "a_overlaps" => Ok(!left.is_disjoint(&right)),
         _ => Err(Error::OpNotImplemented("Arith")),
     };
     match out {
         Ok(v) => Ok(Expr::Bool(v)),
-        _ => Err(Error::OperationError())
+        _ => Err(Error::OperationError()),
     }
 }
-
-
 
 impl Expr {
     /// Update this expression with values from the `properties` attribute of a JSON object
@@ -203,8 +222,8 @@ impl Expr {
     ///
     /// ```
     pub fn reduce(&self, j: Option<&Value>) -> Expr {
-        fn reduce_args(args: &Vec<Box<Expr>>, j: Option<&Value>) -> Vec<Expr> {
-            let mut outargs = args.clone();
+        fn reduce_args(args: &[Box<Expr>], j: Option<&Value>) -> Vec<Expr> {
+            let mut outargs = args.to_owned();
             outargs.iter_mut().map(|arg| arg.reduce(j)).collect()
         }
         match self {
@@ -216,57 +235,56 @@ impl Expr {
                         j.dot_get(&format!("properties.{}", property)).unwrap()
                     };
                     if let Some(v) = propexpr {
-                        return Expr::try_from(v).unwrap()
+                        return Expr::try_from(v).unwrap();
                     }
                 }
-                return self.clone()
+                self.clone()
             }
-            Expr::Operation {op, args } => {
+            Expr::Operation { op, args } => {
                 let op = op.as_str();
                 let args: Vec<Expr> = reduce_args(args, j);
 
-                if BOOLOPS.contains(&op){
-                    let bools: Result<Vec<bool>, Error> = args.into_iter().map(|x| bool::try_from(x)).collect();
+                if BOOLOPS.contains(&op) {
+                    let bools: Result<Vec<bool>, Error> =
+                        args.into_iter().map(bool::try_from).collect();
 
                     if let Ok(bools) = bools {
                         match op {
-                            "and" => {
-                                return Expr::Bool(bools.into_iter().all(|x| x == true))
-                            }
-                            "or" => {
-                                return Expr::Bool(bools.into_iter().any(|x| x == true))
-                            },
-                            _ => return self.clone()
+                            "and" => return Expr::Bool(bools.into_iter().all(|x| x)),
+                            "or" => return Expr::Bool(bools.into_iter().any(|x| x)),
+                            _ => return self.clone(),
                         }
-                    } else { return self.clone() }
+                    } else {
+                        return self.clone();
+                    }
                 }
 
                 // no other operators should have arguments other than 2
                 if args.len() != 2 {
-                    return self.clone()
+                    return self.clone();
                 }
                 let left = args[0].clone();
                 let right = args[1].clone();
 
                 if SPATIALOPS.contains(&op) {
-                    return spatial_op(left, right, op).unwrap_or(self.clone())
+                    return spatial_op(left, right, op).unwrap_or(self.clone());
                 }
 
                 if TEMPORALOPS.contains(&op) {
-                    return temporal_op(left, right, op).unwrap_or(self.clone())
+                    return temporal_op(left, right, op).unwrap_or(self.clone());
                 }
                 if ARITHOPS.contains(&op) {
-                    return arith_op(left, right, op).unwrap_or(self.clone())
+                    return arith_op(left, right, op).unwrap_or(self.clone());
                 }
 
                 if EQOPS.contains(&op) | CMPOPS.contains(&op) {
-                    return cmp_op(left, right, op).unwrap_or(self.clone())
+                    return cmp_op(left, right, op).unwrap_or(self.clone());
                 }
 
                 if ARRAYOPS.contains(&op) {
-                    return array_op(left, right, op).unwrap_or(self.clone())
+                    return array_op(left, right, op).unwrap_or(self.clone());
                 }
-                return self.clone()
+                self.clone()
             }
 
             _ => self.clone(),

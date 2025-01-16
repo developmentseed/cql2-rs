@@ -48,7 +48,7 @@ pub fn temporal_op(left_expr: Expr, right_expr: Expr, op: &str) -> Result<Expr, 
         "t_startedby" => "t_starts",
         "t_contains" => "t_during",
         "t_finishedby" => "t_finishes",
-        _ => op
+        _ => op,
     };
 
     let left: DateRange;
@@ -78,6 +78,6 @@ pub fn temporal_op(left_expr: Expr, right_expr: Expr, op: &str) -> Result<Expr, 
 
     match out {
         Ok(v) => Ok(Expr::Bool(v)),
-        _ => Err(Error::OperationError())
+        _ => Err(Error::OperationError()),
     }
 }

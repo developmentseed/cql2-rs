@@ -96,7 +96,6 @@ fn geojson_ndims(geojson: &geojson::Geometry) -> usize {
     }
 }
 
-
 /// Run a spatial operation.
 pub fn spatial_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
     let left: GGeom = GGeom::try_from(left)?;
@@ -114,6 +113,6 @@ pub fn spatial_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
     };
     match out {
         Ok(v) => Ok(Expr::Bool(v)),
-        _ => Err(Error::OperationError())
+        _ => Err(Error::OperationError()),
     }
 }
