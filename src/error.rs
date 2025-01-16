@@ -12,10 +12,6 @@ pub enum Error {
     #[error(transparent)]
     Geozero(#[from] geozero::error::GeozeroError),
 
-    /// [geos::Error]
-    #[error(transparent)]
-    Geos(#[from] geos::Error),
-
     /// Invalid CQL2 text
     #[error("invalid cql2-text: {0}")]
     InvalidCql2Text(String),
@@ -78,8 +74,8 @@ pub enum Error {
     #[error("Could not convert Expression to bool")]
     ExprToBool(),
 
-    /// Error Converting Expr to geos geometry
-    #[error("Could not convert Expression to Geos Geometry")]
+    /// Error Converting Expr to geometry
+    #[error("Could not convert Expression to Geometry")]
     ExprToGeom(),
 
     /// Error Converting Expr to DateRange

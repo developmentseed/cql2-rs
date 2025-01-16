@@ -24,9 +24,9 @@ keywords = ["cql2"]
 
 [dependencies]
 boon = "0.6.1"
+geo = "0.29.3"
 geo-types = "0.7.15"
 geojson = "0.24.1"
-geos = "9.1.1"
 geozero = "0.14.0"
 jiff = "0.1.24"
 json_dotpath = "1.1.0"
@@ -38,6 +38,7 @@ serde = "1.0"
 serde_derive = "1.0.217"
 serde_json = { version = "1.0.135", features = ["preserve_order"] }
 thiserror = "2.0"
+wkt = "0.12.0"
 
 [dev-dependencies]
 assert-json-diff = "2"

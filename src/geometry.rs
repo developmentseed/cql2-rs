@@ -1,7 +1,8 @@
 use std::cmp::Ordering;
 
 use crate::{Error, Expr};
-use geos::{Geom, Geometry as GGeom};
+use geo::*;
+use geo_types::Geometry as GGeom;
 use geozero::{wkt::Wkt, CoordDimensions, ToGeo, ToWkt};
 use serde::{Deserialize, Serialize, Serializer};
 
@@ -100,19 +101,17 @@ fn geojson_ndims(geojson: &geojson::Geometry) -> usize {
 pub fn spatial_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
     let left: GGeom = GGeom::try_from(left)?;
     let right: GGeom = GGeom::try_from(right)?;
-    let out: Result<bool, Error> = match op {
-        "s_equals" => Ok(left == right),
-        "s_intersects" | "intersects" => left.intersects(&right).map_err(Error::from),
-        "s_disjoint" => left.disjoint(&right).map_err(Error::from),
-        "s_touches" => left.touches(&right).map_err(Error::from),
-        "s_within" => left.within(&right).map_err(Error::from),
-        "s_overlaps" => left.overlaps(&right).map_err(Error::from),
-        "s_crosses" => left.crosses(&right).map_err(Error::from),
-        "s_contains" => left.contains(&right).map_err(Error::from),
-        _ => Err(Error::OpNotImplemented("Spatial")),
+    let rel = left.relate(&right);
+    let out = match op {
+        "s_equals" => rel.is_equal_topo(),
+        "s_intersects" | "intersects" => rel.is_intersects(),
+        "s_disjoint" => rel.is_disjoint(),
+        "s_touches" => rel.is_touches(),
+        "s_within" => rel.is_within(),
+        "s_overlaps" => rel.is_overlaps(),
+        "s_crosses" => rel.is_crosses(),
+        "s_contains" => rel.is_contains(),
+        &_ => todo!(),
     };
-    match out {
-        Ok(v) => Ok(Expr::Bool(v)),
-        _ => Err(Error::OperationError()),
-    }
+    Ok(Expr::Bool(out))
 }

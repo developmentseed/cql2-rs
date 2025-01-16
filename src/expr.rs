@@ -1,11 +1,12 @@
 use crate::{geometry::spatial_op, temporal::temporal_op, Error, Geometry, SqlQuery, Validator};
-use geos::Geometry as GGeom;
+use geo_types::Geometry as GGeom;
 use json_dotpath::DotPaths;
 use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
 use std::str::FromStr;
+use wkt::TryFromWkt;
 
 const BOOLOPS: &[&str] = &["and", "or"];
 const EQOPS: &[&str] = &["=", "<>"];
@@ -125,8 +126,8 @@ impl TryFrom<Expr> for GGeom {
     type Error = Error;
     fn try_from(v: Expr) -> Result<GGeom, Error> {
         match v {
-            Expr::Geometry(v) => Ok(GGeom::new_from_wkt(&v.to_wkt().unwrap())
-                .expect("Failed to convert WKT to Geos Geometry")),
+            Expr::Geometry(v) => Ok(GGeom::try_from_wkt_str(&v.to_wkt().unwrap())
+                .expect("Failed to convert WKT to Geometry")),
             _ => Err(Error::ExprToGeom()),
         }
     }
