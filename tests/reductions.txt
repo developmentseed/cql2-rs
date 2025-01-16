@@ -22,3 +22,15 @@ false
 true
 S_EQUALS(POINT(-93.0 45.0), geometry)
 true
+A_EQUALS((1,2,3),(1,2,3))
+true
+A_EQUALS((1,2,3),(1,2))
+false
+A_OVERLAPS((1,2,3),(1,2))
+true
+A_CONTAINS((1,2,3),(1,2))
+true
+A_CONTAINEDBY((1,2),(1,2,3))
+true
+A_EQUALS(tstarr,(1,2,3))
+true

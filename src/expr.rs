@@ -1,13 +1,24 @@
 use crate::{
-    geometry::spatial_op, temporal::temporal_op, DateRange, Error, Geometry, SqlQuery, Validator,
+    geometry::spatial_op, temporal::temporal_op, Error, Geometry, SqlQuery, Validator,
 };
-use enum_as_inner::EnumAsInner;
 use geos::Geometry as GGeom;
 use json_dotpath::DotPaths;
 use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
+use std::collections::HashSet;
+
+
+const BOOLOPS: &[&str] = &["and", "or"];
+const EQOPS: &[&str] = &["=", "<>"];
+const CMPOPS: &[&str] = &[">", ">=", "<", "<="];
+const SPATIALOPS: &[&str] = &["s_equals", "s_intersects","s_disjoint","s_touches","s_within","s_overlaps","s_crosses","s_contains"];
+const TEMPORALOPS: &[&str] = &["t_before","t_after","t_meets","t_metby","t_overlaps","t_overlappedby","t_starts","t_startedby","t_during","t_contains","t_finishes","to_finishedby","t_equals","t_disjoint","t_intersects"];
+const ARITHOPS: &[&str] = &["+","-","*","/","%","^","div"];
+const ARRAYOPS: &[&str] = &["a_equals","a_contains","a_containedby","a_overlaps"];
+
+// todo: array ops, in, casei, accenti, between, not, like
 
 /// A CQL2 expression.
 ///
@@ -23,7 +34,7 @@ use std::str::FromStr;
 ///
 /// Use [Expr::to_text], [Expr::to_json], and [Expr::to_sql] to use the CQL2,
 /// and use [Expr::is_valid] to check validity.
-#[derive(Debug, Serialize, Deserialize, Clone, EnumAsInner)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
 #[serde(untagged)]
 #[allow(missing_docs)]
 pub enum Expr {
@@ -99,14 +110,25 @@ impl TryFrom<Expr> for GGeom {
     }
 }
 
-impl PartialEq for Expr {
-    fn eq(&self, other: &Self) -> bool {
-        self.to_text().unwrap() == other.to_text().unwrap()
+impl TryFrom<Expr> for HashSet<String> {
+    type Error = Error;
+    fn try_from(v: Expr) -> Result<HashSet<String>, Error> {
+        match v {
+            Expr::Array(v) => {
+                let mut h = HashSet::new();
+                for el in v {
+                    let _ = h.insert(el.to_text()?);
+                }
+                Ok(h)
+
+            }
+            _ => Err(Error::ExprToGeom()),
+        }
     }
 }
 
-fn binary_bool<T: PartialEq + PartialOrd>(left: &T, right: &T, op: &str) -> Result<bool, Error> {
-    match op {
+fn cmp_op<T: PartialEq + PartialOrd>(left: T, right: T, op: &str) -> Result<Expr, Error> {
+    let out = match op {
         "=" => Ok(left == right),
         "<=" => Ok(left <= right),
         "<" => Ok(left < right),
@@ -114,20 +136,48 @@ fn binary_bool<T: PartialEq + PartialOrd>(left: &T, right: &T, op: &str) -> Resu
         ">" => Ok(left > right),
         "<>" => Ok(left != right),
         _ => Err(Error::OpNotImplemented("Binary Bool")),
+    };
+    match out {
+        Ok(v) => Ok(Expr::Bool(v)),
+        _ => Err(Error::OperationError())
     }
 }
 
-fn arith(left: &f64, right: &f64, op: &str) -> Result<f64, Error> {
-    match op {
+fn arith_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
+    let left = f64::try_from(left)?;
+    let right = f64::try_from(right)?;
+    let out = match op {
         "+" => Ok(left + right),
         "-" => Ok(left - right),
         "*" => Ok(left * right),
         "/" => Ok(left / right),
         "%" => Ok(left % right),
-        "^" => Ok(left.powf(*right)),
+        "^" => Ok(left.powf(right)),
         _ => Err(Error::OpNotImplemented("Arith")),
+    };
+    match out {
+        Ok(v) => Ok(Expr::Float(v)),
+        _ => Err(Error::OperationError())
     }
 }
+
+fn array_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
+    let left: HashSet<String> = left.try_into()?;
+    let right: HashSet<String> = right.try_into()?;
+    let out = match op {
+        "a_equals" => Ok(left == right),
+        "a_contains" => Ok(left.is_superset(&right)),
+        "a_containedby" =>  Ok(left.is_subset(&right)),
+        "a_overlaps" =>  Ok(!left.is_disjoint(&right)),
+        _ => Err(Error::OpNotImplemented("Arith")),
+    };
+    match out {
+        Ok(v) => Ok(Expr::Bool(v)),
+        _ => Err(Error::OperationError())
+    }
+}
+
+
 
 impl Expr {
     /// Update this expression with values from the `properties` attribute of a JSON object
@@ -141,30 +191,23 @@ impl Expr {
     ///
     /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z", "boolfield": true}});
     ///
-    /// let mut fromexpr: Expr = Expr::from_str("boolfield = true").unwrap();
-    /// fromexpr.reduce(Some(&item));
-    /// let mut toexpr: Expr = Expr::from_str("true").unwrap();
-    /// assert_eq!(fromexpr, toexpr);
+    /// let fromexpr: Expr = Expr::from_str("boolfield = true").unwrap();
+    /// let reduced = fromexpr.reduce(Some(&item));
+    /// let toexpr: Expr = Expr::from_str("true").unwrap();
+    /// assert_eq!(reduced, toexpr);
     ///
-    /// let mut fromexpr: Expr = Expr::from_str("\"eo:cloud_cover\" + 10").unwrap();
-    /// fromexpr.reduce(Some(&item));
-    /// let mut toexpr: Expr = Expr::from_str("20").unwrap();
-    /// assert_eq!(fromexpr, toexpr);
+    /// let fromexpr: Expr = Expr::from_str("\"eo:cloud_cover\" + 10").unwrap();
+    /// let reduced = fromexpr.reduce(Some(&item));
+    /// let toexpr: Expr = Expr::from_str("20").unwrap();
+    /// assert_eq!(reduced, toexpr);
     ///
     /// ```
-    pub fn reduce(&mut self, j: Option<&Value>) {
+    pub fn reduce(&self, j: Option<&Value>) -> Expr {
+        fn reduce_args(args: &Vec<Box<Expr>>, j: Option<&Value>) -> Vec<Expr> {
+            let mut outargs = args.clone();
+            outargs.iter_mut().map(|arg| arg.reduce(j)).collect()
+        }
         match self {
-            Expr::Interval { interval } => {
-                for arg in interval.iter_mut() {
-                    arg.reduce(j);
-                }
-            }
-            Expr::Timestamp { timestamp } => {
-                timestamp.reduce(j);
-            }
-            Expr::Date { date } => {
-                date.reduce(j);
-            }
             Expr::Property { property } => {
                 if let Some(j) = j {
                     let propexpr: Option<Value> = if j.dot_has(property) {
@@ -172,99 +215,61 @@ impl Expr {
                     } else {
                         j.dot_get(&format!("properties.{}", property)).unwrap()
                     };
-
-                    println!("j:{:?} property:{:?}", j, property);
-                    println!("propexpr: {:?}", propexpr);
                     if let Some(v) = propexpr {
-                        *self = Expr::try_from(v).unwrap();
+                        return Expr::try_from(v).unwrap()
                     }
                 }
+                return self.clone()
             }
-            Expr::Operation { op, args } => {
-                let mut alltrue: bool = true;
-                let mut anytrue: bool = false;
-                let mut allbool: bool = true;
-                for arg in args.iter_mut() {
-                    arg.reduce(j);
+            Expr::Operation {op, args } => {
+                let op = op.as_str();
+                let args: Vec<Expr> = reduce_args(args, j);
 
-                    if let Ok(bool) = arg.as_ref().clone().try_into() {
-                        if bool {
-                            anytrue = true;
-                        } else {
-                            alltrue = false;
+                if BOOLOPS.contains(&op){
+                    let bools: Result<Vec<bool>, Error> = args.into_iter().map(|x| bool::try_from(x)).collect();
+
+                    if let Ok(bools) = bools {
+                        match op {
+                            "and" => {
+                                return Expr::Bool(bools.into_iter().all(|x| x == true))
+                            }
+                            "or" => {
+                                return Expr::Bool(bools.into_iter().any(|x| x == true))
+                            },
+                            _ => return self.clone()
                         }
-                    } else {
-                        alltrue = false;
-                        allbool = false;
-                    }
+                    } else { return self.clone() }
                 }
 
-                // boolean operators
-                if allbool {
-                    match op.as_str() {
-                        "and" => {
-                            *self = Expr::Bool(alltrue);
-                            return;
-                        }
-                        "or" => {
-                            *self = Expr::Bool(anytrue);
-                            return;
-                        }
-                        _ => (),
-                    }
+                // no other operators should have arguments other than 2
+                if args.len() != 2 {
+                    return self.clone()
+                }
+                let left = args[0].clone();
+                let right = args[1].clone();
+
+                if SPATIALOPS.contains(&op) {
+                    return spatial_op(left, right, op).unwrap_or(self.clone())
                 }
 
-                // binary operations
-                if args.len() == 2 {
-                    let left: &Expr = args[0].as_ref();
-                    let right: &Expr = args[1].as_ref();
-
-                    if let (Ok(l), Ok(r)) =
-                        (f64::try_from(left.clone()), f64::try_from(right.clone()))
-                    {
-                        if let Ok(v) = arith(&l, &r, op) {
-                            *self = Expr::Float(v);
-                            return;
-                        }
-                        if let Ok(v) = binary_bool(&l, &r, op) {
-                            *self = Expr::Bool(v);
-                        }
-                    } else if let (Ok(l), Ok(r)) =
-                        (bool::try_from(left.clone()), bool::try_from(right.clone()))
-                    {
-                        if let Ok(v) = binary_bool(&l, &r, op) {
-                            *self = Expr::Bool(v);
-                            return;
-                        }
-                    } else if let (Ok(l), Ok(r)) = (
-                        GGeom::try_from(left.clone()),
-                        GGeom::try_from(right.clone()),
-                    ) {
-                        println!("Is Spatial Op. {:?} ({:?}, {:?})", op, left, right);
-                        if let Ok(v) = spatial_op(&l, &r, op) {
-                            *self = Expr::Bool(v);
-                            return;
-                        }
-                    } else if let (Ok(l), Ok(r)) = (
-                        DateRange::try_from(left.clone()),
-                        DateRange::try_from(right.clone()),
-                    ) {
-                        if let Ok(v) = temporal_op(&l, &r, op) {
-                            *self = Expr::Bool(v);
-                            return;
-                        }
-                    } else if let (Ok(l), Ok(r)) = (
-                        String::try_from(left.clone()),
-                        String::try_from(right.clone()),
-                    ) {
-                        if let Ok(v) = binary_bool(&l, &r, op) {
-                            *self = Expr::Bool(v);
-                            return;
-                        }
-                    }
+                if TEMPORALOPS.contains(&op) {
+                    return temporal_op(left, right, op).unwrap_or(self.clone())
                 }
+                if ARITHOPS.contains(&op) {
+                    return arith_op(left, right, op).unwrap_or(self.clone())
+                }
+
+                if EQOPS.contains(&op) | CMPOPS.contains(&op) {
+                    return cmp_op(left, right, op).unwrap_or(self.clone())
+                }
+
+                if ARRAYOPS.contains(&op) {
+                    return array_op(left, right, op).unwrap_or(self.clone())
+                }
+                return self.clone()
             }
-            _ => (),
+
+            _ => self.clone(),
         }
     }
     /// Run CQL against a JSON Value
@@ -280,9 +285,8 @@ impl Expr {
     /// assert_eq!(true, expr.matches(Some(&item)).unwrap());
     /// ```
     pub fn matches(&self, j: Option<&Value>) -> Result<bool, Error> {
-        let mut e = self.clone();
-        e.reduce(j);
-        match e {
+        let reduced = self.reduce(j);
+        match reduced {
             Expr::Bool(v) => Ok(v),
             _ => Err(Error::NonReduced()),
         }

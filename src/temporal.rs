@@ -40,25 +40,44 @@ impl TryFrom<Expr> for DateRange {
 }
 
 /// Run a temporal operation.
-pub fn temporal_op(left: &DateRange, right: &DateRange, op: &str) -> Result<bool, Error> {
-    match op {
+pub fn temporal_op(left_expr: Expr, right_expr: Expr, op: &str) -> Result<Expr, Error> {
+    let invop = match op {
+        "t_after" => "t_before",
+        "t_metby" => "t_meets",
+        "t_overlappedby" => "t_overlaps",
+        "t_startedby" => "t_starts",
+        "t_contains" => "t_during",
+        "t_finishedby" => "t_finishes",
+        _ => op
+    };
+
+    let left: DateRange;
+    let right: DateRange;
+    if invop != op {
+        left = DateRange::try_from(left_expr)?;
+        right = DateRange::try_from(right_expr)?;
+    } else {
+        right = DateRange::try_from(left_expr)?;
+        left = DateRange::try_from(right_expr)?;
+    }
+
+    let out = match invop {
         "t_before" => Ok(left.end < right.start),
-        "t_after" => temporal_op(right, left, "t_before"),
         "t_meets" => Ok(left.end == right.start),
-        "t_metby" => temporal_op(right, left, "t_meets"),
         "t_overlaps" => {
             Ok(left.start < right.end && right.start < left.end && left.end < right.end)
         }
-        "t_overlappedby" => temporal_op(right, left, "t_overlaps"),
         "t_starts" => Ok(left.start == right.start && left.end < right.end),
-        "t_startedby" => temporal_op(right, left, "t_starts"),
         "t_during" => Ok(left.start > right.start && left.end < right.end),
-        "t_contains" => temporal_op(right, left, "t_during"),
         "t_finishes" => Ok(left.start > right.start && left.end == right.end),
-        "t_finishedby" => temporal_op(right, left, "t_finishes"),
         "t_equals" => Ok(left.start == right.start && left.end == right.end),
-        "t_disjoint" => Ok(!(temporal_op(left, right, "t_intersects").unwrap())),
+        "t_disjoint" => Ok(!(left.start <= right.end && left.end >= right.start)),
         "t_intersects" | "anyinteracts" => Ok(left.start <= right.end && left.end >= right.start),
         _ => Err(Error::OpNotImplemented("temporal")),
+    };
+
+    match out {
+        Ok(v) => Ok(Expr::Bool(v)),
+        _ => Err(Error::OperationError())
     }
 }

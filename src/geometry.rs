@@ -1,4 +1,6 @@
-use crate::Error;
+use std::cmp::Ordering;
+
+use crate::{Error, Expr};
 use geos::{Geom, Geometry as GGeom};
 use geozero::{wkt::Wkt, CoordDimensions, ToGeo, ToWkt};
 use serde::{Deserialize, Serialize, Serializer};
@@ -46,6 +48,18 @@ impl Geometry {
     }
 }
 
+impl PartialEq for Geometry {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_wkt().unwrap() == other.to_wkt().unwrap()
+    }
+}
+
+impl PartialOrd for Geometry {
+    fn partial_cmp(&self, _other: &Self) -> Option<Ordering> {
+        Some(Ordering::Equal)
+    }
+}
+
 fn to_geojson<S>(wkt: &String, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -82,17 +96,24 @@ fn geojson_ndims(geojson: &geojson::Geometry) -> usize {
     }
 }
 
+
 /// Run a spatial operation.
-pub fn spatial_op(left: &GGeom, right: &GGeom, op: &str) -> Result<bool, Error> {
-    match op {
+pub fn spatial_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
+    let left: GGeom = GGeom::try_from(left)?;
+    let right: GGeom = GGeom::try_from(right)?;
+    let out: Result<bool, Error> = match op {
         "s_equals" => Ok(left == right),
-        "s_intersects" | "intersects" => left.intersects(right).map_err(Error::from),
-        "s_disjoint" => left.disjoint(right).map_err(Error::from),
-        "s_touches" => left.touches(right).map_err(Error::from),
-        "s_within" => left.within(right).map_err(Error::from),
-        "s_overlaps" => left.overlaps(right).map_err(Error::from),
-        "s_crosses" => left.crosses(right).map_err(Error::from),
-        "s_contains" => left.contains(right).map_err(Error::from),
+        "s_intersects" | "intersects" => left.intersects(&right).map_err(Error::from),
+        "s_disjoint" => left.disjoint(&right).map_err(Error::from),
+        "s_touches" => left.touches(&right).map_err(Error::from),
+        "s_within" => left.within(&right).map_err(Error::from),
+        "s_overlaps" => left.overlaps(&right).map_err(Error::from),
+        "s_crosses" => left.crosses(&right).map_err(Error::from),
+        "s_contains" => left.contains(&right).map_err(Error::from),
         _ => Err(Error::OpNotImplemented("Spatial")),
+    };
+    match out {
+        Ok(v) => Ok(Expr::Bool(v)),
+        _ => Err(Error::OperationError())
     }
 }

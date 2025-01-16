@@ -93,4 +93,8 @@ pub enum Error {
     /// Expression not reduced to boolean
     #[error("Could not reduce expression to boolean")]
     NonReduced(),
+
+    /// Could not run arith operation
+    #[error("Could not run operation.")]
+    OperationError(),
 }

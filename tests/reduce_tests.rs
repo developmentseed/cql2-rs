@@ -18,16 +18,17 @@ fn validate_reduction(a: String, b: String) {
                 "boolfalse": false,
                 "booltrue": true,
                 "stringfield": "string",
-                "tsfield": {"timestamp": "2020-01-01 00:00:00Z"}
+                "tsfield": {"timestamp": "2020-01-01 00:00:00Z"},
+                "tstarr": [1,2,3]
             },
             "geometry": {"type": "Point", "coordinates": [-93.0, 45]},
             "datetime": "2020-01-01 00:00:00Z"
         }
     );
-    let mut inexpr: Expr = a.parse().unwrap();
-    inexpr.reduce(Some(&properties));
+    let inexpr: Expr = a.parse().unwrap();
+    let reduced = inexpr.reduce(Some(&properties));
     let outexpr: Expr = b.parse().unwrap();
-    assert_eq!(inexpr, outexpr);
+    assert_eq!(reduced, outexpr);
 }
 
 #[rstest]
