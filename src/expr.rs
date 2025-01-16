@@ -9,6 +9,17 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
 
+const BOOLOPS: &[&str] = &["and", "or"];
+const EQOPS: &[&str] = &["=", "<>"];
+const CMPOPS: &[&str] = &[">", ">=", "<", "<="];
+const SPATIALOPS: &[&str] = &["s_equals", "s_intersects","s_disjoint","s_touches","s_within","s_overlaps","s_crosses","s_contains"];
+const TEMPORALOPS: &[&str] = &["t_before","t_after","t_meets","t_metby","t_overlaps","t_overlappedby","t_starts","t_startedby","t_during","t_contains","t_finishes","to_finishedby","t_equals","t_disjoint","t_intersects"];
+const ARITHOPS: &[&str] = &["+","-","*","/","%","^","div"];
+const ARRAYOPS: &[&str] = &["a_equals","a_contains","a_containedby","a_overlaps"];
+
+// todo: array ops, in, casei, accenti, between, not, like
+
+
 /// A CQL2 expression.
 ///
 /// # Examples
@@ -99,6 +110,7 @@ impl TryFrom<Expr> for GGeom {
     }
 }
 
+
 impl PartialEq for Expr {
     fn eq(&self, other: &Self) -> bool {
         self.to_text().unwrap() == other.to_text().unwrap()
@@ -141,7 +153,7 @@ impl Expr {
     ///
     /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z", "boolfield": true}});
     ///
-    /// let mut fromexpr: Expr = Expr::from_str("boolfield = true").unwrap();
+    /// let mut fromexpr: Expr = Expr::from_str("boolfield = true and true").unwrap();
     /// fromexpr.reduce(Some(&item));
     /// let mut toexpr: Expr = Expr::from_str("true").unwrap();
     /// assert_eq!(fromexpr, toexpr);
@@ -181,38 +193,46 @@ impl Expr {
                 }
             }
             Expr::Operation { op, args } => {
-                let mut alltrue: bool = true;
-                let mut anytrue: bool = false;
-                let mut allbool: bool = true;
+                let op = op.as_str();
                 for arg in args.iter_mut() {
                     arg.reduce(j);
-
-                    if let Ok(bool) = arg.as_ref().clone().try_into() {
-                        if bool {
-                            anytrue = true;
-                        } else {
-                            alltrue = false;
-                        }
-                    } else {
-                        alltrue = false;
-                        allbool = false;
-                    }
                 }
 
-                // boolean operators
-                if allbool {
-                    match op.as_str() {
-                        "and" => {
-                            *self = Expr::Bool(alltrue);
-                            return;
+                if BOOLOPS.contains(&op){
+                    let bools: Result<Vec<bool>, Error> = args.into_iter().map(|x| bool::try_from(x.as_ref().clone())).collect();
+
+                    if let Ok(bools) = bools {
+                        match op {
+                            "and" => {
+                                *self = Expr::Bool(bools.into_iter().all(|x| x == true));
+                                return
+                            }
+                            "or" => {
+                                *self = Expr::Bool(bools.into_iter().any(|x| x == true));
+                                return
+                            },
+                            _ => ()
                         }
-                        "or" => {
-                            *self = Expr::Bool(anytrue);
-                            return;
-                        }
-                        _ => (),
                     }
+                } else if SPATIALOPS.contains(&op) {
+                    let geoms: Result<Vec<GGeom>, Error> = args.into_iter().map(|x| GGeom::try_from(x.as_ref().clone())).collect();
+                    if let Ok(geoms) = geoms  {
+                        if geoms.len() == 2 {
+                            if let Ok(v) = spatial_op(&geoms[0], &geoms[1], op) {
+                                *self = Expr::Bool(v);
+                                return
+                            }
+                        }
+                    }
+
+
+                } else if SPATIALOPS.contains(&op) {
+
+                } else if SPATIALOPS.contains(&op) {
+
                 }
+
+
 
                 // binary operations
                 if args.len() == 2 {
