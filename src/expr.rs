@@ -98,7 +98,7 @@ impl TryFrom<Expr> for f64 {
         match v {
             Expr::Float(v) => Ok(v),
             Expr::Literal(v) => f64::from_str(&v).map_err(Error::from),
-            _ => Err(Error::ExprToF64()),
+            _ => Err(Error::ExprToF64(v)),
         }
     }
 }
@@ -109,7 +109,7 @@ impl TryFrom<&Expr> for bool {
         match v {
             Expr::Bool(v) => Ok(*v),
             Expr::Literal(v) => bool::from_str(v).map_err(Error::from),
-            _ => Err(Error::ExprToBool()),
+            _ => Err(Error::ExprToBool(v.clone())),
         }
     }
 }
@@ -121,7 +121,7 @@ impl TryFrom<Expr> for String {
             Expr::Literal(v) => Ok(v),
             Expr::Bool(v) => Ok(v.to_string()),
             Expr::Float(v) => Ok(v.to_string()),
-            _ => Err(Error::ExprToBool()),
+            _ => Err(Error::ExprToBool(v)),
         }
     }
 }
@@ -132,7 +132,7 @@ impl TryFrom<Expr> for GGeom {
         match v {
             Expr::Geometry(v) => Ok(GGeom::try_from_wkt_str(&v.to_wkt().unwrap())
                 .expect("Failed to convert WKT to Geometry")),
-            Expr::BBox { bbox } => {
+            Expr::BBox { ref bbox } => {
                 let minx: f64 = bbox[0].as_ref().clone().try_into()?;
                 let miny: f64 = bbox[1].as_ref().clone().try_into()?;
                 let maxx: f64;
@@ -147,12 +147,12 @@ impl TryFrom<Expr> for GGeom {
                         maxx = bbox[3].as_ref().clone().try_into()?;
                         maxy = bbox[4].as_ref().clone().try_into()?;
                     }
-                    _ => return Err(Error::ExprToGeom()),
+                    _ => return Err(Error::ExprToGeom(v.clone())),
                 };
                 let rec = Rect::new(coord! {x:minx, y:miny}, coord! {x:maxx,y:maxy});
                 Ok(rec.into())
             }
-            _ => Err(Error::ExprToGeom()),
+            _ => Err(Error::ExprToGeom(v)),
         }
     }
 }
@@ -168,7 +168,7 @@ impl TryFrom<Expr> for HashSet<String> {
                 }
                 Ok(h)
             }
-            _ => Err(Error::ExprToGeom()),
+            _ => Err(Error::ExprToGeom(v)),
         }
     }
 }

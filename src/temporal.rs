@@ -34,7 +34,7 @@ impl TryFrom<Expr> for DateRange {
                 let start: Timestamp = v.parse().unwrap();
                 Ok(DateRange { start, end: start })
             }
-            _ => Err(Error::ExprToDateRange()),
+            _ => Err(Error::ExprToDateRange(v)),
         }
     }
 }

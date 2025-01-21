@@ -1,3 +1,4 @@
+use crate::Expr;
 use thiserror::Error;
 
 /// Crate-specific error enum.
@@ -68,19 +69,19 @@ pub enum Error {
 
     /// Error Converting Expr to f64
     #[error("Could not convert Expression to f64")]
-    ExprToF64(),
+    ExprToF64(Expr),
 
     /// Error Converting Expr to bool
     #[error("Could not convert Expression to bool")]
-    ExprToBool(),
+    ExprToBool(Expr),
 
     /// Error Converting Expr to geometry
     #[error("Could not convert Expression to Geometry")]
-    ExprToGeom(),
+    ExprToGeom(Expr),
 
     /// Error Converting Expr to DateRange
     #[error("Could not convert Expression to DateRange")]
-    ExprToDateRange(),
+    ExprToDateRange(Expr),
 
     /// Operator not implemented.
     #[error("Operator {0} is not implemented for this type.")]
