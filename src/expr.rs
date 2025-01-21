@@ -2,14 +2,14 @@ use crate::{geometry::spatial_op, temporal::temporal_op, Error, Geometry, SqlQue
 use geo_types::Geometry as GGeom;
 use geo_types::{coord, Rect};
 use json_dotpath::DotPaths;
+use like::Like;
 use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
 use std::str::FromStr;
-use wkt::TryFromWkt;
 use unaccent::unaccent;
-use like::Like;
+use wkt::TryFromWkt;
 
 const BOOLOPS: &[&str] = &["and", "or"];
 const EQOPS: &[&str] = &["=", "<>"];
@@ -131,7 +131,7 @@ impl TryFrom<Expr> for GGeom {
         match v {
             Expr::Geometry(v) => Ok(GGeom::try_from_wkt_str(&v.to_wkt().unwrap())
                 .expect("Failed to convert WKT to Geometry")),
-            Expr::BBox{bbox} => {
+            Expr::BBox { bbox } => {
                 let minx: f64 = bbox[0].as_ref().clone().try_into()?;
                 let miny: f64 = bbox[1].as_ref().clone().try_into()?;
                 let maxx: f64;
@@ -141,16 +141,16 @@ impl TryFrom<Expr> for GGeom {
                     4 => {
                         maxx = bbox[2].as_ref().clone().try_into()?;
                         maxy = bbox[3].as_ref().clone().try_into()?;
-                    },
+                    }
                     6 => {
                         maxx = bbox[3].as_ref().clone().try_into()?;
                         maxy = bbox[4].as_ref().clone().try_into()?;
-                    },
-                    _ => return Err(Error::ExprToGeom())
+                    }
+                    _ => return Err(Error::ExprToGeom()),
                 };
-                let rec = Rect::new(coord!{x:minx, y:miny}, coord!{x:maxx,y:maxy});
+                let rec = Rect::new(coord! {x:minx, y:miny}, coord! {x:maxx,y:maxy});
                 Ok(rec.into())
-            },
+            }
             _ => Err(Error::ExprToGeom()),
         }
     }
@@ -286,27 +286,27 @@ impl Expr {
                 // no other operators should have arguments other than 2
 
                 if op == "not" {
-                    let out = match args[0]{
+                    let out = match args[0] {
                         Expr::Bool(v) => Expr::Bool(!v),
-                        _ => self.clone()
+                        _ => self.clone(),
                     };
-                    return out
+                    return out;
                 }
 
                 if op == "casei" {
                     let out = match &args[0] {
                         Expr::Literal(v) => Expr::Literal(v.to_lowercase()),
-                        _ => self.clone()
+                        _ => self.clone(),
                     };
-                    return out
+                    return out;
                 }
 
                 if op == "accenti" {
                     let out = match &args[0] {
                         Expr::Literal(v) => Expr::Literal(unaccent(v)),
-                        _ => self.clone()
+                        _ => self.clone(),
                     };
-                    return out
+                    return out;
                 }
 
                 if op == "between" {
@@ -339,23 +339,25 @@ impl Expr {
                 }
 
                 if op == "like" {
-                    let l: String = String::try_from(left).expect("Could not convert left arg to string");
-                    let r: String = String::try_from(right).expect("Could not convert right arg to string");
-                    let m: bool = Like::<true>::like(l.as_str(),r.as_str()).expect("Could not compare using like");
+                    let l: String =
+                        String::try_from(left).expect("Could not convert left arg to string");
+                    let r: String =
+                        String::try_from(right).expect("Could not convert right arg to string");
+                    let m: bool = Like::<true>::like(l.as_str(), r.as_str())
+                        .expect("Could not compare using like");
                     return Expr::Bool(m);
                 }
                 if op == "in" {
                     let l: String = left.to_text().expect("Could not convert arg to string");
-                    let r: HashSet<String> = right.try_into().expect("Could not convert arg to strings");
+                    let r: HashSet<String> =
+                        right.try_into().expect("Could not convert arg to strings");
                     let isin: bool = r.contains(&l);
                     return Expr::Bool(isin);
                 }
 
-
-
                 self.clone()
-            },
-            _ => self.clone()
+            }
+            _ => self.clone(),
         }
     }
     /// Run CQL against a JSON Value

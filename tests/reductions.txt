@@ -54,5 +54,3 @@ true
 true
 1 between 3 and 4
 false
-1 is null
-false
