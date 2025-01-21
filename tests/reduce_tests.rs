@@ -26,7 +26,7 @@ fn validate_reduction(a: String, b: String) {
         }
     );
     let inexpr: Expr = a.parse().unwrap();
-    let reduced = inexpr.reduce(Some(&properties));
+    let reduced = inexpr.reduce(Some(&properties)).unwrap();
     let outexpr: Expr = b.parse().unwrap();
     assert_eq!(reduced, outexpr);
 }

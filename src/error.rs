@@ -93,4 +93,12 @@ pub enum Error {
     /// Could not run arith operation
     #[error("Could not run operation.")]
     OperationError(),
+
+    /// [json_dotpath::Error]
+    #[error(transparent)]
+    JsonDotpath(#[from] json_dotpath::Error),
+
+    /// [like::Error]
+    #[error(transparent)]
+    Like(#[from] like::InvalidPatternError),
 }
