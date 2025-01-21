@@ -1,5 +1,6 @@
 use crate::{geometry::spatial_op, temporal::temporal_op, Error, Geometry, SqlQuery, Validator};
 use geo_types::Geometry as GGeom;
+use geo_types::{coord, Rect};
 use json_dotpath::DotPaths;
 use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
@@ -128,6 +129,26 @@ impl TryFrom<Expr> for GGeom {
         match v {
             Expr::Geometry(v) => Ok(GGeom::try_from_wkt_str(&v.to_wkt().unwrap())
                 .expect("Failed to convert WKT to Geometry")),
+            Expr::BBox{bbox} => {
+                let minx: f64 = bbox[0].as_ref().clone().try_into()?;
+                let miny: f64 = bbox[1].as_ref().clone().try_into()?;
+                let maxx: f64;
+                let maxy: f64;
+
+                match bbox.len() {
+                    4 => {
+                        maxx = bbox[2].as_ref().clone().try_into()?;
+                        maxy = bbox[3].as_ref().clone().try_into()?;
+                    },
+                    6 => {
+                        maxx = bbox[3].as_ref().clone().try_into()?;
+                        maxy = bbox[4].as_ref().clone().try_into()?;
+                    },
+                    _ => return Err(Error::ExprToGeom())
+                };
+                let rec = Rect::new(coord!{x:minx, y:miny}, coord!{x:maxx,y:maxy});
+                Ok(rec.into())
+            },
             _ => Err(Error::ExprToGeom()),
         }
     }
