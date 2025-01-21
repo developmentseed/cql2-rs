@@ -34,3 +34,25 @@ A_CONTAINEDBY((1,2),(1,2,3))
 true
 A_EQUALS(tstarr,(1,2,3))
 true
+1 in (1,2,4)
+true
+'a' in ('a','b','c')
+true
+'a' in ('d','e','f')
+false
+'this' like 'th%'
+true
+not(true)
+false
+not(1+3=1)
+true
+casei('aardvarK') = casei('Aardvark')
+true
+accenti('Café') = accenti('Cafe')
+true
+1 between 1 and 2
+true
+1 between 3 and 4
+false
+1 is null
+false

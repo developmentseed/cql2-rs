@@ -8,6 +8,8 @@ use serde_json::Value;
 use std::collections::HashSet;
 use std::str::FromStr;
 use wkt::TryFromWkt;
+use unaccent::unaccent;
+use like::Like;
 
 const BOOLOPS: &[&str] = &["and", "or"];
 const EQOPS: &[&str] = &["=", "<>"];
@@ -282,6 +284,35 @@ impl Expr {
                 }
 
                 // no other operators should have arguments other than 2
+
+                if op == "not" {
+                    let out = match args[0]{
+                        Expr::Bool(v) => Expr::Bool(!v),
+                        _ => self.clone()
+                    };
+                    return out
+                }
+
+                if op == "casei" {
+                    let out = match &args[0] {
+                        Expr::Literal(v) => Expr::Literal(v.to_lowercase()),
+                        _ => self.clone()
+                    };
+                    return out
+                }
+
+                if op == "accenti" {
+                    let out = match &args[0] {
+                        Expr::Literal(v) => Expr::Literal(unaccent(v)),
+                        _ => self.clone()
+                    };
+                    return out
+                }
+
+                if op == "between" {
+                    return Expr::Bool(args[0] >= args[1] && args[0] <= args[2]);
+                }
+
                 if args.len() != 2 {
                     return self.clone();
                 }
@@ -306,10 +337,25 @@ impl Expr {
                 if ARRAYOPS.contains(&op) {
                     return array_op(left, right, op).unwrap_or(self.clone());
                 }
-                self.clone()
-            }
 
-            _ => self.clone(),
+                if op == "like" {
+                    let l: String = String::try_from(left).expect("Could not convert left arg to string");
+                    let r: String = String::try_from(right).expect("Could not convert right arg to string");
+                    let m: bool = Like::<true>::like(l.as_str(),r.as_str()).expect("Could not compare using like");
+                    return Expr::Bool(m);
+                }
+                if op == "in" {
+                    let l: String = left.to_text().expect("Could not convert arg to string");
+                    let r: HashSet<String> = right.try_into().expect("Could not convert arg to strings");
+                    let isin: bool = r.contains(&l);
+                    return Expr::Bool(isin);
+                }
+
+
+
+                self.clone()
+            },
+            _ => self.clone()
         }
     }
     /// Run CQL against a JSON Value
