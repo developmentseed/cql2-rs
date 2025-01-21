@@ -301,8 +301,6 @@ impl Expr {
                     }
                 } else if op == "between" {
                     Ok(Expr::Bool(args[0] >= args[1] && args[0] <= args[2]))
-                } else if op == "between" {
-                    Ok(Expr::Bool(args[0] >= args[1] && args[0] <= args[2]))
                 } else if args.len() != 2 {
                     Ok(Expr::Operation { op, args })
                 } else {
