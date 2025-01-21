@@ -7,6 +7,7 @@ use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
+use std::ops::Deref;
 use std::str::FromStr;
 use unaccent::unaccent;
 use wkt::TryFromWkt;
@@ -102,12 +103,12 @@ impl TryFrom<Expr> for f64 {
     }
 }
 
-impl TryFrom<Expr> for bool {
+impl TryFrom<&Expr> for bool {
     type Error = Error;
-    fn try_from(v: Expr) -> Result<bool, Error> {
+    fn try_from(v: &Expr) -> Result<bool, Error> {
         match v {
-            Expr::Bool(v) => Ok(v),
-            Expr::Literal(v) => bool::from_str(&v).map_err(Error::from),
+            Expr::Bool(v) => Ok(*v),
+            Expr::Literal(v) => bool::from_str(v).map_err(Error::from),
             _ => Err(Error::ExprToBool()),
         }
     }
@@ -235,131 +236,112 @@ impl Expr {
     /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z", "boolfield": true}});
     ///
     /// let fromexpr: Expr = Expr::from_str("boolfield = true").unwrap();
-    /// let reduced = fromexpr.reduce(Some(&item));
+    /// let reduced = fromexpr.reduce(Some(&item)).unwrap();
     /// let toexpr: Expr = Expr::from_str("true").unwrap();
     /// assert_eq!(reduced, toexpr);
     ///
     /// let fromexpr: Expr = Expr::from_str("\"eo:cloud_cover\" + 10").unwrap();
-    /// let reduced = fromexpr.reduce(Some(&item));
+    /// let reduced = fromexpr.reduce(Some(&item)).unwrap();
     /// let toexpr: Expr = Expr::from_str("20").unwrap();
     /// assert_eq!(reduced, toexpr);
     ///
     /// ```
-    pub fn reduce(&self, j: Option<&Value>) -> Expr {
-        fn reduce_args(args: &[Box<Expr>], j: Option<&Value>) -> Vec<Expr> {
-            let mut outargs = args.to_owned();
-            outargs.iter_mut().map(|arg| arg.reduce(j)).collect()
-        }
+    pub fn reduce(self, j: Option<&Value>) -> Result<Expr, Error> {
         match self {
-            Expr::Property { property } => {
+            Expr::Property { ref property } => {
                 if let Some(j) = j {
-                    let propexpr: Option<Value> = if j.dot_has(property) {
-                        j.dot_get(property).unwrap()
+                    if let Some(value) = j.dot_get::<Value>(property)? {
+                        Expr::try_from(value)
+                    } else if let Some(value) =
+                        j.dot_get::<Value>(&format!("properties.{}", property))?
+                    {
+                        Expr::try_from(value)
                     } else {
-                        j.dot_get(&format!("properties.{}", property)).unwrap()
-                    };
-                    if let Some(v) = propexpr {
-                        return Expr::try_from(v).unwrap();
+                        Ok(self)
                     }
+                } else {
+                    Ok(self)
                 }
-                self.clone()
             }
             Expr::Operation { op, args } => {
-                let op = op.as_str();
-                let args: Vec<Expr> = reduce_args(args, j);
+                let args: Vec<Box<Expr>> = args
+                    .into_iter()
+                    .map(|expr| expr.reduce(j).map(Box::new))
+                    .collect::<Result<_, _>>()?;
 
-                if BOOLOPS.contains(&op) {
-                    let bools: Result<Vec<bool>, Error> =
-                        args.into_iter().map(bool::try_from).collect();
+                if BOOLOPS.contains(&op.as_str()) {
+                    let bools: Result<Vec<bool>, Error> = args
+                        .iter()
+                        .map(|expr| bool::try_from(expr.as_ref()))
+                        .collect();
 
                     if let Ok(bools) = bools {
-                        match op {
-                            "and" => return Expr::Bool(bools.into_iter().all(|x| x)),
-                            "or" => return Expr::Bool(bools.into_iter().any(|x| x)),
-                            _ => return self.clone(),
+                        match op.as_str() {
+                            "and" => Ok(Expr::Bool(bools.into_iter().all(|x| x))),
+                            "or" => Ok(Expr::Bool(bools.into_iter().any(|x| x))),
+                            _ => Ok(Expr::Operation { op, args }),
                         }
                     } else {
-                        return self.clone();
+                        Ok(Expr::Operation { op, args })
+                    }
+                } else if op == "not" {
+                    match args[0].deref() {
+                        Expr::Bool(v) => Ok(Expr::Bool(!v)),
+                        _ => Ok(Expr::Operation { op, args }),
+                    }
+                } else if op == "casei" {
+                    match args[0].as_ref() {
+                        Expr::Literal(v) => Ok(Expr::Literal(v.to_lowercase())),
+                        _ => Ok(Expr::Operation { op, args }),
+                    }
+                } else if op == "accenti" {
+                    match args[0].as_ref() {
+                        Expr::Literal(v) => Ok(Expr::Literal(unaccent(v))),
+                        _ => Ok(Expr::Operation { op, args }),
+                    }
+                } else if op == "between" {
+                    Ok(Expr::Bool(args[0] >= args[1] && args[0] <= args[2]))
+                } else if args.len() != 2 {
+                    Ok(Expr::Operation { op, args })
+                } else {
+                    // Two-arg operations operations
+                    let left = args[0].deref().clone();
+                    let right = args[1].deref().clone();
+
+                    if SPATIALOPS.contains(&op.as_str()) {
+                        Ok(spatial_op(left, right, &op)
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    } else if TEMPORALOPS.contains(&op.as_str()) {
+                        Ok(temporal_op(left, right, &op)
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    } else if ARITHOPS.contains(&op.as_str()) {
+                        Ok(arith_op(left, right, &op)
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    } else if EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str()) {
+                        Ok(cmp_op(left, right, &op)
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    } else if ARRAYOPS.contains(&op.as_str()) {
+                        Ok(array_op(left, right, &op)
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    } else if op == "like" {
+                        let l: String = left.try_into()?;
+                        let r: String = right.try_into()?;
+                        let m: bool = Like::<true>::like(l.as_str(), r.as_str())?;
+                        Ok(Expr::Bool(m))
+                    } else if op == "in" {
+                        let l: String = left.to_text()?;
+                        let r: HashSet<String> = right.try_into()?;
+                        let isin: bool = r.contains(&l);
+                        Ok(Expr::Bool(isin))
+                    } else {
+                        Ok(Expr::Operation { op, args })
                     }
                 }
-
-                // no other operators should have arguments other than 2
-
-                if op == "not" {
-                    let out = match args[0] {
-                        Expr::Bool(v) => Expr::Bool(!v),
-                        _ => self.clone(),
-                    };
-                    return out;
-                }
-
-                if op == "casei" {
-                    let out = match &args[0] {
-                        Expr::Literal(v) => Expr::Literal(v.to_lowercase()),
-                        _ => self.clone(),
-                    };
-                    return out;
-                }
-
-                if op == "accenti" {
-                    let out = match &args[0] {
-                        Expr::Literal(v) => Expr::Literal(unaccent(v)),
-                        _ => self.clone(),
-                    };
-                    return out;
-                }
-
-                if op == "between" {
-                    return Expr::Bool(args[0] >= args[1] && args[0] <= args[2]);
-                }
-
-                if args.len() != 2 {
-                    return self.clone();
-                }
-                let left = args[0].clone();
-                let right = args[1].clone();
-
-                if SPATIALOPS.contains(&op) {
-                    return spatial_op(left, right, op).unwrap_or(self.clone());
-                }
-
-                if TEMPORALOPS.contains(&op) {
-                    return temporal_op(left, right, op).unwrap_or(self.clone());
-                }
-                if ARITHOPS.contains(&op) {
-                    return arith_op(left, right, op).unwrap_or(self.clone());
-                }
-
-                if EQOPS.contains(&op) | CMPOPS.contains(&op) {
-                    return cmp_op(left, right, op).unwrap_or(self.clone());
-                }
-
-                if ARRAYOPS.contains(&op) {
-                    return array_op(left, right, op).unwrap_or(self.clone());
-                }
-
-                if op == "like" {
-                    let l: String =
-                        String::try_from(left).expect("Could not convert left arg to string");
-                    let r: String =
-                        String::try_from(right).expect("Could not convert right arg to string");
-                    let m: bool = Like::<true>::like(l.as_str(), r.as_str())
-                        .expect("Could not compare using like");
-                    return Expr::Bool(m);
-                }
-                if op == "in" {
-                    let l: String = left.to_text().expect("Could not convert arg to string");
-                    let r: HashSet<String> =
-                        right.try_into().expect("Could not convert arg to strings");
-                    let isin: bool = r.contains(&l);
-                    return Expr::Bool(isin);
-                }
-
-                self.clone()
             }
-            _ => self.clone(),
+            _ => Ok(self),
         }
     }
+
     /// Run CQL against a JSON Value
     ///
     ///  # Examples
@@ -372,8 +354,8 @@ impl Expr {
     /// let mut expr: Expr = "boolfield and 1 + 2 = 3".parse().unwrap();
     /// assert_eq!(true, expr.matches(Some(&item)).unwrap());
     /// ```
-    pub fn matches(&self, j: Option<&Value>) -> Result<bool, Error> {
-        let reduced = self.reduce(j);
+    pub fn matches(self, j: Option<&Value>) -> Result<bool, Error> {
+        let reduced = self.reduce(j)?;
         match reduced {
             Expr::Bool(v) => Ok(v),
             _ => Err(Error::NonReduced()),
