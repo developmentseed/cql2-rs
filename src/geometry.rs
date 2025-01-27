@@ -56,7 +56,7 @@ impl PartialEq for Geometry {
         let v = spatial_op(left, right, "s_equals").unwrap_or(Expr::Bool(false));
         match v {
             Expr::Bool(v) => v,
-            _ => false
+            _ => false,
         }
     }
 }

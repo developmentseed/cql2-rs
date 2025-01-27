@@ -109,7 +109,7 @@ impl Cli {
             },
         };
         if self.reduce {
-            expr = expr.reduce(None);
+            expr = expr.reduce(None)?;
         }
         if self.validate {
             let validator = Validator::new().unwrap();

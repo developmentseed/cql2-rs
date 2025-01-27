@@ -54,3 +54,7 @@ true
 true
 1 between 3 and 4
 false
+POINT(0 0) = POINT(0 0)
+true
+POINT(0 0) = POINT(1 0)
+false
