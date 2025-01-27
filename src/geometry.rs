@@ -63,7 +63,7 @@ impl PartialEq for Geometry {
 
 impl PartialOrd for Geometry {
     fn partial_cmp(&self, _other: &Self) -> Option<Ordering> {
-        unimplemented!("Comparison Ops are not implemented for Geometry")
+        None
     }
 }
 
