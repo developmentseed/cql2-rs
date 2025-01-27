@@ -1,3 +1,4 @@
+use crate::Expr;
 use thiserror::Error;
 
 /// Crate-specific error enum.
@@ -65,4 +66,40 @@ pub enum Error {
     /// validator's data.
     #[error("validation error")]
     Validation(serde_json::Value),
+
+    /// Error Converting Expr to f64
+    #[error("Could not convert Expression to f64")]
+    ExprToF64(Expr),
+
+    /// Error Converting Expr to bool
+    #[error("Could not convert Expression to bool")]
+    ExprToBool(Expr),
+
+    /// Error Converting Expr to geometry
+    #[error("Could not convert Expression to Geometry")]
+    ExprToGeom(Expr),
+
+    /// Error Converting Expr to DateRange
+    #[error("Could not convert Expression to DateRange")]
+    ExprToDateRange(Expr),
+
+    /// Operator not implemented.
+    #[error("Operator {0} is not implemented for this type.")]
+    OpNotImplemented(&'static str),
+
+    /// Expression not reduced to boolean
+    #[error("Could not reduce expression to boolean")]
+    NonReduced(),
+
+    /// Could not run arith operation
+    #[error("Could not run operation.")]
+    OperationError(),
+
+    /// [json_dotpath::Error]
+    #[error(transparent)]
+    JsonDotpath(#[from] json_dotpath::Error),
+
+    /// [like::Error]
+    #[error(transparent)]
+    Like(#[from] like::InvalidPatternError),
 }

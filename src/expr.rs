@@ -1,8 +1,51 @@
-use crate::{Error, Geometry, SqlQuery, Validator};
+use crate::{geometry::spatial_op, temporal::temporal_op, Error, Geometry, SqlQuery, Validator};
+use geo_types::Geometry as GGeom;
+use geo_types::{coord, Rect};
+use json_dotpath::DotPaths;
+use like::Like;
 use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashSet;
+use std::ops::Deref;
 use std::str::FromStr;
+use unaccent::unaccent;
+use wkt::TryFromWkt;
+
+const BOOLOPS: &[&str] = &["and", "or"];
+const EQOPS: &[&str] = &["=", "<>"];
+const CMPOPS: &[&str] = &[">", ">=", "<", "<="];
+const SPATIALOPS: &[&str] = &[
+    "s_equals",
+    "s_intersects",
+    "s_disjoint",
+    "s_touches",
+    "s_within",
+    "s_overlaps",
+    "s_crosses",
+    "s_contains",
+];
+const TEMPORALOPS: &[&str] = &[
+    "t_before",
+    "t_after",
+    "t_meets",
+    "t_metby",
+    "t_overlaps",
+    "t_overlappedby",
+    "t_starts",
+    "t_startedby",
+    "t_during",
+    "t_contains",
+    "t_finishes",
+    "to_finishedby",
+    "t_equals",
+    "t_disjoint",
+    "t_intersects",
+];
+const ARITHOPS: &[&str] = &["+", "-", "*", "/", "%", "^", "div"];
+const ARRAYOPS: &[&str] = &["a_equals", "a_contains", "a_containedby", "a_overlaps"];
+
+// todo: array ops, in, casei, accenti, between, not, like
 
 /// A CQL2 expression.
 ///
@@ -18,7 +61,7 @@ use std::str::FromStr;
 ///
 /// Use [Expr::to_text], [Expr::to_json], and [Expr::to_sql] to use the CQL2,
 /// and use [Expr::is_valid] to check validity.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
 #[serde(untagged)]
 #[allow(missing_docs)]
 pub enum Expr {
@@ -35,7 +78,289 @@ pub enum Expr {
     Geometry(Geometry),
 }
 
+impl TryFrom<Value> for Expr {
+    type Error = Error;
+    fn try_from(v: Value) -> Result<Expr, Error> {
+        serde_json::from_value(v).map_err(Error::from)
+    }
+}
+
+impl TryFrom<Expr> for Value {
+    type Error = Error;
+    fn try_from(v: Expr) -> Result<Value, Error> {
+        serde_json::to_value(v).map_err(Error::from)
+    }
+}
+
+impl TryFrom<Expr> for f64 {
+    type Error = Error;
+    fn try_from(v: Expr) -> Result<f64, Error> {
+        match v {
+            Expr::Float(v) => Ok(v),
+            Expr::Literal(v) => f64::from_str(&v).map_err(Error::from),
+            _ => Err(Error::ExprToF64(v)),
+        }
+    }
+}
+
+impl TryFrom<&Expr> for bool {
+    type Error = Error;
+    fn try_from(v: &Expr) -> Result<bool, Error> {
+        match v {
+            Expr::Bool(v) => Ok(*v),
+            Expr::Literal(v) => bool::from_str(v).map_err(Error::from),
+            _ => Err(Error::ExprToBool(v.clone())),
+        }
+    }
+}
+
+impl TryFrom<Expr> for String {
+    type Error = Error;
+    fn try_from(v: Expr) -> Result<String, Error> {
+        match v {
+            Expr::Literal(v) => Ok(v),
+            Expr::Bool(v) => Ok(v.to_string()),
+            Expr::Float(v) => Ok(v.to_string()),
+            _ => Err(Error::ExprToBool(v)),
+        }
+    }
+}
+
+impl TryFrom<Expr> for GGeom {
+    type Error = Error;
+    fn try_from(v: Expr) -> Result<GGeom, Error> {
+        match v {
+            Expr::Geometry(v) => Ok(GGeom::try_from_wkt_str(&v.to_wkt().unwrap())
+                .expect("Failed to convert WKT to Geometry")),
+            Expr::BBox { ref bbox } => {
+                let minx: f64 = bbox[0].as_ref().clone().try_into()?;
+                let miny: f64 = bbox[1].as_ref().clone().try_into()?;
+                let maxx: f64;
+                let maxy: f64;
+
+                match bbox.len() {
+                    4 => {
+                        maxx = bbox[2].as_ref().clone().try_into()?;
+                        maxy = bbox[3].as_ref().clone().try_into()?;
+                    }
+                    6 => {
+                        maxx = bbox[3].as_ref().clone().try_into()?;
+                        maxy = bbox[4].as_ref().clone().try_into()?;
+                    }
+                    _ => return Err(Error::ExprToGeom(v.clone())),
+                };
+                let rec = Rect::new(coord! {x:minx, y:miny}, coord! {x:maxx,y:maxy});
+                Ok(rec.into())
+            }
+            _ => Err(Error::ExprToGeom(v)),
+        }
+    }
+}
+
+impl TryFrom<Expr> for HashSet<String> {
+    type Error = Error;
+    fn try_from(v: Expr) -> Result<HashSet<String>, Error> {
+        match v {
+            Expr::Array(v) => {
+                let mut h = HashSet::new();
+                for el in v {
+                    let _ = h.insert(el.to_text()?);
+                }
+                Ok(h)
+            }
+            _ => Err(Error::ExprToGeom(v)),
+        }
+    }
+}
+
+fn cmp_op<T: PartialEq + PartialOrd>(left: T, right: T, op: &str) -> Result<Expr, Error> {
+    let out = match op {
+        "=" => Ok(left == right),
+        "<=" => Ok(left <= right),
+        "<" => Ok(left < right),
+        ">=" => Ok(left >= right),
+        ">" => Ok(left > right),
+        "<>" => Ok(left != right),
+        _ => Err(Error::OpNotImplemented("Binary Bool")),
+    };
+    match out {
+        Ok(v) => Ok(Expr::Bool(v)),
+        _ => Err(Error::OperationError()),
+    }
+}
+
+fn arith_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
+    let left = f64::try_from(left)?;
+    let right = f64::try_from(right)?;
+    let out = match op {
+        "+" => Ok(left + right),
+        "-" => Ok(left - right),
+        "*" => Ok(left * right),
+        "/" => Ok(left / right),
+        "%" => Ok(left % right),
+        "^" => Ok(left.powf(right)),
+        _ => Err(Error::OpNotImplemented("Arith")),
+    };
+    match out {
+        Ok(v) => Ok(Expr::Float(v)),
+        _ => Err(Error::OperationError()),
+    }
+}
+
+fn array_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
+    let left: HashSet<String> = left.try_into()?;
+    let right: HashSet<String> = right.try_into()?;
+    let out = match op {
+        "a_equals" => Ok(left == right),
+        "a_contains" => Ok(left.is_superset(&right)),
+        "a_containedby" => Ok(left.is_subset(&right)),
+        "a_overlaps" => Ok(!left.is_disjoint(&right)),
+        _ => Err(Error::OpNotImplemented("Arith")),
+    };
+    match out {
+        Ok(v) => Ok(Expr::Bool(v)),
+        _ => Err(Error::OperationError()),
+    }
+}
+
 impl Expr {
+    /// Update this expression with values from the `properties` attribute of a JSON object
+    ///
+    ///  # Examples
+    ///
+    /// ```
+    /// use serde_json::{json, Value};
+    /// use cql2::Expr;
+    /// use std::str::FromStr;
+    ///
+    /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z", "boolfield": true}});
+    ///
+    /// let fromexpr: Expr = Expr::from_str("boolfield = true").unwrap();
+    /// let reduced = fromexpr.reduce(Some(&item)).unwrap();
+    /// let toexpr: Expr = Expr::from_str("true").unwrap();
+    /// assert_eq!(reduced, toexpr);
+    ///
+    /// let fromexpr: Expr = Expr::from_str("\"eo:cloud_cover\" + 10").unwrap();
+    /// let reduced = fromexpr.reduce(Some(&item)).unwrap();
+    /// let toexpr: Expr = Expr::from_str("20").unwrap();
+    /// assert_eq!(reduced, toexpr);
+    ///
+    /// ```
+    pub fn reduce(self, j: Option<&Value>) -> Result<Expr, Error> {
+        match self {
+            Expr::Property { ref property } => {
+                if let Some(j) = j {
+                    if let Some(value) = j.dot_get::<Value>(property)? {
+                        Expr::try_from(value)
+                    } else if let Some(value) =
+                        j.dot_get::<Value>(&format!("properties.{}", property))?
+                    {
+                        Expr::try_from(value)
+                    } else {
+                        Ok(self)
+                    }
+                } else {
+                    Ok(self)
+                }
+            }
+            Expr::Operation { op, args } => {
+                let args: Vec<Box<Expr>> = args
+                    .into_iter()
+                    .map(|expr| expr.reduce(j).map(Box::new))
+                    .collect::<Result<_, _>>()?;
+
+                if BOOLOPS.contains(&op.as_str()) {
+                    let bools: Result<Vec<bool>, Error> = args
+                        .iter()
+                        .map(|expr| bool::try_from(expr.as_ref()))
+                        .collect();
+
+                    if let Ok(bools) = bools {
+                        match op.as_str() {
+                            "and" => Ok(Expr::Bool(bools.into_iter().all(|x| x))),
+                            "or" => Ok(Expr::Bool(bools.into_iter().any(|x| x))),
+                            _ => Ok(Expr::Operation { op, args }),
+                        }
+                    } else {
+                        Ok(Expr::Operation { op, args })
+                    }
+                } else if op == "not" {
+                    match args[0].deref() {
+                        Expr::Bool(v) => Ok(Expr::Bool(!v)),
+                        _ => Ok(Expr::Operation { op, args }),
+                    }
+                } else if op == "casei" {
+                    match args[0].as_ref() {
+                        Expr::Literal(v) => Ok(Expr::Literal(v.to_lowercase())),
+                        _ => Ok(Expr::Operation { op, args }),
+                    }
+                } else if op == "accenti" {
+                    match args[0].as_ref() {
+                        Expr::Literal(v) => Ok(Expr::Literal(unaccent(v))),
+                        _ => Ok(Expr::Operation { op, args }),
+                    }
+                } else if op == "between" {
+                    Ok(Expr::Bool(args[0] >= args[1] && args[0] <= args[2]))
+                } else if args.len() != 2 {
+                    Ok(Expr::Operation { op, args })
+                } else {
+                    // Two-arg operations
+                    let left = args[0].deref().clone();
+                    let right = args[1].deref().clone();
+
+                    if SPATIALOPS.contains(&op.as_str()) {
+                        Ok(spatial_op(left, right, &op)
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    } else if TEMPORALOPS.contains(&op.as_str()) {
+                        Ok(temporal_op(left, right, &op)
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    } else if ARITHOPS.contains(&op.as_str()) {
+                        Ok(arith_op(left, right, &op)
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    } else if EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str()) {
+                        Ok(cmp_op(left, right, &op)
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    } else if ARRAYOPS.contains(&op.as_str()) {
+                        Ok(array_op(left, right, &op)
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    } else if op == "like" {
+                        let l: String = left.try_into()?;
+                        let r: String = right.try_into()?;
+                        let m: bool = Like::<true>::like(l.as_str(), r.as_str())?;
+                        Ok(Expr::Bool(m))
+                    } else if op == "in" {
+                        let l: String = left.to_text()?;
+                        let r: HashSet<String> = right.try_into()?;
+                        let isin: bool = r.contains(&l);
+                        Ok(Expr::Bool(isin))
+                    } else {
+                        Ok(Expr::Operation { op, args })
+                    }
+                }
+            }
+            _ => Ok(self),
+        }
+    }
+
+    /// Run CQL against a JSON Value
+    ///
+    ///  # Examples
+    ///
+    /// ```
+    /// use serde_json::{json, Value};
+    /// use cql2::Expr;
+    /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z", "boolfield": true}});
+    ///
+    /// let mut expr: Expr = "boolfield and 1 + 2 = 3".parse().unwrap();
+    /// assert_eq!(true, expr.matches(Some(&item)).unwrap());
+    /// ```
+    pub fn matches(self, j: Option<&Value>) -> Result<bool, Error> {
+        let reduced = self.reduce(j)?;
+        match reduced {
+            Expr::Bool(v) => Ok(v),
+            _ => Err(Error::NonReduced()),
+        }
+    }
     /// Converts this expression to CQL2 text.
     ///
     /// # Examples

@@ -1,0 +1,60 @@
+1 + 1
+2
+1 + 2 = 4
+false
+1 + 3 = 7
+false
+true and false or true
+true
+"eo:cloud_cover" = 10
+true
+eo:cloud_cover + 10 = 20
+true
+booltrue
+true
+boolfalse
+false
+booltrue or boolfalse
+true
+2 > eo:cloud_cover
+false
+2 > eo:cloud_cover - 10
+true
+S_EQUALS(POINT(-93.0 45.0), geometry)
+true
+A_EQUALS((1,2,3),(1,2,3))
+true
+A_EQUALS((1,2,3),(1,2))
+false
+A_OVERLAPS((1,2,3),(1,2))
+true
+A_CONTAINS((1,2,3),(1,2))
+true
+A_CONTAINEDBY((1,2),(1,2,3))
+true
+A_EQUALS(tstarr,(1,2,3))
+true
+1 in (1,2,4)
+true
+'a' in ('a','b','c')
+true
+'a' in ('d','e','f')
+false
+'this' like 'th%'
+true
+not(true)
+false
+not(1+3=1)
+true
+casei('aardvarK') = casei('Aardvark')
+true
+accenti('Café') = accenti('Cafe')
+true
+1 between 1 and 2
+true
+1 between 3 and 4
+false
+POINT(0 0) = POINT(0 0)
+true
+POINT(0 0) = POINT(1 0)
+false

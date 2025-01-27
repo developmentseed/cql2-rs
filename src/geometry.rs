@@ -1,4 +1,8 @@
-use crate::Error;
+use std::cmp::Ordering;
+
+use crate::{Error, Expr};
+use geo::*;
+use geo_types::Geometry as GGeom;
 use geozero::{wkt::Wkt, CoordDimensions, ToGeo, ToWkt};
 use serde::{Deserialize, Serialize, Serializer};
 
@@ -45,6 +49,24 @@ impl Geometry {
     }
 }
 
+impl PartialEq for Geometry {
+    fn eq(&self, other: &Self) -> bool {
+        let left = Expr::Geometry(self.clone());
+        let right = Expr::Geometry(other.clone());
+        let v = spatial_op(left, right, "s_equals").unwrap_or(Expr::Bool(false));
+        match v {
+            Expr::Bool(v) => v,
+            _ => false,
+        }
+    }
+}
+
+impl PartialOrd for Geometry {
+    fn partial_cmp(&self, _other: &Self) -> Option<Ordering> {
+        None
+    }
+}
+
 fn to_geojson<S>(wkt: &String, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -79,4 +101,23 @@ fn geojson_ndims(geojson: &geojson::Geometry) -> usize {
             .unwrap_or(DEFAULT_NDIM),
         GeometryCollection(v) => v.first().map(geojson_ndims).unwrap_or(DEFAULT_NDIM),
     }
+}
+
+/// Run a spatial operation.
+pub fn spatial_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
+    let left: GGeom = GGeom::try_from(left)?;
+    let right: GGeom = GGeom::try_from(right)?;
+    let rel = left.relate(&right);
+    let out = match op {
+        "s_equals" => rel.is_equal_topo(),
+        "s_intersects" | "intersects" => rel.is_intersects(),
+        "s_disjoint" => rel.is_disjoint(),
+        "s_touches" => rel.is_touches(),
+        "s_within" => rel.is_within(),
+        "s_overlaps" => rel.is_overlaps(),
+        "s_crosses" => rel.is_crosses(),
+        "s_contains" => rel.is_contains(),
+        &_ => todo!(),
+    };
+    Ok(Expr::Bool(out))
 }
