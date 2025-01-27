@@ -1,7 +1,6 @@
 use anyhow::{anyhow, Result};
 use clap::{ArgAction, Parser, ValueEnum};
 use cql2::{Expr, Validator};
-use serde_json::json;
 use std::io::Read;
 
 /// The CQL2 command-line interface.
@@ -110,7 +109,7 @@ impl Cli {
             },
         };
         if self.reduce {
-            expr = expr.reduce(Some(&json!({})));
+            expr = expr.reduce(None);
         }
         if self.validate {
             let validator = Validator::new().unwrap();

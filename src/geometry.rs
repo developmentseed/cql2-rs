@@ -51,13 +51,19 @@ impl Geometry {
 
 impl PartialEq for Geometry {
     fn eq(&self, other: &Self) -> bool {
-        self.to_wkt().unwrap() == other.to_wkt().unwrap()
+        let left = Expr::Geometry(self.clone());
+        let right = Expr::Geometry(other.clone());
+        let v = spatial_op(left, right, "s_equals").unwrap_or(Expr::Bool(false));
+        match v {
+            Expr::Bool(v) => v,
+            _ => false
+        }
     }
 }
 
 impl PartialOrd for Geometry {
     fn partial_cmp(&self, _other: &Self) -> Option<Ordering> {
-        Some(Ordering::Equal)
+        unimplemented!("Comparison Ops are not implemented for Geometry")
     }
 }
 
