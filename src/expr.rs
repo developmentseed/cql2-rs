@@ -304,7 +304,7 @@ impl Expr {
                 } else if args.len() != 2 {
                     Ok(Expr::Operation { op, args })
                 } else {
-                    // Two-arg operations operations
+                    // Two-arg operations
                     let left = args[0].deref().clone();
                     let right = args[1].deref().clone();
 
