@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.3.3-alpha.0] - 2024-02-03
+
+### Added
+
+- Match cql2 against JSON ([#55](https://github.com/developmentseed/cql2-rs/pull/55))
+
 ## [0.3.2] - 2024-12-09
 
 ### Fixed
