@@ -1,5 +1,5 @@
 [workspace.package]
-version = "0.3.2"
+version = "0.3.3-alpha.0"
 authors = [
     "David Bitner <bitner@dbspatial.com>",
     "Pete Gadomski <pete.gadomski@gmail.com>",
@@ -28,7 +28,7 @@ geo = "0.29.3"
 geo-types = "0.7.15"
 geojson = "0.24.1"
 geozero = "0.14.0"
-jiff = "0.1.24"
+jiff = "0.1.29"
 json_dotpath = "1.1.0"
 lazy_static = "1.5"
 like = "0.3.1"
@@ -37,7 +37,7 @@ pest_derive = { version = "2.7", features = ["grammar-extras"] }
 pg_escape = "0.1.1"
 serde = "1.0"
 serde_derive = "1.0.217"
-serde_json = { version = "1.0.135", features = ["preserve_order"] }
+serde_json = { version = "1.0.138", features = ["preserve_order"] }
 thiserror = "2.0"
 unaccent = "0.1.0"
 wkt = "0.12.0"
