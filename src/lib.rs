@@ -36,9 +36,11 @@ mod geometry;
 mod parser;
 mod temporal;
 mod validator;
+mod duckdb;
 
 pub use error::Error;
-pub use expr::Expr;
+pub use expr::*;
+pub use duckdb::ToDuckSQL;
 pub use geometry::{spatial_op, Geometry};
 pub use parser::parse_text;
 use serde_derive::{Deserialize, Serialize};

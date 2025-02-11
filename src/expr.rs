@@ -12,10 +12,10 @@ use std::str::FromStr;
 use unaccent::unaccent;
 use wkt::TryFromWkt;
 
-const BOOLOPS: &[&str] = &["and", "or"];
-const EQOPS: &[&str] = &["=", "<>"];
-const CMPOPS: &[&str] = &[">", ">=", "<", "<="];
-const SPATIALOPS: &[&str] = &[
+pub const BOOLOPS: &[&str] = &["and", "or"];
+pub const EQOPS: &[&str] = &["=", "<>"];
+pub const CMPOPS: &[&str] = &[">", ">=", "<", "<="];
+pub const SPATIALOPS: &[&str] = &[
     "s_equals",
     "s_intersects",
     "s_disjoint",
@@ -25,7 +25,7 @@ const SPATIALOPS: &[&str] = &[
     "s_crosses",
     "s_contains",
 ];
-const TEMPORALOPS: &[&str] = &[
+pub const TEMPORALOPS: &[&str] = &[
     "t_before",
     "t_after",
     "t_meets",
@@ -42,8 +42,8 @@ const TEMPORALOPS: &[&str] = &[
     "t_disjoint",
     "t_intersects",
 ];
-const ARITHOPS: &[&str] = &["+", "-", "*", "/", "%", "^", "div"];
-const ARRAYOPS: &[&str] = &["a_equals", "a_contains", "a_containedby", "a_overlaps"];
+pub const ARITHOPS: &[&str] = &["+", "-", "*", "/", "%", "^", "div"];
+pub const ARRAYOPS: &[&str] = &["a_equals", "a_contains", "a_containedby", "a_overlaps"];
 
 // todo: array ops, in, casei, accenti, between, not, like
 
