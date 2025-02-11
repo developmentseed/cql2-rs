@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Hello wasm-pack!</title>
+  </head>
+  <body>
+    <script src="./pkg/cql2_wasm.js"></script>
+    <textarea id="cqlinput" rows="8" cols="100"></textarea>
+    <div id="valid"></div>
+    <div id="cql2text"></div>
+    <div id="cql2json"></div>
+    <script>
+        var cqlin = document.GetElementById('cqlinput');
+        var valid = document.GetElementById('valid');
+        var text = document.GetElementById('cql2text');
+        var json = document.GetElementById('cql2json');
+        cql.addEventListener('input', function() {
+            var expr = CQL2.new(cql.val);
+            valid.value = expr.valid();
+            text.value = expr.to_text();
+            json.value = expr.to_json_pretty();
+        });
+    </script>
+  </body>
+</html>
