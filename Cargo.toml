@@ -22,9 +22,6 @@ repository = { workspace = true }
 license = { workspace = true }
 keywords = ["cql2"]
 
-[features]
-validation = []
-reduce = []
 
 [dependencies]
 geo = "0.29.3"

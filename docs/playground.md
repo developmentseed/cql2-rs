@@ -1,11 +1,6 @@
-<html>
-  <head>
-    <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  </head>
-  <body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script type="module">
-    import init, { CQL2 } from './pkg/cql2_wasm.js';
+    import init, { CQL2 } from '../pkg/cql2_wasm.js';
 
     await init();
     window.CQL2 = CQL2;
@@ -45,23 +40,16 @@
         check();
     });
 
-    </script>
-    <h1>CQL2 Playground</h1>
-    <textarea id="cqlin" rows="20" cols="100">foo > 1</textarea>
-    <br/>
-    Valid:<input type="checkbox" id="cqlvalid" onclick="return false"></input>
-    <br/>
-    Parsed CQL2 Text
-    <br/>
-    <textarea id="cql2text" rows="10" cols="100" readonly>Parsed CQL2 Text</textarea>
-    <br/>
-    Parsed CQL2 JSON
-    <br/>
-    <textarea id="cql2json" rows="20" cols="100" readonly>Parsed CQL2 JSON</textarea>
-
-
-  </body>
-  <script>
-
   </script>
-</html>
+  <h1>CQL2 Playground</h1>
+  <textarea id="cqlin" rows="20" cols="100">foo > 1</textarea>
+  <br/>
+  Valid:<input type="checkbox" id="cqlvalid" onclick="return false"></input>
+  <br/>
+  Parsed CQL2 Text
+  <br/>
+  <textarea id="cql2text" rows="10" cols="100" readonly>Parsed CQL2 Text</textarea>
+  <br/>
+  Parsed CQL2 JSON
+  <br/>
+  <textarea id="cql2json" rows="20" cols="100" readonly>Parsed CQL2 JSON</textarea>
