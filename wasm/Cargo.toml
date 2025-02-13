@@ -1,0 +1,29 @@
+[package]
+name = "cql2-wasm"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+description = "WASM interface for Common Query Language (CQL2)"
+readme = "README.md"
+homepage = "https://github.com/developmentseed/cql2-rs"
+repository = { workspace = true }
+license = { workspace = true }
+keywords = ["cql2"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+cql2 = { path = ".." }
+wasm-bindgen = "0.2"
+getrandom = { version = "0.2.15", features = ["js"]}
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = [
+  'Document',
+  'Element',
+  'HtmlElement',
+  'Node',
+  'Window',
+]

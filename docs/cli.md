@@ -35,7 +35,7 @@ $ cql2 -o json < tests/fixtures/text/example01.txt
 Use `-v` to get detailed validation information:
 
 ```shell
-$ cql2 'wrong' -v  
+$ cql2 'wrong' -v
 [ERROR] Invalid CQL2: wrong
 For more detailed validation information, use -vv
 jsonschema validation failed with file:///tmp/cql2.json#
@@ -58,7 +58,7 @@ jsonschema validation failed with file:///tmp/cql2.json#
 cql2-text parsing errors are pretty-printed:
 
 ```shell
-$ cql2 '(foo ~= "bar")' 
+$ cql2 '(foo ~= "bar")'
 [ERROR] Parsing error: (foo ~= "bar")
  --> 1:6
   |

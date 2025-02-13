@@ -22,14 +22,15 @@ repository = { workspace = true }
 license = { workspace = true }
 keywords = ["cql2"]
 
+
 [dependencies]
-boon = "0.6.1"
 geo = "0.29.3"
 geo-types = "0.7.15"
 geojson = "0.24.1"
 geozero = "0.14.0"
-jiff = "0.1.29"
+jiff = "0.2.0"
 json_dotpath = "1.1.0"
+jsonschema = { version = "0.29.0", default-features = false }
 lazy_static = "1.5"
 like = "0.3.1"
 pest = "2.7"
@@ -48,7 +49,7 @@ rstest = "0.24.0"
 
 [workspace]
 default-members = [".", "cli"]
-members = ["cli", "python"]
+members = ["cli", "python", "wasm"]
 
 [workspace.dependencies]
-clap = "4.5"
+clap = "4.5.28"

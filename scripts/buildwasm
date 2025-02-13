@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+set -e
+
+wasm-pack build --no-typescript --target web --out-dir ../docs/pkg wasm

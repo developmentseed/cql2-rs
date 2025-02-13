@@ -1,0 +1,17 @@
+#!/bin/bash
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+JSONFILES="$SCRIPT_DIR/../examples/json"
+TXTFILES="$SCRIPT_DIR/../examples/text"
+for i in $TXTFILES/*.txt
+do
+    name=`basename $i`
+    content=`cat $i`
+    content=${content//\"/\&quot;}
+    echo "<option value=\"$content\">$name</option>"
+done
+for i in $JSONFILES/*.json
+do
+    name=`basename $i`
+    content=`cat $i | jq -r @json`
+    echo "<option value='$content'>$name</option>"
+done

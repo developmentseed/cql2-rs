@@ -34,6 +34,7 @@ nav:
   - Python: python.md
   - CLI: cli.md
   - Rust: https://docs.rs/cql2
+  - Wasm Playground: playground.md
 plugins:
   - search
   - social
