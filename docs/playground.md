@@ -39,6 +39,10 @@
         $("#cqlin").bind('input propertychange', check);
         $("#examples").change(function(){
           let sel = $('#examples').find(":selected").val();
+          if (sel.startsWith("{")){
+            let j = JSON.parse(sel);
+            sel = JSON.stringify(j, null, 2);
+          }
           $("#cqlin").val(sel);
           $("#examples").prop("selectedIndex", 0);
           check();
