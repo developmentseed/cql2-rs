@@ -1,37 +1,27 @@
 use crate::Error;
-use boon::{Compiler, SchemaIndex, Schemas, ValidationError};
+use jsonschema::{self, output::Output};
 use serde_json::Value;
 
-/// A re-usable json-schema validator for CQL2.
-#[allow(missing_debug_implementations)]
+#[derive(Debug)]
+/// Validator for cql2 json schema
 pub struct Validator {
-    schemas: Schemas,
-    index: SchemaIndex,
+    validator: jsonschema::Validator,
 }
 
 impl Validator {
-    /// Creates a new validator.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use cql2::Validator;
-    ///
-    /// let validator = Validator::new().unwrap();
-    /// ```
-    pub fn new() -> Result<Validator, Error> {
-        let mut schemas = Schemas::new();
-        let mut compiler = Compiler::new();
-        let schema_json = serde_json::from_str(include_str!("cql2.json"))?;
-        compiler
-            .add_resource("/tmp/cql2.json", schema_json)
-            .expect("the cql2 json-schema should compile");
-        let index = compiler
-            .compile("/tmp/cql2.json", &mut schemas)
-            .expect("the cql2 json-schema should compile");
-        Ok(Validator { schemas, index })
+    /// Instantiate Validator instance loading schema.
+    pub fn new() -> Result<Self, Error> {
+        let schema_str = include_str!("cql2.json");
+        let schema_json: Value = serde_json::from_str(schema_str)?;
+        let validator =
+            jsonschema::validator_for(&schema_json).expect("Could not construct schema validator.");
+        Ok(Validator { validator })
     }
 
+    /// Validate CQL2 Json
+    pub fn is_valid(&self, v: &Value) -> bool {
+        self.validator.is_valid(v)
+    }
     /// Validates a [serde_json::Value].
     ///
     /// # Examples
@@ -57,7 +47,17 @@ impl Validator {
     /// });
     /// validator.validate(&invalid).unwrap_err();
     /// ```
-    pub fn validate<'a, 'b>(&'a self, value: &'b Value) -> Result<(), ValidationError<'a, 'b>> {
-        self.schemas.validate(value, self.index)
+    pub fn validate<'i>(&self, v: &'i Value) -> Result<(), jsonschema::ValidationError<'i>> {
+        self.validator.validate(v)
+    }
+
+    /// Apply a validator
+    pub fn apply<'a, 'b>(&'a self, v: &'b Value) -> Output<'a, 'b> {
+        self.validator.apply(v)
+    }
+
+    /// Iterate through validation errors
+    pub fn iter_errors<'i>(&'i self, v: &'i Value) -> jsonschema::ErrorIterator<'i> {
+        self.validator.iter_errors(v)
     }
 }

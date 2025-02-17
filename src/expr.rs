@@ -596,7 +596,7 @@ impl Expr {
         match &value {
             Ok(value) => {
                 let validator = Validator::new().expect("Could not create default validator");
-                validator.validate(value).is_ok()
+                validator.is_valid(value)
             }
             _ => false,
         }
