@@ -180,9 +180,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "clap"
-version = "4.5.28"
+version = "4.5.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e77c3243bd94243c03672cb5154667347c457ca271254724f9f393aee1c05ff"
+checksum = "92b7b18d71fad5313a1e320fa9897994228ce274b60faa4d694fe0ea89cd9e6d"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -190,9 +190,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.27"
+version = "4.5.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b26884eb4b57140e4d2d93652abfa49498b938b3c9179f9fc487b0acc3edad7"
+checksum = "a35db2071778a7344791a4fb4f95308b5673d219dee3ae348b86642574ecc90c"
 dependencies = [
  "anstream",
  "anstyle",
@@ -235,7 +235,7 @@ dependencies = [
 
 [[package]]
 name = "cql2"
-version = "0.3.3-alpha.0"
+version = "0.3.3-alpha.1"
 dependencies = [
  "assert-json-diff",
  "geo",
@@ -261,7 +261,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-cli"
-version = "0.3.3-alpha.0"
+version = "0.3.3-alpha.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -271,7 +271,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-python"
-version = "0.3.3-alpha.0"
+version = "0.3.3-alpha.1"
 dependencies = [
  "clap",
  "cql2",
@@ -282,7 +282,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-wasm"
-version = "0.3.3-alpha.0"
+version = "0.3.3-alpha.1"
 dependencies = [
  "cql2",
  "getrandom",
@@ -373,9 +373,9 @@ dependencies = [
 
 [[package]]
 name = "equivalent"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
+checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "fancy-regex"
@@ -826,9 +826,9 @@ checksum = "d75a2a4b1b190afb6f5425f10f6a8f959d2ea0b9c2b1d79553551850539e4674"
 
 [[package]]
 name = "jiff"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba926fdd8e5b5e7f9700355b0831d8c416afe94b014b1023424037a187c9c582"
+checksum = "3590fea8e9e22d449600c9bbd481a8163bef223e4ff938e5f55899f8cf1adb93"
 dependencies = [
  "jiff-tzdb-platform",
  "log",
@@ -1558,9 +1558,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.13.2"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
+checksum = "7fcf8323ef1faaee30a44a340193b1ac6814fd9b7b4e88e9d4519a3e4abe1cfd"
 
 [[package]]
 name = "spade"
@@ -1710,9 +1710,9 @@ checksum = "2896d95c02a80c6d6a5d6e953d479f5ddf2dfdb6a244441010e373ac0fb88971"
 
 [[package]]
 name = "unaccent"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a302f53d684e29e3d2ce7a83bb9bd2a0ee4a0793c0d4b6be325983b9b304e935"
+checksum = "e732eb499ccf541e76badc7eb2a929cf8749cfd79022dde9e2cb4628d885a69a"
 dependencies = [
  "unicode-normalization",
 ]
@@ -1758,9 +1758,9 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "uuid"
-version = "1.13.1"
+version = "1.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ced87ca4be083373936a67f8de945faa23b6b42384bd5b64434850802c6dccd0"
+checksum = "8c1f41ffb7cf259f1ecc2876861a17e7142e63ead296f671f81f6ae85903e0d6"
 
 [[package]]
 name = "uuid-simd"
