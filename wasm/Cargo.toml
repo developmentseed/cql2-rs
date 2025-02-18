@@ -12,7 +12,7 @@ keywords = ["cql2"]
 publish = false
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cql2 = { path = ".." }
@@ -22,3 +22,6 @@ getrandom = { version = "0.2.15", features = ["js"] }
 [dependencies.web-sys]
 version = "0.3.4"
 features = ['Document', 'Element', 'HtmlElement', 'Node', 'Window']
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.34"
