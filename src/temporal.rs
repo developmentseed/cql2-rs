@@ -81,3 +81,17 @@ pub fn temporal_op(left_expr: Expr, right_expr: Expr, op: &str) -> Result<Expr, 
         _ => Err(Error::OperationError()),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::DateRange;
+    use crate::Expr;
+    use serde_json::json;
+
+    #[test]
+    fn timestamp_math() {
+        // https://github.com/developmentseed/cql2-rs/issues/66
+        let expr: Expr = serde_json::from_value(json!({"date": "2025-02-18T00:00:00Z"})).unwrap();
+        let _: DateRange = expr.try_into().unwrap();
+    }
+}
