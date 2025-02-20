@@ -118,6 +118,22 @@ class Expr:
             ['LC82030282019133LGN00']
         """
 
+    def __add__(self, other: "Expr") -> "Expr":
+        """Combines two cql2 expressions using the AND operator.
+
+        Args:
+            other (Expr): The other expression
+
+        Returns:
+            Expr: The combined expression
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> expr1 = Expr("landsat:scene_id = 'LC82030282019133LGN00'")
+            >>> expr2 = Expr("landsat:cloud_cover = 10")
+            >>> expr = expr1 + expr2
+        """
+
 class SqlQuery:
     """A SQL query"""
 
