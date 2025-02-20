@@ -7,7 +7,7 @@ use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
-use std::ops::Deref;
+use std::ops::{Add, Deref};
 use std::str::FromStr;
 use unaccent::unaccent;
 use wkt::TryFromWkt;
@@ -611,6 +611,42 @@ impl FromStr for Expr {
             crate::parse_json(s).map_err(Error::from)
         } else {
             crate::parse_text(s)
+        }
+    }
+}
+
+impl Add for Expr {
+    type Output = Expr;
+
+    ///
+    /// Combines two expressions with the `+` operator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    /// use std::ops::Add;
+    ///
+    /// let expr1 = Expr::Bool(true);
+    /// let expr2 = Expr::Bool(false);
+    /// let expected_expr: Expr = "true and false".parse().unwrap();
+    /// assert_eq!(expr1 + expr2, expected_expr);
+    /// ```
+    ///
+    /// ```
+    /// use cql2::Expr;
+    /// use std::ops::Add;
+    ///
+    /// let expr1 = Expr::Bool(true);
+    /// let expr2 = Expr::Bool(false);
+    /// let expected_expr: Expr = "true and false".parse().unwrap();
+    /// assert_eq!(expr1.add(expr2), expected_expr);
+    /// ```
+
+    fn add(self, other: Expr) -> Expr {
+        Expr::Operation {
+            op: "and".to_string(),
+            args: vec![Box::new(self), Box::new(other)],
         }
     }
 }
