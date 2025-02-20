@@ -85,6 +85,10 @@ impl Expr {
     fn to_sql(&self) -> Result<SqlQuery> {
         self.0.to_sql().map(SqlQuery::from).map_err(Error::from)
     }
+
+    fn __add__(&self, rhs: &Expr) -> Result<Expr> {
+        Ok(Expr(self.0.clone() + rhs.0.clone()))
+    }
 }
 
 impl From<::cql2::SqlQuery> for SqlQuery {

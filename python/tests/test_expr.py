@@ -57,3 +57,7 @@ def test_validate() -> None:
     )
     with pytest.raises(ValidationError):
         expr.validate()
+
+
+def test_add() -> None:
+    assert (Expr("True") + Expr("false")).to_text() == Expr("true AND false").to_text()
