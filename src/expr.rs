@@ -642,7 +642,6 @@ impl Add for Expr {
     /// let expected_expr: Expr = "true and false".parse().unwrap();
     /// assert_eq!(expr1.add(expr2), expected_expr);
     /// ```
-
     fn add(self, other: Expr) -> Expr {
         Expr::Operation {
             op: "and".to_string(),
