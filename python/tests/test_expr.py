@@ -60,4 +60,8 @@ def test_validate() -> None:
 
 
 def test_add() -> None:
-    assert (Expr("True") + Expr("false")).to_text() == Expr("true AND false").to_text()
+    assert Expr("True") + Expr("false") == Expr("true AND false")
+
+
+def test_eq() -> None:
+    assert Expr("True") == Expr("true")

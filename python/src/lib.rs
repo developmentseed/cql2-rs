@@ -89,6 +89,10 @@ impl Expr {
     fn __add__(&self, rhs: &Expr) -> Result<Expr> {
         Ok(Expr(self.0.clone() + rhs.0.clone()))
     }
+
+    fn __eq__(&self, rhs: &Expr) -> bool {
+        self.0 == rhs.0
+    }
 }
 
 impl From<::cql2::SqlQuery> for SqlQuery {
