@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize, Serializer};
 
 const DEFAULT_NDIM: usize = 2;
 
-
 /// Crate-specific geometry type to hold either WKT or GeoJSON.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]

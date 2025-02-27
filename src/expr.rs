@@ -12,9 +12,16 @@ use std::str::FromStr;
 use unaccent::unaccent;
 use wkt::TryFromWkt;
 
+/// Boolean Operators
 pub const BOOLOPS: &[&str] = &["and", "or"];
+
+/// Equality Operators
 pub const EQOPS: &[&str] = &["=", "<>"];
+
+/// Comparison Operators
 pub const CMPOPS: &[&str] = &[">", ">=", "<", "<="];
+
+/// Spatial Operators
 pub const SPATIALOPS: &[&str] = &[
     "s_equals",
     "s_intersects",
@@ -25,6 +32,8 @@ pub const SPATIALOPS: &[&str] = &[
     "s_crosses",
     "s_contains",
 ];
+
+/// Temporal Operators
 pub const TEMPORALOPS: &[&str] = &[
     "t_before",
     "t_after",
@@ -42,7 +51,11 @@ pub const TEMPORALOPS: &[&str] = &[
     "t_disjoint",
     "t_intersects",
 ];
+
+/// Arithmetic Operators
 pub const ARITHOPS: &[&str] = &["+", "-", "*", "/", "%", "^", "div"];
+
+/// Array Operators
 pub const ARRAYOPS: &[&str] = &["a_equals", "a_contains", "a_containedby", "a_overlaps"];
 
 // todo: array ops, in, casei, accenti, between, not, like

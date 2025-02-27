@@ -67,7 +67,7 @@ pub fn temporal_op(left_expr: Expr, right_expr: Expr, op: &str) -> Result<Expr, 
 
     let left: DateRange;
     let right: DateRange;
-    if invop != op {
+    if invop == op {
         left = DateRange::try_from(left_expr)?;
         right = DateRange::try_from(right_expr)?;
     } else {
