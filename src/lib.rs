@@ -30,6 +30,7 @@
 )]
 #![allow(clippy::result_large_err)]
 
+mod duckdb;
 mod error;
 mod expr;
 mod geometry;
@@ -37,8 +38,9 @@ mod parser;
 mod temporal;
 mod validator;
 
+pub use duckdb::ToDuckSQL;
 pub use error::Error;
-pub use expr::Expr;
+pub use expr::*;
 pub use geometry::{spatial_op, Geometry};
 pub use parser::parse_text;
 use serde_derive::{Deserialize, Serialize};
