@@ -1,5 +1,16 @@
 use crate::{Error, Expr};
-use jiff::{Timestamp, ToSpan};
+use jiff::{SignedDuration, Timestamp};
+
+const DAY: SignedDuration = SignedDuration::from_hours(24);
+const SHYOFADAY: SignedDuration = DAY.checked_sub(SignedDuration::from_nanos(1)).unwrap();
+
+fn strip_quotes(s: String) -> String {
+    if (s.starts_with('"') && s.ends_with('"')) || (s.starts_with('\'') && s.ends_with('\'')) {
+        s[1..s.len() - 1].to_string()
+    } else {
+        s
+    }
+}
 
 /// Struct to hold a range of timestamps.
 #[derive(Debug, Clone, PartialEq)]
@@ -13,21 +24,24 @@ impl TryFrom<Expr> for DateRange {
     fn try_from(v: Expr) -> Result<DateRange, Error> {
         match v {
             Expr::Interval { interval } => {
-                let start_str: String = interval[0].to_text()?;
-                let end_str: String = interval[1].to_text()?;
+                let start_str: String = strip_quotes(interval[0].to_text()?);
+                let end_str: String = strip_quotes(interval[1].to_text()?);
                 let start: Timestamp = start_str.parse().unwrap();
                 let end: Timestamp = end_str.parse().unwrap();
                 Ok(DateRange { start, end })
             }
             Expr::Timestamp { timestamp } => {
-                let start_str: String = timestamp.to_text()?;
+                let start_str: String = strip_quotes(timestamp.to_text()?);
                 let start: Timestamp = start_str.parse().unwrap();
                 Ok(DateRange { start, end: start })
             }
             Expr::Date { date } => {
-                let start_str: String = date.to_text()?;
+                let mut start_str: String = strip_quotes(date.to_text()?);
+                if start_str.len() <= 11 {
+                    start_str = format!("{start_str} 00Z");
+                }
                 let start: Timestamp = start_str.parse().unwrap();
-                let end: Timestamp = start + 1.day() - 1.nanosecond();
+                let end: Timestamp = start + SHYOFADAY;
                 Ok(DateRange { start, end })
             }
             Expr::Literal(v) => {
@@ -91,7 +105,7 @@ mod tests {
     #[test]
     fn timestamp_math() {
         // https://github.com/developmentseed/cql2-rs/issues/66
-        let expr: Expr = serde_json::from_value(json!({"date": "2025-02-18T00:00:00Z"})).unwrap();
+        let expr: Expr = serde_json::from_value(json!({"date": "2020-02-18"})).unwrap();
         let _: DateRange = expr.try_into().unwrap();
     }
 }
