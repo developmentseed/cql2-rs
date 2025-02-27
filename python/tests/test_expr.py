@@ -57,3 +57,11 @@ def test_validate() -> None:
     )
     with pytest.raises(ValidationError):
         expr.validate()
+
+
+def test_add() -> None:
+    assert Expr("True") + Expr("false") == Expr("true AND false")
+
+
+def test_eq() -> None:
+    assert Expr("True") == Expr("true")

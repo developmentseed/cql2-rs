@@ -120,12 +120,7 @@ impl Cli {
                     match self.verbose {
                         0 => "For more detailed validation information, use -v".to_string(),
                         1 => format!("For more detailed validation information, use -vv\n{error}"),
-                        2 =>
-                            format!("For more detailed validation information, use -vvv\n{error:#}"),
-                        _ => {
-                            let detailed_output = error.detailed_output();
-                            format!("{detailed_output:#}")
-                        }
+                        _ => format!("{error:#}"),
                     }
                 ));
             }
