@@ -1,17 +1,19 @@
 #!/bin/bash
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-JSONFILES="$SCRIPT_DIR/../examples/json"
-TXTFILES="$SCRIPT_DIR/../examples/text"
-for i in $TXTFILES/*.txt
+CSVFILE="$SCRIPT_DIR/../examples/cql_examples.csv"
+
+# Extract header and rows from CSV
+tail -n +2 "$CSVFILE" | while IFS="|" read -r name path description
 do
-    name=`basename $i`
-    content=`cat $i`
-    content=${content//\"/\&quot;}
-    echo "<option value=\"$content\">$name</option>"
-done
-for i in $JSONFILES/*.json
-do
-    name=`basename $i`
-    content=`cat $i | jq -r @json`
-    echo "<option value='$content'>$name</option>"
+    # Read the CQL content directly from the JSON file
+    CQL_FILE="$SCRIPT_DIR/../$path"
+    if [ -f "$CQL_FILE" ]; then
+        cql_content=$(cat "$CQL_FILE" | tr -d '\n' | sed 's/"/\&quot;/g')
+        description=$(echo "$description" | sed 's/"/\&quot;/g')
+        # Generate HTML option with description as a tooltip
+        echo "<option value=\"$cql_content\" title=\"$description\">$name</option>"
+    else
+        echo "<!-- File not found: $CQL_FILE -->"
+    fi
 done
