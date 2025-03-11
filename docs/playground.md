@@ -3,20 +3,46 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 
 <style>
+.container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    width: 100%;
+}
+
+
+.editor {
+    flex: 1; /* Makes each take up equal space */
+    min-width: 45%; /* Prevents excessive shrinking */
+}
+
+.right-panel {
+    display: flex;
+    flex-direction: row; /* Ensures they are side by side */
+    gap: 20px;
+    width: 100%;
+}
+
+textarea {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 300px; /* Ensures they have enough height */
+}
+
 .select2-container {
-    max-width: 100%; /* Makes it adapt to screen size */
-    width: auto !important; /* Overrides any fixed width */
-    min-width: 200px; /* Ensures it doesn’t get too small */
+    max-width: 100%;
+    width: auto !important;
+    min-width: 200px;
 }
 
 .select2-container--default .select2-selection--single {
-    height: 34px !important; /* Keeps it aligned with the text input */
+    height: 34px !important;
     font-size: 14px;
 }
 
 .select2-dropdown {
-    min-width: 100% !important; /* Forces dropdown to match input */
-    max-width: 600px; /* Prevents it from being too wide */
+    min-width: 100% !important;
+    max-width: 600px;
 }
 
 .select2-search__field {
@@ -24,16 +50,10 @@
     padding: 4px !important;
 }
 
-/* Media Queries to adjust for different screen sizes */
+/* Responsive behavior for smaller screens */
 @media (max-width: 768px) {
-    .select2-container {
-        max-width: 90%; /* Takes most of the screen width on mobile */
-    }
-}
-
-@media (max-width: 480px) {
-    .select2-container {
-        max-width: 100%; /* Full width on small screens */
+    .right-panel {
+        flex-direction: column; /* Stack on smaller screens */
     }
 }
 </style>
@@ -49,12 +69,11 @@
 
       function check(){
           let valid = false;
-          let txt = "Invalid";
-          let jsn = "Invalid";
+          let txt = $("#cql2text").val();
+          let jsn = $("#cql2json").val();
+
           try {
-              let val = $("#cqlin").val();
-              console.log("cqlin val", val);
-              let e = new window.CQL2(val);
+              let e = new window.CQL2(txt);
               valid = e.is_valid();
               txt = e.to_text();
               jsn = e.to_json_pretty();
@@ -68,25 +87,24 @@
           $("#cql2json").val(jsn).css({"background-color": valid ? "#90EE90" : "pink"});
       }
 
-      $("#cqlin").on('input propertychange', check);
+      $("#cql2text, #cql2json").on('input propertychange', check);
 
       $("#examples").change(function(){
           let selectedOption = $('#examples').find(":selected");
           let sel = selectedOption.val();
-          let description = selectedOption.attr("title"); // Get the description
+          let description = selectedOption.attr("title");
 
           if (sel.startsWith("{")) {
               let j = JSON.parse(sel);
               sel = JSON.stringify(j, null, 2);
           }
 
-          $("#cqlin").val(sel);
+          $("#cql2text").val(sel);
           $("#examples").prop("selectedIndex", 0);
-          $("#example-description").text("Current example description: " + description); // Set the description above the CQL input
+          $("#example-description").text("Current example description: " + description);
           check();
       });
 
-      // Initialize Select2
       $('#examples').select2({
           placeholder: "Search or select an example...",
           allowClear: true,
@@ -99,13 +117,12 @@
 
 <h1>CQL2 Playground</h1>
 
-<p id="example-description" style="font-weight: margin-bottom: 5px;"></p>
+<p id="example-description" style="margin-bottom: 5px;">Current example description: </p>
 
 Examples: 
-
-<select id="examples" class="searchable-dropdown" >
-<option value=''>-</option>
-<option value="{  &quot;op&quot;: &quot;a_overlaps&quot;,  &quot;args&quot;: [    { &quot;property&quot;: &quot;values&quot; },    [ { &quot;timestamp&quot;: &quot;2012-08-10T05:30:00Z&quot; }, { &quot;date&quot;: &quot;2010-02-10&quot; }, false ]  ]}" title="Checks for overlapping attribute values within a specified date range.">Overlapping Attribute Values Check</option>
+<select id="examples" class="searchable-dropdown">
+  <option value=''>-</option>
+  <option value="{  &quot;op&quot;: &quot;a_overlaps&quot;,  &quot;args&quot;: [    { &quot;property&quot;: &quot;values&quot; },    [ { &quot;timestamp&quot;: &quot;2012-08-10T05:30:00Z&quot; }, { &quot;date&quot;: &quot;2010-02-10&quot; }, false ]  ]}" title="Checks for overlapping attribute values within a specified date range.">Overlapping Attribute Values Check</option>
 <option value="{  &quot;op&quot;: &quot;in&quot;,  &quot;args&quot;: [    { &quot;property&quot;: &quot;eo:cloud_cover&quot; },    [ 0.1, 0.2 ]  ]}" title="Filters features based on a property being in a specified list.">Property List Filter</option>
 <option value="{  &quot;op&quot;: &quot;s_crosses&quot;,  &quot;args&quot;: [    {      &quot;type&quot;: &quot;LineString&quot;,      &quot;coordinates&quot;: [        [ 43.72992, -79.2998 ], [ 43.73005, -79.2991 ], [ 43.73006, -79.2984 ],        [ 43.73140, -79.2956 ], [ 43.73259, -79.2950 ], [ 43.73266, -79.2945 ],        [ 43.73320, -79.2936 ], [ 43.73378, -79.2936 ], [ 43.73486, -79.2917 ]      ]    },    {      &quot;type&quot;: &quot;Polygon&quot;,      &quot;coordinates&quot;: [        [          [ 43.7286, -79.2986 ], [ 43.7311, -79.2996 ], [ 43.7323, -79.2972 ],          [ 43.7326, -79.2971 ], [ 43.7350, -79.2981 ], [ 43.7350, -79.2982 ],          [ 43.7352, -79.2982 ], [ 43.7357, -79.2956 ], [ 43.7337, -79.2948 ],          [ 43.7343, -79.2933 ], [ 43.7339, -79.2923 ], [ 43.7327, -79.2947 ],          [ 43.7320, -79.2942 ], [ 43.7322, -79.2937 ], [ 43.7306, -79.2930 ],          [ 43.7303, -79.2930 ], [ 43.7299, -79.2928 ], [ 43.7286, -79.2986 ]        ]      ]    }  ]}" title="Checks if a line string crosses a specified polygon.">Line String Crosses Polygon Check</option>
 <option value="{ &quot;op&quot;: &quot;avg&quot;, &quot;args&quot;: [ { &quot;property&quot;: &quot;windSpeed&quot; } ] }" title="Computes the average of a specified property.">Average Property Calculation</option>
@@ -166,16 +183,21 @@ Examples:
 <option value="{  &quot;op&quot;: &quot;t_contains&quot;,  &quot;args&quot;: [    { &quot;interval&quot;: [ &quot;2000-01-01T00:00:00Z&quot;, &quot;2005-01-10T01:01:01.393216Z&quot; ] },    { &quot;interval&quot;: [ { &quot;property&quot;: &quot;starts_at&quot; }, { &quot;property&quot;: &quot;ends_at&quot; } ] }      ]}" title="Performs a t_contains operation on properties.">Time Contains Check</option>
 <option value="{  &quot;op&quot;: &quot;t_equals&quot;,  &quot;args&quot;: [    { &quot;property&quot;: &quot;updated_at&quot; },    { &quot;date&quot;: &quot;1851-04-29&quot; }  ]}" title="Performs a t_equals operation on properties.">Time Equals Check</option>
 <option value="{  &quot;op&quot;: &quot;t_metBy&quot;,  &quot;args&quot;: [    { &quot;interval&quot;: [ &quot;2010-02-10T05:29:20.073225Z&quot;, &quot;2010-10-07&quot; ] },    { &quot;interval&quot;: [ { &quot;property&quot;: &quot;starts_at&quot; }, { &quot;property&quot;: &quot;ends_at&quot; } ] }  ]}" title="Performs a t_metBy operation on properties.">Time MetBy Check</option>
+<option value="{  &quot;op&quot;: &quot;t_meets&quot;,  &quot;args&quot;: [    { &quot;interval&quot;: [ &quot;2005-01-10&quot;, &quot;2010-02-10&quot; ] },    { &quot;interval&quot;: [ { &quot;property&quot;: &quot;starts_at&quot; }, { &quot;property&quot;: &quot;ends_at&quot; } ] }  ]}" title="Performs a t_meets operation on properties.">Time Meets Check</option>
 
-  </select>
-  <textarea id="cqlin" rows="20" cols="100">foo > 1</textarea>
-  <br/>
-  Valid:<input type="checkbox" id="cqlvalid" onclick="return false"></input>
-  <br/>
-  Parsed CQL2 Text
-  <br/>
-  <textarea id="cql2text" rows="10" cols="100" readonly>Parsed CQL2 Text</textarea>
-  <br/>
-  Parsed CQL2 JSON
-  <br/>
-  <textarea id="cql2json" rows="20" cols="100" readonly>Parsed CQL2 JSON</textarea>
+</select>
+
+<label>Valid: <input type="checkbox" id="cqlvalid" onclick="return false"></label>
+
+<div class="container">
+    <div class="right-panel">
+        <div class="editor">
+            <h3>Text Representation</h3>
+            <textarea id="cql2text" rows="10">Parsed CQL2 Text</textarea>
+        </div>
+        <div class="editor">
+            <h3>JSON Representation</h3>
+            <textarea id="cql2json" rows="10">Parsed CQL2 JSON</textarea>
+        </div>
+    </div>
+</div>
