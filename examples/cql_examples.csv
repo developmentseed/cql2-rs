@@ -1,0 +1,63 @@
+name|path|description
+Overlapping Attribute Values Check|examples/json/example82.json|Checks for overlapping attribute values within a specified date range.
+Property List Filter|examples/json/example05b.json|Filters features based on a property being in a specified list.
+Line String Crosses Polygon Check|examples/json/clause7_16.json|Checks if a line string crosses a specified polygon.
+Average Property Calculation|examples/json/clause6_01.json|Computes the average of a specified property.
+Time Interval Filter|examples/json/example57.json|Filters features based on a time interval condition.
+isNull Operation|examples/json/example41.json|Performs a isNull operation on properties.
+AND Operation|examples/json/example16.json|Performs a and operation on properties.
+Time Intersects Check|examples/json/example61.json|Performs a t_intersects operation on properties.
+Greater Than or Equal Check|examples/json/clause6_02d.json|Performs a >= operation on properties.
+NOT Operation|examples/json/example36.json|Performs a not operation on properties.
+NOT IN Operation|examples/json/clause7_03b.json|Performs a not operation on properties.
+Time Before Check|examples/json/example20.json|Performs a t_before operation on properties.
+Equals Operation|examples/json/example77.json|Performs a = operation on properties.
+Less Than or Equal Check|examples/json/example76.json|Performs a <= operation on properties.
+Time After Check|examples/json/example21.json|Performs a t_after operation on properties.
+Between Operation|examples/json/example37.json|Performs a between operation on properties.
+Time Finishes Check|examples/json/example60.json|Performs a t_finishes operation on properties.
+OR Operation|examples/json/example17.json|Performs a or operation on properties.
+Time Disjoint Check|examples/json/example56.json|Performs a t_disjoint operation on properties.
+LIKE Operation|examples/json/clause7_01.json|Performs a like operation on properties.
+Time Interval Condition Filter|examples/json/clause7_17.json|Filters features based on a time interval condition.
+Spatial Equals Check|examples/json/example83.json|Performs a s_equals operation on properties.
+Time Starts Check|examples/json/example67.json|Performs a t_starts operation on properties.
+Less Than Check|examples/json/clause6_02b.json|Performs a < operation on properties.
+Not Equal Operation|examples/json/example30.json|Performs a <> operation on properties.
+Spatial Disjoint Check|examples/json/example47.json|Performs a s_disjoint operation on properties.
+Spatial Overlaps Check|examples/json/example50.json|Performs a s_overlaps operation on properties.
+Spatial Intersects Check|examples/json/clause7_07.json|Performs a s_intersects operation on properties.
+Spatial Contains Check|examples/json/example52.json|Performs a s_contains operation on properties.
+Time Contains Check|examples/json/example55.json|Performs a t_contains operation on properties.
+Spatial Touches Check|examples/json/example48.json|Performs a s_touches operation on properties.
+Time Overlaps Check|examples/json/example65.json|Performs a t_overlaps operation on properties.
+Greater Than Check|examples/json/clause6_02c.json|Performs a > operation on properties.
+Less Than Check|examples/json/example31.json|Performs a < operation on properties.
+Time StartedBy Check|examples/json/example66.json|Performs a t_startedBy operation on properties.
+Spatial Within Check|examples/json/example49.json|Performs a s_within operation on properties.
+Less Than Check|examples/json/example73.json|Performs a < operation on properties.
+Spatial Intersects Check|examples/json/example24.json|Performs a s_intersects operation on properties.
+Greater Than Check|examples/json/example32.json|Performs a > operation on properties.
+LIKE Operation|examples/json/example12.json|Performs a like operation on properties.
+Spatial Intersects Check|examples/json/example45.json|Performs a s_intersects operation on properties.
+Time After Check|examples/json/example53.json|Performs a t_after operation on properties.
+Property List Filter|examples/json/clause7_04.json|Filters features based on a property being in a specified list.
+LIKE Operation|examples/json/example28.json|Performs a like operation on properties.
+Time Intersects Check|examples/json/clause7_12.json|Performs a t_intersects operation on properties.
+Not Equal Operation|examples/json/example69.json|Performs a <> operation on properties.
+LIKE Operation|examples/json/example86.json|Performs a like operation on properties.
+Time Interval Condition Filter|examples/json/clause7_13.json|Filters features based on a time interval condition.
+Spatial Contains Check|examples/json/example52.json|Performs a s_contains operation on properties.
+OR Operation|examples/json/example44.json|Performs a or operation on properties.
+NOT Operation|examples/json/example13.json|Performs a not operation on properties.
+Time OverlappedBy Check|examples/json/example64.json|Performs a t_overlappedBy operation on properties.
+Less Than or Equal Check|examples/json/example33.json|Performs a <= operation on properties.
+Greater Than Check|examples/json/example72.json|Performs a > operation on properties.
+Greater Than Check|examples/json/example09.json|Performs a > operation on properties.
+AND Operation|examples/json/example06a.json|Performs a and operation on properties.
+Spatial Touches Check|examples/json/example48.json|Performs a s_touches operation on properties.
+Equals Operation|examples/json/example14.json|Performs a = operation on properties.
+Time Contains Check|examples/json/example55.json|Performs a t_contains operation on properties.
+Time Equals Check|examples/json/example58.json|Performs a t_equals operation on properties.
+Time MetBy Check|examples/json/example63.json|Performs a t_metBy operation on properties.
+Time Meets Check|examples/json/example62.json|Performs a t_meets operation on properties.
