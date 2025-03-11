@@ -4,10 +4,10 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CSVFILE="$SCRIPT_DIR/../examples/cql_examples.csv"
 
 # Extract header and rows from CSV
-tail -n +2 "$CSVFILE" | while IFS="|" read -r name path description
+tail -n +2 "$CSVFILE" | while IFS="|" read -r name description txt_path cql_path
 do
     # Read the CQL content directly from the JSON file
-    CQL_FILE="$SCRIPT_DIR/../$path"
+    CQL_FILE="$SCRIPT_DIR/../$cql_path"
     if [ -f "$CQL_FILE" ]; then
         cql_content=$(cat "$CQL_FILE" | tr -d '\n' | sed 's/"/\&quot;/g')
         description=$(echo "$description" | sed 's/"/\&quot;/g')

@@ -63,5 +63,3 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
-extra_javascript:
-  - cql_examples.csv
