@@ -3,46 +3,48 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 
 <style>
-.container {
+
+#cqlin-div {
+    height: 200px; 
+    width: 100%;
+    resize: vertical;
+    margin-bottom: 50px;
+    display: block;
+}
+
+.parsed-container {
     display: flex;
-    flex-direction: row;
-    gap: 20px;
-    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 10px; /* Reduce space between input and parsed results */
 }
 
-
-.editor {
-    flex: 1; /* Makes each take up equal space */
-    min-width: 45%; /* Prevents excessive shrinking */
-}
-
-.right-panel {
+.parsed-box {
+    flex: 1; /* Make both parsed sections take equal space */
     display: flex;
-    flex-direction: row; /* Ensures they are side by side */
-    gap: 20px;
-    width: 100%;
+    flex-direction: column;
 }
 
-textarea {
+.parsed-box textarea {
     width: 100%;
-    box-sizing: border-box;
-    min-height: 300px; /* Ensures they have enough height */
+    height: 200px; /* Limit height */
+    resize: vertical;
 }
 
 .select2-container {
-    max-width: 100%;
-    width: auto !important;
-    min-width: 200px;
+    max-width: 100%; /* Makes it adapt to screen size */
+    width: auto !important; /* Overrides any fixed width */
+    min-width: 200px; /* Ensures it doesn’t get too small */
 }
 
 .select2-container--default .select2-selection--single {
-    height: 34px !important;
+    height: 34px !important; /* Keeps it aligned with the text input */
     font-size: 14px;
 }
 
 .select2-dropdown {
-    min-width: 100% !important;
-    max-width: 600px;
+    min-width: 100% !important; /* Forces dropdown to match input */
+    max-width: 600px; /* Prevents it from being too wide */
 }
 
 .select2-search__field {
@@ -50,10 +52,16 @@ textarea {
     padding: 4px !important;
 }
 
-/* Responsive behavior for smaller screens */
+/* Media Queries to adjust for different screen sizes */
 @media (max-width: 768px) {
-    .right-panel {
-        flex-direction: column; /* Stack on smaller screens */
+    .select2-container {
+        max-width: 90%; /* Takes most of the screen width on mobile */
+    }
+}
+
+@media (max-width: 480px) {
+    .select2-container {
+        max-width: 100%; /* Full width on small screens */
     }
 }
 </style>
@@ -64,74 +72,68 @@ textarea {
   await init();
   window.CQL2 = CQL2;
   $(document).ready(function(){
-    console.log("Ready");
-    console.log("window.cql2", window.CQL2);
+      console.log("Ready");
+      console.log("window.cql2", window.CQL2);
 
-    function check(source) {
-        let valid = false;
-        let txt = $("#cql2text").val();
-        let jsn = $("#cql2json").val();
+      function check(){
+          let valid = false;
+          let txt = "Invalid";
+          let jsn = "Invalid";
+          try {
+              let val = $("#cqlin").val();
+              console.log("cqlin val", val);
+              let e = new window.CQL2(val);
+              valid = e.is_valid();
+              txt = e.to_text();
+              jsn = e.to_json_pretty();
+          } catch(error) {
+              console.log(error);
+          }
 
-        try {
-            if (source === "text") {
-                let e = new window.CQL2(txt);
-                valid = e.is_valid();
-                txt = e.to_text();
-                jsn = e.to_json_pretty();
-            } else if (source === "json") {
-                let e = new window.CQL2(jsn);
-                valid = e.is_valid();
-                txt = e.to_text();
-                jsn = e.to_json_pretty();
-            }
-        } catch(error) {
-            console.log(error);
-        }
+          console.log(valid, txt, jsn);
+          $("#cqlvalid").prop("checked", valid);
+          $("#cql2text").val(txt).css({"background-color": valid ? "#90EE90" : "pink"});
+          $("#cql2json").val(jsn).css({"background-color": valid ? "#90EE90" : "pink"});
+      }
 
-        console.log(valid, txt, jsn);
-        $("#cqlvalid").prop("checked", valid);
-        $("#cql2text").val(txt).css({"background-color": valid ? "#90EE90" : "pink"});
-        $("#cql2json").val(jsn).css({"background-color": valid ? "#90EE90" : "pink"});
-    }
+      $("#cqlin").on('input propertychange', check);
 
-    $("#cql2text").on('input propertychange', function() { check("text"); });
-    $("#cql2json").on('input propertychange', function() { check("json"); });
+      $("#examples").change(function(){
+          let selectedOption = $('#examples').find(":selected");
+          let sel = selectedOption.val();
+          let description = selectedOption.attr("title"); // Get the description
 
-    $("#examples").change(function(){
-        let selectedOption = $('#examples').find(":selected");
-        let sel = selectedOption.val();
-        let description = selectedOption.attr("title");
+          if (sel.startsWith("{")) {
+              let j = JSON.parse(sel);
+              sel = JSON.stringify(j, null, 2);
+          }
 
-        if (sel.startsWith("{")) {
-            let j = JSON.parse(sel);
-            sel = JSON.stringify(j, null, 2);
-        }
+          $("#cqlin").val(sel);
+          $("#examples").prop("selectedIndex", 0);
+          $("#example-description").text("Current example description: " + description); // Set the description above the CQL input
+          check();
+      });
 
-        $("#cql2text").val(sel);
-        $("#cql2json").val(sel);  // Sync both fields
-        $("#examples").prop("selectedIndex", 0);
-        $("#example-description").text("Current example description: " + description);
-        check("text");
-    });
+      // Initialize Select2
+      $('#examples').select2({
+          placeholder: "Search or select an example...",
+          allowClear: true,
+          width: '100%'
+      });
 
-    $('#examples').select2({
-        placeholder: "Search or select an example...",
-        allowClear: true,
-        width: '100%'
-    });
-
-    check("text"); // Initial validation
-});
+      check();
+  });
 </script>
 
 <h1>CQL2 Playground</h1>
 
-<p id="example-description" style="margin-bottom: 5px;">Current example description: </p>
+<p id="example-description" style="font-weight: margin-bottom: 5px;"></p>
 
 Examples: 
-<select id="examples" class="searchable-dropdown">
-  <option value=''>-</option>
-  <option value="{  &quot;op&quot;: &quot;a_overlaps&quot;,  &quot;args&quot;: [    { &quot;property&quot;: &quot;values&quot; },    [ { &quot;timestamp&quot;: &quot;2012-08-10T05:30:00Z&quot; }, { &quot;date&quot;: &quot;2010-02-10&quot; }, false ]  ]}" title="Checks for overlapping attribute values within a specified date range.">Overlapping Attribute Values Check</option>
+
+<select id="examples" class="searchable-dropdown" >
+<option value=''>-</option>
+<option value="{  &quot;op&quot;: &quot;a_overlaps&quot;,  &quot;args&quot;: [    { &quot;property&quot;: &quot;values&quot; },    [ { &quot;timestamp&quot;: &quot;2012-08-10T05:30:00Z&quot; }, { &quot;date&quot;: &quot;2010-02-10&quot; }, false ]  ]}" title="Checks for overlapping attribute values within a specified date range.">Overlapping Attribute Values Check</option>
 <option value="{  &quot;op&quot;: &quot;in&quot;,  &quot;args&quot;: [    { &quot;property&quot;: &quot;eo:cloud_cover&quot; },    [ 0.1, 0.2 ]  ]}" title="Filters features based on a property being in a specified list.">Property List Filter</option>
 <option value="{  &quot;op&quot;: &quot;s_crosses&quot;,  &quot;args&quot;: [    {      &quot;type&quot;: &quot;LineString&quot;,      &quot;coordinates&quot;: [        [ 43.72992, -79.2998 ], [ 43.73005, -79.2991 ], [ 43.73006, -79.2984 ],        [ 43.73140, -79.2956 ], [ 43.73259, -79.2950 ], [ 43.73266, -79.2945 ],        [ 43.73320, -79.2936 ], [ 43.73378, -79.2936 ], [ 43.73486, -79.2917 ]      ]    },    {      &quot;type&quot;: &quot;Polygon&quot;,      &quot;coordinates&quot;: [        [          [ 43.7286, -79.2986 ], [ 43.7311, -79.2996 ], [ 43.7323, -79.2972 ],          [ 43.7326, -79.2971 ], [ 43.7350, -79.2981 ], [ 43.7350, -79.2982 ],          [ 43.7352, -79.2982 ], [ 43.7357, -79.2956 ], [ 43.7337, -79.2948 ],          [ 43.7343, -79.2933 ], [ 43.7339, -79.2923 ], [ 43.7327, -79.2947 ],          [ 43.7320, -79.2942 ], [ 43.7322, -79.2937 ], [ 43.7306, -79.2930 ],          [ 43.7303, -79.2930 ], [ 43.7299, -79.2928 ], [ 43.7286, -79.2986 ]        ]      ]    }  ]}" title="Checks if a line string crosses a specified polygon.">Line String Crosses Polygon Check</option>
 <option value="{ &quot;op&quot;: &quot;avg&quot;, &quot;args&quot;: [ { &quot;property&quot;: &quot;windSpeed&quot; } ] }" title="Computes the average of a specified property.">Average Property Calculation</option>
@@ -192,19 +194,19 @@ Examples:
 <option value="{  &quot;op&quot;: &quot;t_contains&quot;,  &quot;args&quot;: [    { &quot;interval&quot;: [ &quot;2000-01-01T00:00:00Z&quot;, &quot;2005-01-10T01:01:01.393216Z&quot; ] },    { &quot;interval&quot;: [ { &quot;property&quot;: &quot;starts_at&quot; }, { &quot;property&quot;: &quot;ends_at&quot; } ] }      ]}" title="Performs a t_contains operation on properties.">Time Contains Check</option>
 <option value="{  &quot;op&quot;: &quot;t_equals&quot;,  &quot;args&quot;: [    { &quot;property&quot;: &quot;updated_at&quot; },    { &quot;date&quot;: &quot;1851-04-29&quot; }  ]}" title="Performs a t_equals operation on properties.">Time Equals Check</option>
 <option value="{  &quot;op&quot;: &quot;t_metBy&quot;,  &quot;args&quot;: [    { &quot;interval&quot;: [ &quot;2010-02-10T05:29:20.073225Z&quot;, &quot;2010-10-07&quot; ] },    { &quot;interval&quot;: [ { &quot;property&quot;: &quot;starts_at&quot; }, { &quot;property&quot;: &quot;ends_at&quot; } ] }  ]}" title="Performs a t_metBy operation on properties.">Time MetBy Check</option>
-<option value="{  &quot;op&quot;: &quot;t_meets&quot;,  &quot;args&quot;: [    { &quot;interval&quot;: [ &quot;2005-01-10&quot;, &quot;2010-02-10&quot; ] },    { &quot;interval&quot;: [ { &quot;property&quot;: &quot;starts_at&quot; }, { &quot;property&quot;: &quot;ends_at&quot; } ] }  ]}" title="Performs a t_meets operation on properties.">Time Meets Check</option>
 
-</select>
-
-<div class="container">
-    <div class="right-panel">
-        <div class="editor">
-            <h3>Text Representation</h3>
-            <textarea id="cql2text" rows="10">Parsed CQL2 Text</textarea>
-        </div>
-        <div class="editor">
-            <h3>JSON Representation</h3>
-            <textarea id="cql2json" rows="10">Parsed CQL2 JSON</textarea>
-        </div>
+  </select>
+  <div id="cqlin-div">
+    <textarea id="cqlin" rows="20" cols="114">foo > 1</textarea>
+</div>
+  <br/>
+  <div class="parsed-container">
+    <div class="parsed-box">
+        <h3>Parsed CQL2 Text</h3>
+        <textarea id="cql2text" rows="15" readonly></textarea>
+    </div>
+    <div class="parsed-box">
+        <h3>Parsed CQL2 JSON</h3>
+        <textarea id="cql2json" rows="15" readonly></textarea>
     </div>
 </div>
