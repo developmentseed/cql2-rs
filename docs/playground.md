@@ -71,13 +71,18 @@
       $("#cqlin").on('input propertychange', check);
 
       $("#examples").change(function(){
-          let sel = $('#examples').find(":selected").val();
-          if (sel.startsWith("{")){
+          let selectedOption = $('#examples').find(":selected");
+          let sel = selectedOption.val();
+          let description = selectedOption.attr("title"); // Get the description
+
+          if (sel.startsWith("{")) {
               let j = JSON.parse(sel);
               sel = JSON.stringify(j, null, 2);
           }
+
           $("#cqlin").val(sel);
           $("#examples").prop("selectedIndex", 0);
+          $("#example-description").text("Current example description: " + description); // Set the description above the CQL input
           check();
       });
 
@@ -93,12 +98,13 @@
 </script>
 
 <h1>CQL2 Playground</h1>
+
+<p id="example-description" style="font-weight: margin-bottom: 5px;"></p>
+
 Examples: 
 
 <select id="examples" class="searchable-dropdown" >
 <option value=''>-</option>
-
-
 <option value="{  &quot;op&quot;: &quot;a_overlaps&quot;,  &quot;args&quot;: [    { &quot;property&quot;: &quot;values&quot; },    [ { &quot;timestamp&quot;: &quot;2012-08-10T05:30:00Z&quot; }, { &quot;date&quot;: &quot;2010-02-10&quot; }, false ]  ]}" title="Checks for overlapping attribute values within a specified date range.">Overlapping Attribute Values Check</option>
 <option value="{  &quot;op&quot;: &quot;in&quot;,  &quot;args&quot;: [    { &quot;property&quot;: &quot;eo:cloud_cover&quot; },    [ 0.1, 0.2 ]  ]}" title="Filters features based on a property being in a specified list.">Property List Filter</option>
 <option value="{  &quot;op&quot;: &quot;s_crosses&quot;,  &quot;args&quot;: [    {      &quot;type&quot;: &quot;LineString&quot;,      &quot;coordinates&quot;: [        [ 43.72992, -79.2998 ], [ 43.73005, -79.2991 ], [ 43.73006, -79.2984 ],        [ 43.73140, -79.2956 ], [ 43.73259, -79.2950 ], [ 43.73266, -79.2945 ],        [ 43.73320, -79.2936 ], [ 43.73378, -79.2936 ], [ 43.73486, -79.2917 ]      ]    },    {      &quot;type&quot;: &quot;Polygon&quot;,      &quot;coordinates&quot;: [        [          [ 43.7286, -79.2986 ], [ 43.7311, -79.2996 ], [ 43.7323, -79.2972 ],          [ 43.7326, -79.2971 ], [ 43.7350, -79.2981 ], [ 43.7350, -79.2982 ],          [ 43.7352, -79.2982 ], [ 43.7357, -79.2956 ], [ 43.7337, -79.2948 ],          [ 43.7343, -79.2933 ], [ 43.7339, -79.2923 ], [ 43.7327, -79.2947 ],          [ 43.7320, -79.2942 ], [ 43.7322, -79.2937 ], [ 43.7306, -79.2930 ],          [ 43.7303, -79.2930 ], [ 43.7299, -79.2928 ], [ 43.7286, -79.2986 ]        ]      ]    }  ]}" title="Checks if a line string crosses a specified polygon.">Line String Crosses Polygon Check</option>
@@ -160,8 +166,6 @@ Examples:
 <option value="{  &quot;op&quot;: &quot;t_contains&quot;,  &quot;args&quot;: [    { &quot;interval&quot;: [ &quot;2000-01-01T00:00:00Z&quot;, &quot;2005-01-10T01:01:01.393216Z&quot; ] },    { &quot;interval&quot;: [ { &quot;property&quot;: &quot;starts_at&quot; }, { &quot;property&quot;: &quot;ends_at&quot; } ] }      ]}" title="Performs a t_contains operation on properties.">Time Contains Check</option>
 <option value="{  &quot;op&quot;: &quot;t_equals&quot;,  &quot;args&quot;: [    { &quot;property&quot;: &quot;updated_at&quot; },    { &quot;date&quot;: &quot;1851-04-29&quot; }  ]}" title="Performs a t_equals operation on properties.">Time Equals Check</option>
 <option value="{  &quot;op&quot;: &quot;t_metBy&quot;,  &quot;args&quot;: [    { &quot;interval&quot;: [ &quot;2010-02-10T05:29:20.073225Z&quot;, &quot;2010-10-07&quot; ] },    { &quot;interval&quot;: [ { &quot;property&quot;: &quot;starts_at&quot; }, { &quot;property&quot;: &quot;ends_at&quot; } ] }  ]}" title="Performs a t_metBy operation on properties.">Time MetBy Check</option>
-
-
 
   </select>
   <textarea id="cqlin" rows="20" cols="100">foo > 1</textarea>
