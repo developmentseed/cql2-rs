@@ -64,55 +64,64 @@ textarea {
   await init();
   window.CQL2 = CQL2;
   $(document).ready(function(){
-      console.log("Ready");
-      console.log("window.cql2", window.CQL2);
+    console.log("Ready");
+    console.log("window.cql2", window.CQL2);
 
-      function check(){
-          let valid = false;
-          let txt = $("#cql2text").val();
-          let jsn = $("#cql2json").val();
+    function check(source) {
+        let valid = false;
+        let txt = $("#cql2text").val();
+        let jsn = $("#cql2json").val();
 
-          try {
-              let e = new window.CQL2(txt);
-              valid = e.is_valid();
-              txt = e.to_text();
-              jsn = e.to_json_pretty();
-          } catch(error) {
-              console.log(error);
-          }
+        try {
+            if (source === "text") {
+                let e = new window.CQL2(txt);
+                valid = e.is_valid();
+                txt = e.to_text();
+                jsn = e.to_json_pretty();
+            } else if (source === "json") {
+                let e = new window.CQL2(jsn);
+                valid = e.is_valid();
+                txt = e.to_text();
+                jsn = e.to_json_pretty();
+            }
+        } catch(error) {
+            console.log(error);
+        }
 
-          console.log(valid, txt, jsn);
-          $("#cqlvalid").prop("checked", valid);
-          $("#cql2text").val(txt).css({"background-color": valid ? "#90EE90" : "pink"});
-          $("#cql2json").val(jsn).css({"background-color": valid ? "#90EE90" : "pink"});
-      }
+        console.log(valid, txt, jsn);
+        $("#cqlvalid").prop("checked", valid);
+        $("#cql2text").val(txt).css({"background-color": valid ? "#90EE90" : "pink"});
+        $("#cql2json").val(jsn).css({"background-color": valid ? "#90EE90" : "pink"});
+    }
 
-      $("#cql2text, #cql2json").on('input propertychange', check);
+    $("#cql2text").on('input propertychange', function() { check("text"); });
+    $("#cql2json").on('input propertychange', function() { check("json"); });
 
-      $("#examples").change(function(){
-          let selectedOption = $('#examples').find(":selected");
-          let sel = selectedOption.val();
-          let description = selectedOption.attr("title");
+    $("#examples").change(function(){
+        let selectedOption = $('#examples').find(":selected");
+        let sel = selectedOption.val();
+        let description = selectedOption.attr("title");
 
-          if (sel.startsWith("{")) {
-              let j = JSON.parse(sel);
-              sel = JSON.stringify(j, null, 2);
-          }
+        if (sel.startsWith("{")) {
+            let j = JSON.parse(sel);
+            sel = JSON.stringify(j, null, 2);
+        }
 
-          $("#cql2text").val(sel);
-          $("#examples").prop("selectedIndex", 0);
-          $("#example-description").text("Current example description: " + description);
-          check();
-      });
+        $("#cql2text").val(sel);
+        $("#cql2json").val(sel);  // Sync both fields
+        $("#examples").prop("selectedIndex", 0);
+        $("#example-description").text("Current example description: " + description);
+        check("text");
+    });
 
-      $('#examples').select2({
-          placeholder: "Search or select an example...",
-          allowClear: true,
-          width: '100%'
-      });
+    $('#examples').select2({
+        placeholder: "Search or select an example...",
+        allowClear: true,
+        width: '100%'
+    });
 
-      check();
-  });
+    check("text"); // Initial validation
+});
 </script>
 
 <h1>CQL2 Playground</h1>
