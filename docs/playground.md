@@ -196,8 +196,6 @@ Examples:
 
 </select>
 
-<label>Valid: <input type="checkbox" id="cqlvalid" onclick="return false"></label>
-
 <div class="container">
     <div class="right-panel">
         <div class="editor">
