@@ -1,58 +1,101 @@
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script type="module">
-    import init, { CQL2 } from '../pkg/cql2_wasm.js';
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
 
-    await init();
-    window.CQL2 = CQL2;
-    $(document).ready(function(){
-        console.log("Ready");
-        console.log("window.cql2", window.CQL2);
-        function check(){
-            let valid = false;
-            let txt = "Invalid";
-            let jsn = "Invalid";
-            try {
-                let val =$("#cqlin").val();
-                console.log("cqlin val", val);
-                let e = new window.CQL2(val);
-                valid = e.is_valid();
-                txt = e.to_text();
-                jsn = e.to_json_pretty();
-            } catch(error) {
-                console.log(error);
+<style>
+.select2-container {
+    max-width: 100%; /* Makes it adapt to screen size */
+    width: auto !important; /* Overrides any fixed width */
+    min-width: 200px; /* Ensures it doesn’t get too small */
+}
 
-            }
-            console.log(valid, txt, jsn);
-            if (valid) {
-                $("#cqlvalid").prop("checked", true);
-                $("#cql2text").css({"background-color": "#90EE90"});
-                $("#cql2json").css({"background-color": "#90EE90"});
-            } else {
-                $("#cqlvalid").prop("checked", false);
-                $("#cql2text").css({"background-color": "pink"});
-                $("#cql2json").css({"background-color": "pink"});
-            };
+.select2-container--default .select2-selection--single {
+    height: 34px !important; /* Keeps it aligned with the text input */
+    font-size: 14px;
+}
 
-            $("#cql2text").val(txt);
-            $("#cql2json").val(jsn);
-        };
-        $("#cqlin").bind('input propertychange', check);
-        $("#examples").change(function(){
+.select2-dropdown {
+    min-width: 100% !important; /* Forces dropdown to match input */
+    max-width: 600px; /* Prevents it from being too wide */
+}
+
+.select2-search__field {
+    font-size: 14px !important;
+    padding: 4px !important;
+}
+
+/* Media Queries to adjust for different screen sizes */
+@media (max-width: 768px) {
+    .select2-container {
+        max-width: 90%; /* Takes most of the screen width on mobile */
+    }
+}
+
+@media (max-width: 480px) {
+    .select2-container {
+        max-width: 100%; /* Full width on small screens */
+    }
+}
+</style>
+
+<script type="module">
+  import init, { CQL2 } from '../pkg/cql2_wasm.js';
+
+  await init();
+  window.CQL2 = CQL2;
+  $(document).ready(function(){
+      console.log("Ready");
+      console.log("window.cql2", window.CQL2);
+
+      function check(){
+          let valid = false;
+          let txt = "Invalid";
+          let jsn = "Invalid";
+          try {
+              let val = $("#cqlin").val();
+              console.log("cqlin val", val);
+              let e = new window.CQL2(val);
+              valid = e.is_valid();
+              txt = e.to_text();
+              jsn = e.to_json_pretty();
+          } catch(error) {
+              console.log(error);
+          }
+
+          console.log(valid, txt, jsn);
+          $("#cqlvalid").prop("checked", valid);
+          $("#cql2text").val(txt).css({"background-color": valid ? "#90EE90" : "pink"});
+          $("#cql2json").val(jsn).css({"background-color": valid ? "#90EE90" : "pink"});
+      }
+
+      $("#cqlin").on('input propertychange', check);
+
+      $("#examples").change(function(){
           let sel = $('#examples').find(":selected").val();
           if (sel.startsWith("{")){
-            let j = JSON.parse(sel);
-            sel = JSON.stringify(j, null, 2);
+              let j = JSON.parse(sel);
+              sel = JSON.stringify(j, null, 2);
           }
           $("#cqlin").val(sel);
           $("#examples").prop("selectedIndex", 0);
           check();
-        });
-        check();
-    });
+      });
 
-  </script>
-  <h1>CQL2 Playground</h1>
-  Examples: <select id="examples">
+      // Initialize Select2
+      $('#examples').select2({
+          placeholder: "Search or select an example...",
+          allowClear: true,
+          width: '100%'
+      });
+
+      check();
+  });
+</script>
+
+<h1>CQL2 Playground</h1>
+Examples: 
+
+<select id="examples" class="searchable-dropdown" >
 <option value=''>-</option>
 
 
