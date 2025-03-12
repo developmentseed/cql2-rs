@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
-## [0.3.4] - 2024-02-21
+## [0.3.5] - 2025-03-12
+
+### Fixed
+
+- Timestamp math ([#67](https://github.com/developmentseed/cql2-rs/pull/67))
+
+## [0.3.4] - 2025-02-21
 
 ### Added
 
@@ -54,7 +60,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Initial release.
 
-[Unreleased]: https://github.com/developmentseed/cql-rs/compare/v0.3.4...main
+[Unreleased]: https://github.com/developmentseed/cql-rs/compare/v0.3.5...main
+[0.3.5]: https://github.com/developmentseed/cql-rs/releases/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/developmentseed/cql-rs/releases/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/developmentseed/cql-rs/releases/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/developmentseed/cql-rs/releases/compare/v0.3.1...v0.3.2
