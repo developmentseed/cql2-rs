@@ -166,8 +166,6 @@
 
 <p id="example-description" style="font-weight: margin-bottom: 5px;"></p>
 
-Examples:
-
 <select id="exampletype" class="searchable-dropdown" >
 <option value='cql2_text'>CQL2 Text</option>
 <option value='cql2_json'>CQL2 JSON</option>
