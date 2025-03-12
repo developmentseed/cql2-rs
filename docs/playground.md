@@ -8,15 +8,17 @@
     height: 200px; 
     width: 100%;
     resize: vertical;
-    margin-bottom: 50px;
+    margin-bottom: 0px;
     display: block;
+    padding-bottom:0px;
 }
 
 .parsed-container {
     display: flex;
     justify-content: space-between;
     gap: 10px;
-    margin-top: 10px; /* Reduce space between input and parsed results */
+    margin-top: 0;
+    padding-top:0;
 }
 
 .parsed-box {
@@ -125,11 +127,7 @@
   });
 </script>
 
-<h1>CQL2 Playground</h1>
-
 <p id="example-description" style="font-weight: margin-bottom: 5px;"></p>
-
-Examples: 
 
 <select id="examples" class="searchable-dropdown" >
 <option value=''>-</option>
@@ -197,7 +195,7 @@ Examples:
 
   </select>
   <div id="cqlin-div">
-    <textarea id="cqlin" rows="20" cols="114">foo > 1</textarea>
+    <textarea id="cqlin" rows="15" cols="114">foo > 1</textarea>
 </div>
   <br/>
   <div class="parsed-container">
