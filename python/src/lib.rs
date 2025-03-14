@@ -4,7 +4,9 @@ use pyo3::{
     create_exception,
     exceptions::{PyException, PyIOError, PyValueError},
     prelude::*,
+    types::PyDict,
 };
+use serde_json::Value;
 use std::path::PathBuf;
 
 create_exception!(cql2, ValidationError, PyException);
@@ -72,6 +74,11 @@ impl Expr {
         } else {
             Ok(())
         }
+    }
+
+    fn matches(&self, item: Bound<'_, PyDict>) -> Result<bool> {
+        let value: Value = pythonize::depythonize(&item)?;
+        self.0.clone().matches(Some(&value)).map_err(Error::from)
     }
 
     fn to_json<'py>(&self, py: Python<'py>) -> Result<Bound<'py, PyAny>> {

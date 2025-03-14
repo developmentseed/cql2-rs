@@ -278,6 +278,7 @@ dependencies = [
  "cql2-cli",
  "pyo3",
  "pythonize",
+ "serde_json",
 ]
 
 [[package]]

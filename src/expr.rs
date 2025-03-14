@@ -353,6 +353,9 @@ impl Expr {
     ///
     /// let mut expr: Expr = "boolfield and 1 + 2 = 3".parse().unwrap();
     /// assert_eq!(true, expr.matches(Some(&item)).unwrap());
+    ///
+    /// let mut expr: Expr = "eo:cloud_cover <= 9".parse().unwrap();
+    /// assert_eq!(false, expr.matches(Some(&item)).unwrap());
     /// ```
     pub fn matches(self, j: Option<&Value>) -> Result<bool, Error> {
         let reduced = self.reduce(j)?;
