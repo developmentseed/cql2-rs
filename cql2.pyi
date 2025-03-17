@@ -77,6 +77,16 @@ class Expr:
             >>> expr.validate()
         """
 
+    def matches(self, item: dict[str, Any]) -> bool:
+        """Matches this expression against an item.
+
+        Args:
+            item (dict[str, Any]): The item to match against
+
+        Returns:
+            bool: True if the expression matches the item, False otherwise
+        """
+
     def to_json(self) -> dict[str, Any]:
         """Converts this cql2 expression to a cql2-json dictionary.
 
