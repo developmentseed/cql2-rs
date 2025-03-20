@@ -58,3 +58,11 @@ POINT(0 0) = POINT(0 0)
 true
 POINT(0 0) = POINT(1 0)
 false
+a and b and c and a and a
+a and b and c
+true or b = false
+true
+true or false or c=3
+true
+false or c=3 or c=3
+c=3 or false

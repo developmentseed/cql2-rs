@@ -7,6 +7,7 @@ use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
+use std::fmt::Debug;
 use std::ops::{Add, Deref};
 use std::str::FromStr;
 use unaccent::unaccent;
@@ -173,7 +174,7 @@ impl TryFrom<Expr> for HashSet<String> {
     }
 }
 
-fn cmp_op<T: PartialEq + PartialOrd>(left: T, right: T, op: &str) -> Result<Expr, Error> {
+fn cmp_op<T: PartialEq + PartialOrd + Debug>(left: T, right: T, op: &str) -> Result<Expr, Error> {
     let out = match op {
         "=" => Ok(left == right),
         "<=" => Ok(left <= right),
@@ -245,6 +246,12 @@ impl Expr {
     /// let toexpr: Expr = Expr::from_str("20").unwrap();
     /// assert_eq!(reduced, toexpr);
     ///
+    /// let fromexpr: Expr = Expr::from_str("(bork=1) and (bork=1) and (bork=1 and true)").unwrap();
+    /// let reduced = fromexpr.reduce(Some(&item)).unwrap();
+    /// let toexpr: Expr = Expr::from_str("bork=1 and true").unwrap();
+    /// assert_eq!(reduced, toexpr);
+    ///
+    ///
     /// ```
     pub fn reduce(self, j: Option<&Value>) -> Result<Expr, Error> {
         match self {
@@ -270,19 +277,51 @@ impl Expr {
                     .collect::<Result<_, _>>()?;
 
                 if BOOLOPS.contains(&op.as_str()) {
-                    let bools: Result<Vec<bool>, Error> = args
-                        .iter()
-                        .map(|expr| bool::try_from(expr.as_ref()))
-                        .collect();
-
-                    if let Ok(bools) = bools {
-                        match op.as_str() {
-                            "and" => Ok(Expr::Bool(bools.into_iter().all(|x| x))),
-                            "or" => Ok(Expr::Bool(bools.into_iter().any(|x| x))),
-                            _ => Ok(Expr::Operation { op, args }),
+                    let curop = &op;
+                    let mut dedupargs: Vec<Box<Expr>> = vec![];
+                    let mut nestedargs: Vec<Box<Expr>> = vec![];
+                    for a in args.iter() {
+                        match a.as_ref() {
+                            Expr::Operation { op, args } if op == curop => {
+                                nestedargs.append(&mut args.clone());
+                            }
+                            _ => {
+                                dedupargs.push(a.clone());
+                            }
                         }
+                    }
+                    dedupargs.append(&mut nestedargs);
+                    dedupargs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                    dedupargs.dedup();
+
+                    let mut anytrue: bool = false;
+                    let mut anyfalse: bool = false;
+                    let mut anyexp: bool = false;
+
+                    for a in dedupargs.iter() {
+                        let b = bool::try_from(a.as_ref());
+                        match b {
+                            Ok(true) => {
+                                anytrue = true;
+                            }
+                            Ok(false) => {
+                                anyfalse = true;
+                            }
+                            _ => {
+                                anyexp = true;
+                            }
+                        }
+                    }
+                    dbg!(&op, &anyfalse, &anytrue, &anyexp);
+                    if (op == "and" && anyfalse) || (op == "or" && !anytrue && !anyexp) {
+                        Ok(Expr::Bool(false))
+                    } else if (op == "and" && !anyfalse && !anyexp) || (op == "or" && anytrue) {
+                        Ok(Expr::Bool(true))
                     } else {
-                        Ok(Expr::Operation { op, args })
+                        Ok(Expr::Operation {
+                            op,
+                            args: dedupargs.clone(),
+                        })
                     }
                 } else if op == "not" {
                     match args[0].deref() {
@@ -308,26 +347,30 @@ impl Expr {
                     let left = args[0].deref().clone();
                     let right = args[1].deref().clone();
 
-                    if SPATIALOPS.contains(&op.as_str()) {
-                        Ok(spatial_op(left, right, &op)
-                            .unwrap_or_else(|_| Expr::Operation { op, args }))
-                    } else if TEMPORALOPS.contains(&op.as_str()) {
-                        Ok(temporal_op(left, right, &op)
-                            .unwrap_or_else(|_| Expr::Operation { op, args }))
-                    } else if ARITHOPS.contains(&op.as_str()) {
-                        Ok(arith_op(left, right, &op)
-                            .unwrap_or_else(|_| Expr::Operation { op, args }))
-                    } else if EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str()) {
-                        Ok(cmp_op(left, right, &op)
-                            .unwrap_or_else(|_| Expr::Operation { op, args }))
-                    } else if ARRAYOPS.contains(&op.as_str()) {
-                        Ok(array_op(left, right, &op)
-                            .unwrap_or_else(|_| Expr::Operation { op, args }))
-                    } else if op == "like" {
-                        let l: String = left.try_into()?;
-                        let r: String = right.try_into()?;
-                        let m: bool = Like::<true>::like(l.as_str(), r.as_str())?;
-                        Ok(Expr::Bool(m))
+                    if std::mem::discriminant(&left) == std::mem::discriminant(&right) {
+                        if SPATIALOPS.contains(&op.as_str()) {
+                            Ok(spatial_op(left, right, &op)
+                                .unwrap_or_else(|_| Expr::Operation { op, args }))
+                        } else if TEMPORALOPS.contains(&op.as_str()) {
+                            Ok(temporal_op(left, right, &op)
+                                .unwrap_or_else(|_| Expr::Operation { op, args }))
+                        } else if ARITHOPS.contains(&op.as_str()) {
+                            Ok(arith_op(left, right, &op)
+                                .unwrap_or_else(|_| Expr::Operation { op, args }))
+                        } else if EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str()) {
+                            Ok(cmp_op(left, right, &op)
+                                .unwrap_or_else(|_| Expr::Operation { op, args }))
+                        } else if ARRAYOPS.contains(&op.as_str()) {
+                            Ok(array_op(left, right, &op)
+                                .unwrap_or_else(|_| Expr::Operation { op, args }))
+                        } else if op == "like" {
+                            let l: String = left.try_into()?;
+                            let r: String = right.try_into()?;
+                            let m: bool = Like::<true>::like(l.as_str(), r.as_str())?;
+                            Ok(Expr::Bool(m))
+                        } else {
+                            Ok(Expr::Operation { op, args })
+                        }
                     } else if op == "in" {
                         let l: String = left.to_text()?;
                         let r: HashSet<String> = right.try_into()?;
