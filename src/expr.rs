@@ -248,7 +248,7 @@ impl Expr {
     ///
     /// let fromexpr: Expr = Expr::from_str("(bork=1) and (bork=1) and (bork=1 and true)").unwrap();
     /// let reduced = fromexpr.reduce(Some(&item)).unwrap();
-    /// let toexpr: Expr = Expr::from_str("bork=1 and true").unwrap();
+    /// let toexpr: Expr = Expr::from_str("bork=1").unwrap();
     /// assert_eq!(reduced, toexpr);
     ///
     ///
@@ -313,7 +313,12 @@ impl Expr {
                         }
                     }
                     dbg!(&op, &anyfalse, &anytrue, &anyexp);
-                    if (op == "and" && anyfalse) || (op == "or" && !anytrue && !anyexp) {
+                    if op == "and" && anytrue {
+                        dedupargs.retain(|x| ! bool::try_from(x.as_ref()).unwrap_or(false));
+                    }
+                    if dedupargs.len() == 1 {
+                        Ok(dedupargs.pop().unwrap().as_ref().clone())
+                    } else if (op == "and" && anyfalse) || (op == "or" && !anytrue && !anyexp) {
                         Ok(Expr::Bool(false))
                     } else if (op == "and" && !anyfalse && !anyexp) || (op == "or" && anytrue) {
                         Ok(Expr::Bool(true))
