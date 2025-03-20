@@ -314,7 +314,7 @@ impl Expr {
                     }
                     dbg!(&op, &anyfalse, &anytrue, &anyexp);
                     if op == "and" && anytrue {
-                        dedupargs.retain(|x| ! bool::try_from(x.as_ref()).unwrap_or(false));
+                        dedupargs.retain(|x| !bool::try_from(x.as_ref()).unwrap_or(false));
                     }
                     if dedupargs.len() == 1 {
                         Ok(dedupargs.pop().unwrap().as_ref().clone())
