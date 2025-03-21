@@ -1,0 +1,114 @@
+# Boolean Ops
+"and":
+  optype: OP
+  args: null
+"or":
+  optype: OP
+  args: null
+# OP Ops
+"=":
+  optype: OP
+"<>":
+  optype: OP
+">":
+  optype: OP
+">=":
+  optype: OP
+"<":
+  optype: OP
+"<=":
+  optype: OP
+"like":
+  template: "({} LIKE {})"
+  cast: STRING
+# Arithmetic Ops
+"+":
+  optype: OP
+  cast: FLOAT
+"-":
+  optype: OP
+  cast: FLOAT
+"*":
+  optype: OP
+  cast: FLOAT
+"/":
+  optype: OP
+  cast: FLOAT
+"%":
+  optype: OP
+  cast: FLOAT
+"^":
+  optype: OP
+  cast: FLOAT
+# Other
+"isNull":
+  args: 1
+  template: "({} IS NULL)"
+"in":
+  template: "({} IN {})"
+"between":
+  args: 3
+  template: "({} BETWEEN {} AND {})"
+"not":
+  args: 1
+  template: "(NOT {})"
+"accenti":
+  args: 1
+"casei":
+  args: 1
+
+# Spatial Ops
+"s_equals":
+  cast: WKT
+"s_intersects":
+  cast: WKT
+"s_disjoint":
+  cast: WKT
+"s_touches":
+  cast: WKT
+"s_within":
+  cast: WKT
+"s_overlaps":
+  cast: WKT
+"s_crosses":
+  cast: WKT
+"s_contains":
+  cast: WKT
+
+# Temporal Ops
+"t_before":
+  cast: DTRANGE
+"t_after":
+  cast: DTRANGE
+"t_meets":
+  cast: DTRANGE
+"t_metby":
+  cast: DTRANGE
+"t_overlaps":
+  cast: DTRANGE
+"t_overlappedby":
+  cast: DTRANGE
+"t_starts":
+  cast: DTRANGE
+"t_startedby":
+  cast: DTRANGE
+"t_during":
+  cast: DTRANGE
+"t_contains":
+  cast: DTRANGE
+"t_finishes":
+  cast: DTRANGE
+"t_finishedby":
+  cast: DTRANGE
+"t_equals":
+  cast: DTRANGE
+"t_disjoint":
+  cast: DTRANGE
+"t_intersects":
+  cast: DTRANGE
+
+# Array Ops
+"a_equals":
+"a_contains":
+"a_containedby":
+"a_overlaps":
