@@ -251,7 +251,6 @@ impl Expr {
     /// let toexpr: Expr = Expr::from_str("bork=1").unwrap();
     /// assert_eq!(reduced, toexpr);
     ///
-    ///
     /// ```
     pub fn reduce(self, j: Option<&Value>) -> Result<Expr, Error> {
         match self {
