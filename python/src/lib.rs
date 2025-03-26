@@ -83,13 +83,7 @@ impl Expr {
 
     #[pyo3(signature = (item=None))]
     fn reduce(&self, item: Option<Bound<'_, PyDict>>) -> Result<Expr> {
-        let value = match item {
-            Some(item) => {
-                let binding: Value = pythonize::depythonize(item.as_ref())?;
-                Some(binding)
-            }
-            None => None,
-        };
+        let value = item.map(|item| pythonize::depythonize(&item)).transpose()?;
         self.0
             .clone()
             .reduce(value.as_ref())
