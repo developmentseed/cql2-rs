@@ -174,7 +174,7 @@ impl TryFrom<Expr> for HashSet<String> {
     }
 }
 
-fn cmp_op<T: PartialEq + PartialOrd + Debug>(left: T, right: T, op: &str) -> Result<Expr, Error> {
+fn cmp_op<T: PartialEq + PartialOrd>(left: T, right: T, op: &str) -> Result<Expr, Error> {
     let out = match op {
         "=" => Ok(left == right),
         "<=" => Ok(left <= right),
@@ -248,7 +248,8 @@ impl Expr {
     ///
     /// let fromexpr: Expr = Expr::from_str("(bork=1) and (bork=1) and (bork=1 and true)").unwrap();
     /// let reduced = fromexpr.reduce(Some(&item)).unwrap();
-    /// assert_eq!(reduced, "bork=1".parse().unwrap());
+    /// let toexpr: Expr = Expr::from_str("bork=1").unwrap();
+    /// assert_eq!(reduced, toexpr);
     ///
     /// ```
     pub fn reduce(self, j: Option<&Value>) -> Result<Expr, Error> {
@@ -275,11 +276,11 @@ impl Expr {
                     .collect::<Result<_, _>>()?;
 
                 if BOOLOPS.contains(&op.as_str()) {
-                    let curop = &op;
+                    let curop = op.clone();
                     let mut dedupargs: Vec<Box<Expr>> = vec![];
                     let mut nestedargs: Vec<Box<Expr>> = vec![];
-                    for a in args.iter() {
-                        match a.as_ref() {
+                    for a in args {
+                        match *a {
                             Expr::Operation { op, args } if op == curop => {
                                 nestedargs.append(&mut args.clone());
                             }
@@ -310,7 +311,6 @@ impl Expr {
                             }
                         }
                     }
-                    dbg!(&op, &anyfalse, &anytrue, &anyexp);
                     if op == "and" && anytrue {
                         dedupargs.retain(|x| !bool::try_from(x.as_ref()).unwrap_or(false));
                     }
