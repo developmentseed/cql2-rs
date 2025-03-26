@@ -248,8 +248,7 @@ impl Expr {
     ///
     /// let fromexpr: Expr = Expr::from_str("(bork=1) and (bork=1) and (bork=1 and true)").unwrap();
     /// let reduced = fromexpr.reduce(Some(&item)).unwrap();
-    /// let toexpr: Expr = Expr::from_str("bork=1").unwrap();
-    /// assert_eq!(reduced, toexpr);
+    /// assert_eq!(reduced, "bork=1".parse().unwrap());
     ///
     /// ```
     pub fn reduce(self, j: Option<&Value>) -> Result<Expr, Error> {
