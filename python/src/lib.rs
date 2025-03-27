@@ -81,6 +81,16 @@ impl Expr {
         self.0.clone().matches(Some(&value)).map_err(Error::from)
     }
 
+    #[pyo3(signature = (item=None))]
+    fn reduce(&self, item: Option<Bound<'_, PyDict>>) -> Result<Expr> {
+        let value = item.map(|item| pythonize::depythonize(&item)).transpose()?;
+        self.0
+            .clone()
+            .reduce(value.as_ref())
+            .map(Expr)
+            .map_err(Error::from)
+    }
+
     fn to_json<'py>(&self, py: Python<'py>) -> Result<Bound<'py, PyAny>> {
         pythonize::pythonize(py, &self.0).map_err(Error::from)
     }

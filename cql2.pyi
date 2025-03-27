@@ -87,6 +87,22 @@ class Expr:
             bool: True if the expression matches the item, False otherwise
         """
 
+    def reduce(self, item: dict[str, Any] | None = None) -> Expr:
+        """Reduces this expression against an item.
+
+        Args:
+            item (dict[str, Any] | None): The item to reduce against
+
+        Returns:
+            Expr: The reduced expression
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> expr = Expr("true AND true").reduce()
+            >>> expr.to_text()
+            'true'
+        """
+
     def to_json(self) -> dict[str, Any]:
         """Converts this cql2 expression to a cql2-json dictionary.
 
@@ -128,7 +144,7 @@ class Expr:
             ['LC82030282019133LGN00']
         """
 
-    def __add__(self, other: "Expr") -> "Expr":
+    def __add__(self, other: Expr) -> Expr:
         """Combines two cql2 expressions using the AND operator.
 
         Args:
