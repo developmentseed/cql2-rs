@@ -92,8 +92,15 @@ class Expr:
 
         Args:
             item (dict[str, Any] | None): The item to reduce against
+
         Returns:
             Expr: The reduced expression
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> expr = Expr("true AND true").reduce()
+            >>> expr.to_text()
+            'true'
         """
 
     def to_json(self) -> dict[str, Any]:
