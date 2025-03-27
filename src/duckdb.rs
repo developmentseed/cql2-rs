@@ -107,8 +107,8 @@ impl ToDuckSQL for Expr {
                     "between" => format!("{} BETWEEN {} AND {}", a[0], a[1], a[2]),
                     "in" => format!("IN ({})", a.join(",")),
                     "like" => format!("{} LIKE {}", a[0], a[1]),
-                    "accenti" => format!("ACCENTI {}", a[0]),
-                    "casei" => format!("CASEI {}", a[0]),
+                    "accenti" => format!("strip_accents({})", a[0]),
+                    "casei" => format!("lower({})", a[0]),
                     _ => {
                         if BOOLOPS.contains(&op) {
                             let padded = format!(" {} ", op);
