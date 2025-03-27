@@ -1,5 +1,5 @@
 [workspace.package]
-version = "0.3.5"
+version = "0.3.6"
 authors = [
     "David Bitner <bitner@dbspatial.com>",
     "Pete Gadomski <pete.gadomski@gmail.com>",
