@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.3.6] - 2025-03-27
+
+### Changed
+
+- Update examples ([#75](https://github.com/developmentseed/cql2-rs/pull/75))
+- Further reductions for and/or ([#78](https://github.com/developmentseed/cql2-rs/pull/78))
+
+### Added
+
+- Expose Expr.matches() in Python ([#76](https://github.com/developmentseed/cql2-rs/pull/76))
+- Expose Expr.reduce() in Python ([#79](https://github.com/developmentseed/cql2-rs/pull/79))
+
+
 ## [0.3.5] - 2025-03-12
 
 ### Fixed
@@ -60,14 +73,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Initial release.
 
-[Unreleased]: https://github.com/developmentseed/cql-rs/compare/v0.3.5...main
-[0.3.5]: https://github.com/developmentseed/cql-rs/releases/compare/v0.3.4...v0.3.5
-[0.3.4]: https://github.com/developmentseed/cql-rs/releases/compare/v0.3.3...v0.3.4
-[0.3.3]: https://github.com/developmentseed/cql-rs/releases/compare/v0.3.2...v0.3.3
-[0.3.2]: https://github.com/developmentseed/cql-rs/releases/compare/v0.3.1...v0.3.2
-[0.3.1]: https://github.com/developmentseed/cql-rs/releases/compare/v0.3.0...v0.3.1
-[0.3.0]: https://github.com/developmentseed/cql-rs/releases/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/developmentseed/cql-rs/releases/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/developmentseed/cql-rs/releases/tag/v0.1.0
+[Unreleased]: https://github.com/developmentseed/cql2-rs/compare/v0.3.5...main
+[0.3.5]: https://github.com/developmentseed/cql2-rs/releases/compare/v0.3.4...v0.3.5
+[0.3.4]: https://github.com/developmentseed/cql2-rs/releases/compare/v0.3.3...v0.3.4
+[0.3.3]: https://github.com/developmentseed/cql2-rs/releases/compare/v0.3.2...v0.3.3
+[0.3.2]: https://github.com/developmentseed/cql2-rs/releases/compare/v0.3.1...v0.3.2
+[0.3.1]: https://github.com/developmentseed/cql2-rs/releases/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/developmentseed/cql2-rs/releases/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/developmentseed/cql2-rs/releases/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/developmentseed/cql2-rs/releases/tag/v0.1.0
 
 <!-- markdownlint-disable-file MD024 -->
