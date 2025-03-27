@@ -73,7 +73,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Initial release.
 
-[Unreleased]: https://github.com/developmentseed/cql2-rs/compare/v0.3.5...main
+[Unreleased]: https://github.com/developmentseed/cql2-rs/compare/v0.3.6...main
+[0.3.6]: https://github.com/developmentseed/cql2-rs/releases/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/developmentseed/cql2-rs/releases/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/developmentseed/cql2-rs/releases/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/developmentseed/cql2-rs/releases/compare/v0.3.2...v0.3.3
