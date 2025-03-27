@@ -15,8 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
-- Expose Expr.matches() in Python ([#76](https://github.com/developmentseed/cql2-rs/pull/76))
-- Expose Expr.reduce() in Python ([#79](https://github.com/developmentseed/cql2-rs/pull/79))
+- Expose `Expr.matches()` in Python ([#76](https://github.com/developmentseed/cql2-rs/pull/76))
+- Expose `Expr.reduce()` in Python ([#79](https://github.com/developmentseed/cql2-rs/pull/79))
 
 
 ## [0.3.5] - 2025-03-12
