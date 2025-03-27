@@ -20,6 +20,7 @@ fn lit_or_prop_to_ts(arg: &Expr) -> Result<String, Error> {
 
 impl ToDuckSQL for Expr {
     /// Converts this expression to DuckDB SQL.
+    /// WARNING: This is an experimental feature with limited tests subject to change!
     ///
     /// # Examples
     ///
