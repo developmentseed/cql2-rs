@@ -92,7 +92,10 @@ class Expr:
 
         Args:
             item (dict[str, Any] | None): The item to reduce against
+        Returns:
+            Expr: The reduced expression
         """
+
     def to_json(self) -> dict[str, Any]:
         """Converts this cql2 expression to a cql2-json dictionary.
 
