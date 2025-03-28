@@ -13,10 +13,17 @@ use std::str::FromStr;
 use unaccent::unaccent;
 use wkt::TryFromWkt;
 
-const BOOLOPS: &[&str] = &["and", "or"];
-const EQOPS: &[&str] = &["=", "<>"];
-const CMPOPS: &[&str] = &[">", ">=", "<", "<="];
-const SPATIALOPS: &[&str] = &[
+/// Boolean Operators
+pub const BOOLOPS: &[&str] = &["and", "or"];
+
+/// Equality Operators
+pub const EQOPS: &[&str] = &["=", "<>"];
+
+/// Comparison Operators
+pub const CMPOPS: &[&str] = &[">", ">=", "<", "<="];
+
+/// Spatial Operators
+pub const SPATIALOPS: &[&str] = &[
     "s_equals",
     "s_intersects",
     "s_disjoint",
@@ -26,7 +33,9 @@ const SPATIALOPS: &[&str] = &[
     "s_crosses",
     "s_contains",
 ];
-const TEMPORALOPS: &[&str] = &[
+
+/// Temporal Operators
+pub const TEMPORALOPS: &[&str] = &[
     "t_before",
     "t_after",
     "t_meets",
@@ -43,8 +52,12 @@ const TEMPORALOPS: &[&str] = &[
     "t_disjoint",
     "t_intersects",
 ];
-const ARITHOPS: &[&str] = &["+", "-", "*", "/", "%", "^", "div"];
-const ARRAYOPS: &[&str] = &["a_equals", "a_contains", "a_containedby", "a_overlaps"];
+
+/// Arithmetic Operators
+pub const ARITHOPS: &[&str] = &["+", "-", "*", "/", "%", "^", "div"];
+
+/// Array Operators
+pub const ARRAYOPS: &[&str] = &["a_equals", "a_contains", "a_containedby", "a_overlaps"];
 
 // todo: array ops, in, casei, accenti, between, not, like
 
