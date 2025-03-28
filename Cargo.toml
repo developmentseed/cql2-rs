@@ -1,5 +1,5 @@
 [workspace.package]
-version = "0.3.6"
+version = "0.3.7-beta.0"
 authors = [
     "David Bitner <bitner@dbspatial.com>",
     "Pete Gadomski <pete.gadomski@gmail.com>",
@@ -24,7 +24,7 @@ keywords = ["cql2"]
 
 
 [dependencies]
-geo = "0.29.3"
+geo = "0.30.0"
 geo-types = "0.7.15"
 geojson = "0.24.1"
 geozero = "0.14.0"
