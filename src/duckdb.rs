@@ -203,3 +203,30 @@ impl ToDuckSQL for Expr {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::Expr;
+
+    use super::ToDuckSQL;
+
+    #[test]
+    fn panic() {
+        // https://github.com/stac-utils/rustac-py/issues/135
+        let expr: Expr = serde_json::from_value(serde_json::json!({
+            "op": "and",
+            "args": [
+                {
+                    "op": "eq",
+                    "args": [{"property": "forecast:horizon"}, "PT48H"]
+                },
+                {
+                    "op": "gte",
+                    "args": [{"property": "forecast:reference_time"}, "2025-05-15T00:00:00Z"]
+                },
+            ],
+        }))
+        .unwrap();
+        let _ = expr.to_ducksql().unwrap();
+    }
+}
