@@ -87,6 +87,10 @@ pub enum Error {
     #[error("Operator {0} is not implemented for this type.")]
     OpNotImplemented(&'static str),
 
+    /// Invalid operator
+    #[error("{0} is not a valid operator.")]
+    InvalidOperator(String),
+
     /// Expression not reduced to boolean
     #[error("Could not reduce expression to boolean")]
     NonReduced(),

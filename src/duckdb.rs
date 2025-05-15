@@ -195,7 +195,7 @@ impl ToDuckSQL for Expr {
                         {
                             format!("{} {} {}", a[0], op, a[1])
                         } else {
-                            unreachable!()
+                            return Err(Error::InvalidOperator(op.to_string()));
                         }
                     }
                 }
@@ -206,12 +206,11 @@ impl ToDuckSQL for Expr {
 
 #[cfg(test)]
 mod tests {
-    use crate::Expr;
-
     use super::ToDuckSQL;
+    use crate::{Error, Expr};
 
     #[test]
-    fn panic() {
+    fn unreachable_code() {
         // https://github.com/stac-utils/rustac-py/issues/135
         let expr: Expr = serde_json::from_value(serde_json::json!({
             "op": "and",
@@ -227,6 +226,9 @@ mod tests {
             ],
         }))
         .unwrap();
-        let _ = expr.to_ducksql().unwrap();
+        assert!(matches!(
+            expr.to_ducksql().unwrap_err(),
+            Error::InvalidOperator(_)
+        ));
     }
 }
