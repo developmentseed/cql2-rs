@@ -30,7 +30,7 @@ jobs:
       - name: build wasm
         run: scripts/buildwasm
         env:
-          RUSTFLAGS: 'cfg getrandom_backend="wasm_js"'
+          RUSTFLAGS: '--cfg getrandom_backend="wasm_js"'
       - uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
