@@ -28,3 +28,5 @@ jobs:
         run: scripts/test
       - name: CLI smoke test
         run: uv run cql2 < examples/text/example01.txt
+      - name: Build WASM
+        run: scripts/buildwasm
