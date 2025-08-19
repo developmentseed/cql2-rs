@@ -254,6 +254,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
+ "sqlparser",
  "thiserror 2.0.12",
  "unaccent",
  "wkt 0.12.0",
@@ -1570,6 +1571,15 @@ dependencies = [
  "num-traits",
  "robust",
  "smallvec",
+]
+
+[[package]]
+name = "sqlparser"
+version = "0.53.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05a528114c392209b3264855ad491fcce534b94a38771b0a0b97a79379275ce8"
+dependencies = [
+ "log",
 ]
 
 [[package]]

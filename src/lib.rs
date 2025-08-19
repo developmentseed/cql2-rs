@@ -35,6 +35,7 @@ mod error;
 mod expr;
 mod geometry;
 mod parser;
+mod sql;
 mod temporal;
 mod validator;
 
@@ -44,6 +45,7 @@ pub use expr::*;
 pub use geometry::{spatial_op, Geometry};
 pub use parser::parse_text;
 use serde_derive::{Deserialize, Serialize};
+pub use sql::ToSqlAst;
 use std::{fs, path::Path};
 pub use temporal::{temporal_op, DateRange};
 pub use validator::Validator;
