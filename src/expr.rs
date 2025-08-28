@@ -47,7 +47,7 @@ pub const TEMPORALOPS: &[&str] = &[
     "t_during",
     "t_contains",
     "t_finishes",
-    "to_finishedby",
+    "t_finishedby",
     "t_equals",
     "t_disjoint",
     "t_intersects",
@@ -391,7 +391,7 @@ impl Expr {
 
 
                     if TEMPORALOPS.contains(&op.as_str()) {
-
+                        eprintln!("Op: {:?}, Left: {:?}, Right: {:?}", op, left, right);
                         Ok(temporal_op(left, right, &op)
                                 .unwrap_or_else(|_| Expr::Operation { op, args }))
                     // Date or Timestamp comparison: convert to jiff Timestamp for correct ordering

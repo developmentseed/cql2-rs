@@ -23,28 +23,6 @@ fn cast(arg: SqlExpr, data_type: sqlparser::ast::DataType) -> SqlExpr {
     }
 }
 
-fn lit_or_prop_to_ts(arg: &Expr) -> Result<SqlExpr, Error> {
-    Ok(match arg {
-        Expr::Property { property } => ident(property),
-        Expr::Literal(v) => cast(
-            lit_expr(v),
-            Timestamp(None, TimezoneInfo::WithTimeZone),
-        ),
-        _ => return Err(Error::OperationError()),
-    })
-}
-
-fn lit_or_prop_to_date(arg: &Expr) -> Result<SqlExpr, Error> {
-    Ok(match arg {
-        Expr::Property { property } => ident(property),
-        Expr::Literal(v) => cast(
-            lit_expr(v),
-            Date,
-        ),
-        _ => return Err(Error::OperationError()),
-    })
-}
-
 fn func(name: &str, args: Vec<SqlExpr>) -> SqlExpr {
     SqlExpr::Function(
         sqlparser::ast::Function {
@@ -99,26 +77,57 @@ struct Targs {
     right_end: SqlExpr,
 }
 
-fn t_args(args: &Vec<Box<Expr>>) -> Result<Targs, Error> {
-    let left = &args[0];
-    let right = &args[1];
-    let left_start: SqlExpr;
-    let left_end: SqlExpr;
-    let right_start: SqlExpr;
-    let right_end: SqlExpr;
-    if let Expr::Interval {interval} = left.as_ref() {
-        left_start = lit_or_prop_to_ts(&interval[0])?;
-        left_end = lit_or_prop_to_ts(&interval[1])?;
-    } else {
-        return Err(Error::OperationError());
-    }
 
-    if let Expr::Interval {interval} = right.as_ref() {
-        right_start = lit_or_prop_to_ts(&interval[0])?;
-        right_end = lit_or_prop_to_ts(&interval[1])?;
-    } else {
-        return Err(Error::OperationError());
+fn lit_or_prop_to_ts(arg: &Expr) -> Result<SqlExpr, Error> {
+    Ok(match arg {
+        Expr::Property { property } => ident(property),
+        Expr::Literal(v) => cast(
+            lit_expr(v),
+            Timestamp(None, TimezoneInfo::WithTimeZone),
+        ),
+        _ => return Err(Error::OperationError()),
+    })
+}
+
+fn lit_or_prop_to_date(arg: &Expr) -> Result<SqlExpr, Error> {
+    Ok(match arg {
+        Expr::Property { property } => ident(property),
+        Expr::Literal(v) => cast(
+            lit_expr(v),
+            Date,
+        ),
+        _ => return Err(Error::OperationError()),
+    })
+}
+
+fn t_arg_to_interval(arg: &Box<Expr>) -> Result<(SqlExpr, SqlExpr), Error> {
+    match arg.as_ref() {
+        Expr::Interval { interval } => {
+            let start = lit_or_prop_to_ts(&interval[0])?;
+            let end = lit_or_prop_to_ts(&interval[1])?;
+            Ok((start, end))
+        }
+        Expr::Property { property } => {
+            let start = ident(&property);
+            Ok((start.clone(), start.clone()))
+        }
+        Expr::Date { date } => {
+            let e = Expr::Date{ date: date.clone() };
+            let start = e.to_sql_ast()?;
+            Ok((start.clone(), start.clone()))
+        }
+        Expr::Timestamp { timestamp } => {
+            let e = Expr::Timestamp{ timestamp: timestamp.clone() };
+            let start = e.to_sql_ast()?;
+            Ok((start.clone(), start.clone()))
+        }
+        _ => Err(Error::OperationError()),
     }
+}
+
+fn t_args(args: &Vec<Box<Expr>>) -> Result<Targs, Error> {
+    let (left_start, left_end) = t_arg_to_interval(&args[0])?;
+    let (right_start, right_end) = t_arg_to_interval(&args[1])?;
     Ok(Targs {
             left_start,
             left_end,
@@ -250,6 +259,7 @@ impl ToSqlAst for Expr {
             Expr::Operation { op, args } => {
                 let op_str = op.to_lowercase();
                 let a = args2ast(args)?;
+                eprintln!("Operation: {} with {} args", op_str, a.len());
                 match op_str.as_str() {
                     "not" => SqlExpr::UnaryOp {
                         op: sqlparser::ast::UnaryOperator::Not,
@@ -263,11 +273,12 @@ impl ToSqlAst for Expr {
                     },
                     "in" => {
                         let expr = a[0].clone();
-                        let items = a[1..].to_vec();
-                        SqlExpr::InList {
-                            expr: Box::new(expr),
-                            list: items,
-                            negated: false,
+                        let items = a[1].clone();
+                        SqlExpr::AnyOp {
+                            left: Box::new(expr),
+                            compare_op: BinaryOperator::Eq,
+                            right: Box::new(items),
+                            is_some: true
                         }
                     }
                     "like" => {
@@ -314,7 +325,7 @@ impl ToSqlAst for Expr {
                     }
                     "t_after" => {
                         let t = t_args(args)?;
-                        gtop(t.right_end, t.left_start)
+                        ltop(t.right_end, t.left_start)
                     }
                     "t_meets" => {
                         let t = t_args(args)?;
@@ -349,7 +360,7 @@ impl ToSqlAst for Expr {
                         wrap(andop(
                             vec![
                                 eqop(t.left_start, t.right_start.clone()),
-                                ltop(t.left_end, t.right_start)
+                                ltop(t.left_end, t.right_end)
                             ]
                         ))
                     }
@@ -358,7 +369,7 @@ impl ToSqlAst for Expr {
                         wrap(andop(
                             vec![
                                 eqop(t.right_start, t.left_start.clone()),
-                                ltop(t.right_end, t.left_start)
+                                ltop(t.right_end, t.left_end)
                             ]
                         ))
                     }
@@ -445,4 +456,16 @@ mod tests {
         let sql_str = sql_ast.to_string();
         assert_eq!(sql_str, "1 + 2 > 4");
     }
+
+    #[test]
+    fn test_t_before_expression() {
+        // t_before([start1, end1], [start2, end2]) => end1 < start2
+        let expr: Expr = "t_before(ts_start, DATE('2020-02-01'))".parse().unwrap();
+        eprintln!("Parsed expression: {}", expr.to_text().unwrap());
+        let sql_ast = expr.to_sql_ast().expect("to_sql_ast failed");
+        let sql_str = sql_ast.to_string();
+        eprintln!("SQL: {}", sql_str);
+        assert_eq!(sql_str, "ts_start < CAST('2020-02-01' AS DATE)");
+    }
+
 }

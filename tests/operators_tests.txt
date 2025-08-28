@@ -194,4 +194,4 @@ intfield > 1 and floatfield < 5.0
 not (intfield <= 2) or (boolfield and floatfield >= 2.0)
 floatfield between -23 and 40 and in(textfield, 'item_2', 'item_3')
 s_intersects(geom, POINT(-93 45)) or s_disjoint(geom, POINT(-93 45))
-t_before(interval(ts_start, ts_end), interval('2020-01-01T00:00:00Z','2022-01-01T00:00:00Z')) and not boolfield
+t_before(interval(ts_start, ts_end), interval('2020-01-10T00:00:00Z','2022-02-01T00:00:00Z')) and not boolfield

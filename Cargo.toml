@@ -46,6 +46,7 @@ sqlparser = "0.53"
 
 [dev-dependencies]
 assert-json-diff = "2"
+duckdb = { version = "1.3.2", features = ["bundled"] }
 rstest = "0.25.0"
 
 [workspace]
