@@ -29,4 +29,9 @@ impl CQL2Expression {
         let r = self.0.to_text()?;
         Ok(r)
     }
+
+    pub fn reduce(&self) -> Result<CQL2Expression, JsError> {
+        let r = self.0.clone().reduce(None)?;
+        Ok(CQL2Expression(r))
+    }
 }

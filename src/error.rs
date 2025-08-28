@@ -50,6 +50,10 @@ pub enum Error {
     #[error(transparent)]
     ParseInt(#[from] std::num::ParseIntError),
 
+    /// [std::num::ParseTimestamp]
+    #[error(transparent)]
+    ParseTimestamp(#[from] jiff::Error),
+
     /// [pest::error::Error]
     #[error(transparent)]
     Pest(#[from] Box<pest::error::Error<crate::parser::Rule>>),

@@ -187,7 +187,8 @@ impl TryFrom<Expr> for HashSet<String> {
     }
 }
 
-fn cmp_op<T: PartialEq + PartialOrd>(left: T, right: T, op: &str) -> Result<Expr, Error> {
+fn cmp_op<T: PartialEq + PartialOrd + Debug>(left: T, right: T, op: &str) -> Result<Expr, Error> {
+
     let out = match op {
         "=" => Ok(left == right),
         "<=" => Ok(left <= right),
@@ -282,11 +283,18 @@ impl Expr {
                     Ok(self)
                 }
             }
+            Expr::Interval { ref interval } => {
+
+                let start = interval[0].as_ref().clone().reduce(j)?;
+                let end = interval[1].as_ref().clone().reduce(j)?;
+                Ok(Expr::Interval{ interval: vec![Box::new(start), Box::new(end)] })
+            }
             Expr::Operation { op, args } => {
                 let args: Vec<Box<Expr>> = args
                     .into_iter()
                     .map(|expr| expr.reduce(j).map(Box::new))
                     .collect::<Result<_, _>>()?;
+
 
                 if BOOLOPS.contains(&op.as_str()) {
                     let curop = op.clone();
@@ -360,16 +368,54 @@ impl Expr {
                     Ok(Expr::Operation { op, args })
                 } else {
                     // Two-arg operations
-                    let left = args[0].deref().clone();
-                    let right = args[1].deref().clone();
+                    let mut left = args[0].deref().clone();
+                    let mut right = args[1].deref().clone();
 
-                    if std::mem::discriminant(&left) == std::mem::discriminant(&right) {
+                    // If left is Date/Timestamp and right is Literal, convert right
+                    match (&left, &right) {
+                        (Expr::Date { .. }, Expr::Literal(ref v)) => {
+                            right = Expr::Date { date: Box::new(Expr::Literal(v.clone())) };
+                        }
+                        (Expr::Timestamp { .. }, Expr::Literal(ref v)) => {
+                            right = Expr::Timestamp { timestamp: Box::new(Expr::Literal(v.clone())) };
+                        }
+                        (Expr::Literal(ref v), Expr::Date { .. }) => {
+                            left = Expr::Date { date: Box::new(Expr::Literal(v.clone())) };
+                        }
+                        (Expr::Literal(ref v), Expr::Timestamp { .. }) => {
+                            left = Expr::Timestamp { timestamp: Box::new(Expr::Literal(v.clone())) };
+                        }
+                        _ => {}
+                    }
+
+
+
+                    if TEMPORALOPS.contains(&op.as_str()) {
+
+                        Ok(temporal_op(left, right, &op)
+                                .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    // Date or Timestamp comparison: convert to jiff Timestamp for correct ordering
+                    } else if (matches!(left, Expr::Date { .. } | Expr::Timestamp { .. })
+                           && matches!(right, Expr::Date { .. } | Expr::Timestamp { .. })
+                           && (EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str()))) {
+                        // convert both operands to DateRange and compare using PartialOrd/PartialEq
+                        let l_dr = crate::temporal::DateRange::try_from(left.clone())?;
+                        let r_dr = crate::temporal::DateRange::try_from(right.clone())?;
+                        let cmp = match op.as_str() {
+                            "="  => l_dr == r_dr,
+                            "<=" => l_dr <= r_dr,
+                            "<"  => l_dr < r_dr,
+                            ">=" => l_dr >= r_dr,
+                            ">"  => l_dr > r_dr,
+                            "<>" => l_dr != r_dr,
+                            _ => unreachable!(),
+                        };
+                        Ok(Expr::Bool(cmp))
+                    } else if std::mem::discriminant(&left) == std::mem::discriminant(&right) {
                         if SPATIALOPS.contains(&op.as_str()) {
                             Ok(spatial_op(left, right, &op)
                                 .unwrap_or_else(|_| Expr::Operation { op, args }))
-                        } else if TEMPORALOPS.contains(&op.as_str()) {
-                            Ok(temporal_op(left, right, &op)
-                                .unwrap_or_else(|_| Expr::Operation { op, args }))
+
                         } else if ARITHOPS.contains(&op.as_str()) {
                             Ok(arith_op(left, right, &op)
                                 .unwrap_or_else(|_| Expr::Operation { op, args }))
@@ -423,6 +469,41 @@ impl Expr {
             _ => Err(Error::NonReduced()),
         }
     }
+
+    /// Filters an iterable of JSON values based on this expression.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    /// use serde_json::json;
+    ///
+    /// let expr: Expr = "eo:cloud_cover < 20".parse().unwrap();
+    /// let items = vec![
+    ///     json!({"properties": {"eo:cloud_cover": 10}}),
+    ///     json!({"properties": {"eo:cloud_cover": 25}}),
+    ///     json!({"properties": {"eo:cloud_cover": 15}})
+    /// ];
+    /// let filtered = expr.filter(&items).unwrap();
+    /// assert_eq!(filtered.len(), 2);
+    /// assert_eq!(filtered[0]["properties"]["eo:cloud_cover"], 10);
+    /// assert_eq!(filtered[1]["properties"]["eo:cloud_cover"], 15);
+    /// ```
+    pub fn filter<'a, I>(&self, items: I) -> Result<Vec<&'a Value>, Error>
+    where
+        I: IntoIterator<Item = &'a Value>,
+    {
+        let mut filtered = Vec::new();
+        for item in items {
+            if self.clone().matches(Some(item))? {
+                filtered.push(item);
+            }
+        }
+        Ok(filtered)
+    }
+    ///
+    ///
+
     /// Converts this expression to CQL2 text.
     ///
     /// # Examples

@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use clap::{ArgAction, Parser, ValueEnum};
+use clap::{ArgAction, Parser, ValueEnum, Subcommand};
 use cql2::{Expr, Validator, ToSqlAst};
 use std::io::Read;
 
@@ -7,6 +7,10 @@ use std::io::Read;
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
+    /// Subcommand to run (e.g., Filter)
+    #[command(subcommand)]
+    cmd: Option<Commands>,
+
     /// The input CQL2
     ///
     /// If not provided, or `-`, the CQL2 will be read from standard input. The
@@ -39,6 +43,18 @@ pub struct Cli {
     /// Provide this argument several times to turn up the chatter.
     #[arg(short, long, action = ArgAction::Count)]
     verbose: u8,
+}
+
+#[derive(Debug, Subcommand)]
+enum Commands {
+    /// Filter an NDJSON file by a CQL2 expression
+    Filter {
+        /// The CQL2 expression (text or JSON)
+        expression: String,
+        /// Input NDJSON file path
+        #[arg(long)]
+        file: String,
+    },
 }
 
 /// The input CQL2 format.
@@ -87,6 +103,25 @@ impl Cli {
     }
 
     pub fn run_inner(self) -> Result<()> {
+        if let Some(Commands::Filter { expression, file }) = self.cmd {
+            use std::fs::File;
+            use std::io::{BufRead, BufReader};
+            let expr: Expr = if expression.trim_start().starts_with('{') {
+                cql2::parse_json(&expression)?
+            } else {
+                cql2::parse_text(&expression)?
+            };
+            let file = File::open(file)?;
+            let reader = BufReader::new(file);
+            for line in reader.lines() {
+                let line = line?;
+                let v: serde_json::Value = serde_json::from_str(&line)?;
+                if expr.clone().matches(Some(&v))? {
+                    println!("{}", line);
+                }
+            }
+            return Ok(());
+        }
         let input = self
             .input
             .and_then(|input| if input == "-" { None } else { Some(input) })

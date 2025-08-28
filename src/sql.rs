@@ -48,7 +48,7 @@ fn lit_or_prop_to_date(arg: &Expr) -> Result<SqlExpr, Error> {
 fn func(name: &str, args: Vec<SqlExpr>) -> SqlExpr {
     SqlExpr::Function(
         sqlparser::ast::Function {
-            name: sqlparser::ast::ObjectName(vec![Ident::new(name)]),
+            name: sqlparser::ast::ObjectName(vec![ident_inner(name)]),
             args: FunctionArguments::List(
                 FunctionArgumentList {
                     duplicate_treatment: None,
@@ -199,13 +199,17 @@ fn wrap(arg: SqlExpr) -> SqlExpr {
     Nested(Box::new(arg))
 }
 
-fn ident(property: &str) -> SqlExpr {
+fn ident_inner(property: &str) -> Ident {
     let p = quote_identifier(property);
     if p.starts_with('"') && p.ends_with('"') {
-        SqlExpr::Identifier(Ident::with_quote('"', p[1..p.len()-1].to_string()))
+        Ident::with_quote('"', p[1..p.len()-1].to_string())
     } else {
-        SqlExpr::Identifier(Ident::new(p))
+        Ident::new(p)
     }
+}
+
+fn ident(property: &str) -> SqlExpr {
+    SqlExpr::Identifier(ident_inner(property))
 }
 
 impl ToSqlAst for Expr {
@@ -225,17 +229,17 @@ impl ToSqlAst for Expr {
             Expr::Geometry(v) => match v {
                 Geometry::GeoJSON(v) => {
                     let s = lit_expr(&v.to_string());
-                    func("ST_GeomFromGeoJSON", vec![s])
+                    func("st_geomfromgeojson", vec![s])
                 }
                 Geometry::Wkt(v) => {
                     let s = lit_expr(&v.to_string());
-                    func("ST_GeomFromText", vec![s])
+                    func("st_geomfromtext", vec![s])
                 }
             },
 
             Expr::BBox { bbox } => {
                 func(
-                    "ST_MakeEnvelope",
+                    "st_makeenvelope",
                     args2ast(&bbox)?
                 )
             }
@@ -293,14 +297,14 @@ impl ToSqlAst for Expr {
                     "/" => binop(BinaryOperator::Divide, a),
                     "%" => binop(BinaryOperator::Modulo, a),
                     "^" => func("power", a),
-                    "s_intersects" | "st_intersects" | "intersects" => func("ST_Intersects", a),
-                    "s_equals" | "st_equals" => func("ST_Equals", a),
-                    "s_within" | "st_within" => func("ST_Within", a),
-                    "s_contains" | "st_contains" => func("ST_Contains", a),
-                    "s_crosses" | "st_crosses" => func("ST_Crosses", a),
-                    "s_overlaps" | "st_overlaps" => func("ST_Overlaps", a),
-                    "s_touches" | "st_touches" => func("ST_Touches", a),
-                    "s_disjoint" | "st_disjoint" => func("ST_Disjoint", a),
+                    "s_intersects" | "st_intersects" | "intersects" => func("st_intersects", a),
+                    "s_equals" | "st_equals" => func("st_equals", a),
+                    "s_within" | "st_within" => func("st_within", a),
+                    "s_contains" | "st_contains" => func("st_contains", a),
+                    "s_crosses" | "st_crosses" => func("st_crosses", a),
+                    "s_overlaps" | "st_overlaps" => func("st_overlaps", a),
+                    "s_touches" | "st_touches" => func("st_touches", a),
+                    "s_disjoint" | "st_disjoint" => func("st_disjoint", a),
                     "a_contains" => binop(BinaryOperator::AtArrow, a),
                     "a_containedby" => binop(BinaryOperator::ArrowAt, a),
                     "a_overlaps" => binop(BinaryOperator::AtAt, a),

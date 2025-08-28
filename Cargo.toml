@@ -52,5 +52,6 @@ rstest = "0.25.0"
 default-members = [".", "cli"]
 members = ["cli", "python", "wasm"]
 
+
 [workspace.dependencies]
 clap = "4.5.28"
