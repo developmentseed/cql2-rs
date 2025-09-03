@@ -29,7 +29,6 @@ fn parse_ts(s: &str) -> Result<Timestamp, Error> {
 
 /// Struct to hold a range of timestamps.
 #[derive(Debug, Clone)]
-// Manual PartialEq and PartialOrd compare by start timestamp only
 pub struct DateRange {
     /// Start timestamp of the range
     pub start: Timestamp,

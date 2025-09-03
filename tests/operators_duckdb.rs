@@ -26,16 +26,12 @@ fn operators_duckdb_filter() -> Result<()> {
             .parse()
             .unwrap_or_else(|_| panic!("Failed to parse query '{}'", query));
         let where_clause = expr.to_ducksql().expect("to_ducksql failed");
-        eprintln!("Query: {}", query);
-        eprintln!("Expected output: {}", expected_line);
-        eprintln!("Where clause: {}", where_clause);
 
         // Build and execute DuckDB query on the NDJSON source
         let sql = format!(
             "select array_to_string(array_agg(intfield::text), ' ') from test where {}",
             where_clause
         );
-        eprintln!("Executing SQL: {}", sql);
         let mut stmt = conn.prepare(&sql)?;
         let mut rows = stmt.query([])?;
         let ids: String = rows
@@ -43,8 +39,6 @@ fn operators_duckdb_filter() -> Result<()> {
             .expect("No data returned")
             .get::<_, String>(0)
             .expect("Failed to get result");
-        eprintln!("Query IDs: {}", ids);
-        eprintln!("Expected IDs: {}", expected_line);
         assert_eq!(
             ids, expected_line,
             "Query '{}' returned '{}', expected '{}'",

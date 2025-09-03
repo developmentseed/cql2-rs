@@ -254,7 +254,6 @@ impl ToSqlAst for Expr {
             Expr::Operation { op, args } => {
                 let op_str = op.to_lowercase();
                 let a = args2ast(args)?;
-                eprintln!("Operation: {} with {} args", op_str, a.len());
                 match op_str.as_str() {
                     "isnull" => SqlExpr::IsNull(Box::new(a[0].clone())),
                     "not" => SqlExpr::UnaryOp {

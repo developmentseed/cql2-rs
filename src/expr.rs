@@ -185,7 +185,7 @@ impl TryFrom<Expr> for HashSet<String> {
     }
 }
 
-fn cmp_op<T: PartialEq + PartialOrd + Debug>(left: T, right: T, op: &str) -> Result<Expr, Error> {
+fn cmp_op<T: PartialEq + PartialOrd>(left: T, right: T, op: &str) -> Result<Expr, Error> {
     let out = match op {
         "=" => Ok(left == right),
         "<=" => Ok(left <= right),
@@ -294,7 +294,6 @@ impl Expr {
                     .into_iter()
                     .map(|expr| expr.reduce(j).map(Box::new))
                     .collect::<Result<_, _>>()?;
-                eprintln!("Op: {:?}, Args: {:?}", op, args);
 
                 if op == "isnull" {
                     match args[0].as_ref() {
@@ -477,7 +476,6 @@ impl Expr {
     /// ```
     pub fn matches(self, j: Option<&Value>) -> Result<bool, Error> {
         let reduced = self.reduce(j)?;
-        eprintln!("Reduced expression (matches): {}", reduced.to_text()?);
 
         match reduced {
             Expr::Bool(v) => Ok(v),
@@ -488,7 +486,6 @@ impl Expr {
     /// Run CQL against a JSON Value, returning false if the expression does not reduce to a boolean.
     pub fn matches_or_false(self, j: Option<&Value>) -> Result<bool, Error> {
         let reduced = self.reduce(j)?;
-        eprintln!("Reduced expression (or false): {}", reduced.to_text()?);
 
         match reduced {
             Expr::Bool(v) => Ok(v),
@@ -521,9 +518,8 @@ impl Expr {
     {
         let mut filtered = Vec::new();
         for item in items {
-            match self.clone().matches_or_false(Some(item))? {
-                true => filtered.push(item),
-                false => eprintln!("Item did not match: {:?}", item),
+            if self.clone().matches_or_false(Some(item))? {
+                filtered.push(item)
             }
         }
         Ok(filtered)

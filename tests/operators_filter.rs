@@ -25,7 +25,7 @@ fn operators_expected_filter() {
         // Parse and filter
         let expr: Expr = query
             .parse()
-            .unwrap_or_else(|_| panic!("Failed to parse query '{}'%", query));
+            .unwrap_or_else(|_| panic!("Failed to parse query '{}'", query));
         let filtered = expr.filter(&items).expect("Filter failed");
         // Collect intfield values
         let ints: Vec<String> = filtered
