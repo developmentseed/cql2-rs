@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+
+- Reworked SQL generation to use `SqlParser` AST as the target.
+- Modified `to_ducksql` to leverage SQL AST, only changing aspects specific to DuckDB.
+
+### Added
+
+- `filter` method to filter passed-in JSON values.
+- Sample data to run test filters against.
+- 155 tests covering every CQL2 operator.
+- Test runners for both internal `reduce`/`matches` and DuckDB.
+- Exposed `reduce` option in WASM / WASM Playground.
+
+### Fixed
+
+- Numerous issues found with the new tests.
 
 ## [0.3.7] - 2025-03-28
 
