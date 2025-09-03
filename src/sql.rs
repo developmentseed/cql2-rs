@@ -1,17 +1,22 @@
-use std::vec;
 use crate::Error;
 use crate::Expr;
 use crate::Geometry;
-use sqlparser::ast::{Array as SqlArray, BinaryOperator, Expr as SqlExpr, FunctionArgumentList, FunctionArguments, Ident, Value, CastKind, TimezoneInfo};
-use sqlparser::ast::Expr::Value as ValExpr;
-use sqlparser::ast::Expr::{Nested, Cast};
-use sqlparser::ast::DataType::{Timestamp, Date};
 use pg_escape::quote_identifier;
+use sqlparser::ast::DataType::{Date, Timestamp};
+use sqlparser::ast::Expr::Value as ValExpr;
+use sqlparser::ast::Expr::{Cast, Nested};
+use sqlparser::ast::{
+    Array as SqlArray, BinaryOperator, CastKind, Expr as SqlExpr, FunctionArgumentList,
+    FunctionArguments, Ident, TimezoneInfo, Value,
+};
+use std::vec;
 
 /// Trait for converting expressions to SQLParser AST nodes.
 pub trait ToSqlAst {
     /// Converts this expression to SQLParser AST.
     fn to_sql_ast(&self) -> Result<SqlExpr, Error>;
+    /// Converts the expression to a SQL string.
+    fn to_sql(&self) -> Result<String, Error>;
 }
 
 fn cast(arg: SqlExpr, data_type: sqlparser::ast::DataType) -> SqlExpr {
@@ -24,31 +29,27 @@ fn cast(arg: SqlExpr, data_type: sqlparser::ast::DataType) -> SqlExpr {
 }
 
 pub(crate) fn func(name: &str, args: Vec<SqlExpr>) -> SqlExpr {
-    SqlExpr::Function(
-        sqlparser::ast::Function {
-            name: sqlparser::ast::ObjectName(vec![sqlparser::ast::ObjectNamePart::Identifier(ident_inner(name))]),
-            args: FunctionArguments::List(
-                FunctionArgumentList {
-                    duplicate_treatment: None,
-                    args: args
-                        .into_iter()
-                        .map(|arg| (
-                            sqlparser::ast::FunctionArg::Unnamed(
-                                sqlparser::ast::FunctionArgExpr::Expr(arg)
-                            )
-                        ))
-                        .collect(),
-                    clauses: vec![],
-                }
-            ),
-            over: None,
-            filter: None,
-            null_treatment: None,
-            within_group: vec![],
-            uses_odbc_syntax: false,
-            parameters: FunctionArguments::None,
-        },
-    )
+    SqlExpr::Function(sqlparser::ast::Function {
+        name: sqlparser::ast::ObjectName(vec![sqlparser::ast::ObjectNamePart::Identifier(
+            ident_inner(name),
+        )]),
+        args: FunctionArguments::List(FunctionArgumentList {
+            duplicate_treatment: None,
+            args: args
+                .into_iter()
+                .map(|arg| {
+                    sqlparser::ast::FunctionArg::Unnamed(sqlparser::ast::FunctionArgExpr::Expr(arg))
+                })
+                .collect(),
+            clauses: vec![],
+        }),
+        over: None,
+        filter: None,
+        null_treatment: None,
+        within_group: vec![],
+        uses_odbc_syntax: false,
+        parameters: FunctionArguments::None,
+    })
 }
 
 fn lit_expr(value: &str) -> SqlExpr {
@@ -57,7 +58,7 @@ fn lit_expr(value: &str) -> SqlExpr {
 fn float_expr(value: &f64) -> SqlExpr {
     ValExpr(Value::Number(value.to_string(), false).into())
 }
-fn args2ast(args: &Vec<Box<Expr>>) -> Result<Vec<SqlExpr>, Error> {
+fn args2ast(args: &[Box<Expr>]) -> Result<Vec<SqlExpr>, Error> {
     args.iter()
         .map(|arg| arg.to_sql_ast())
         .collect::<Result<Vec<_>, _>>()
@@ -77,14 +78,10 @@ struct Targs {
     right_end: SqlExpr,
 }
 
-
 fn lit_or_prop_to_ts(arg: &Expr) -> Result<SqlExpr, Error> {
     Ok(match arg {
         Expr::Property { property } => ident(property),
-        Expr::Literal(v) => cast(
-            lit_expr(v),
-            Timestamp(None, TimezoneInfo::WithTimeZone),
-        ),
+        Expr::Literal(v) => cast(lit_expr(v), Timestamp(None, TimezoneInfo::WithTimeZone)),
         _ => return Err(Error::OperationError()),
     })
 }
@@ -92,32 +89,31 @@ fn lit_or_prop_to_ts(arg: &Expr) -> Result<SqlExpr, Error> {
 fn lit_or_prop_to_date(arg: &Expr) -> Result<SqlExpr, Error> {
     Ok(match arg {
         Expr::Property { property } => ident(property),
-        Expr::Literal(v) => cast(
-            lit_expr(v),
-            Date,
-        ),
+        Expr::Literal(v) => cast(lit_expr(v), Date),
         _ => return Err(Error::OperationError()),
     })
 }
 
-fn t_arg_to_interval(arg: &Box<Expr>) -> Result<(SqlExpr, SqlExpr), Error> {
-    match arg.as_ref() {
+fn t_arg_to_interval(arg: &Expr) -> Result<(SqlExpr, SqlExpr), Error> {
+    match arg {
         Expr::Interval { interval } => {
             let start = lit_or_prop_to_ts(&interval[0])?;
             let end = lit_or_prop_to_ts(&interval[1])?;
             Ok((start, end))
         }
         Expr::Property { property } => {
-            let start = ident(&property);
+            let start = ident(property);
             Ok((start.clone(), start.clone()))
         }
         Expr::Date { date } => {
-            let e = Expr::Date{ date: date.clone() };
+            let e = Expr::Date { date: date.clone() };
             let start = e.to_sql_ast()?;
             Ok((start.clone(), start.clone()))
         }
         Expr::Timestamp { timestamp } => {
-            let e = Expr::Timestamp{ timestamp: timestamp.clone() };
+            let e = Expr::Timestamp {
+                timestamp: timestamp.clone(),
+            };
             let start = e.to_sql_ast()?;
             Ok((start.clone(), start.clone()))
         }
@@ -125,36 +121,35 @@ fn t_arg_to_interval(arg: &Box<Expr>) -> Result<(SqlExpr, SqlExpr), Error> {
     }
 }
 
-fn t_args(args: &Vec<Box<Expr>>) -> Result<Targs, Error> {
-    let (left_start, left_end) = t_arg_to_interval(&args[0])?;
-    let (right_start, right_end) = t_arg_to_interval(&args[1])?;
+fn t_args(args: &[Box<Expr>]) -> Result<Targs, Error> {
+    let (left_start, left_end) = t_arg_to_interval(args[0].as_ref())?;
+    let (right_start, right_end) = t_arg_to_interval(args[1].as_ref())?;
     Ok(Targs {
-            left_start,
-            left_end,
-            right_start,
-            right_end,
-        })
-
+        left_start,
+        left_end,
+        right_start,
+        right_end,
+    })
 }
 
 fn andop(args: Vec<SqlExpr>) -> SqlExpr {
-    args.into_iter().reduce(|left, right| {
-        SqlExpr::BinaryOp {
+    args.into_iter()
+        .reduce(|left, right| SqlExpr::BinaryOp {
             left: Box::new(left),
             op: BinaryOperator::And,
             right: Box::new(right),
-        }
-    }).expect("andop requires at least one argument")
+        })
+        .expect("andop requires at least one argument")
 }
 
 fn orop(args: Vec<SqlExpr>) -> SqlExpr {
-    args.into_iter().reduce(|left, right| {
-        SqlExpr::BinaryOp {
+    args.into_iter()
+        .reduce(|left, right| SqlExpr::BinaryOp {
             left: Box::new(left),
             op: BinaryOperator::Or,
             right: Box::new(right),
-        }
-    }).expect("orop requires at least one argument")
+        })
+        .expect("orop requires at least one argument")
 }
 
 fn ltop(left: SqlExpr, right: SqlExpr) -> SqlExpr {
@@ -211,7 +206,7 @@ fn wrap(arg: SqlExpr) -> SqlExpr {
 fn ident_inner(property: &str) -> Ident {
     let p = quote_identifier(property);
     if p.starts_with('"') && p.ends_with('"') {
-        Ident::with_quote('"', p[1..p.len()-1].to_string())
+        Ident::with_quote('"', p[1..p.len() - 1].to_string())
     } else {
         Ident::new(p)
     }
@@ -233,7 +228,10 @@ impl ToSqlAst for Expr {
             Expr::Interval { ref interval } => {
                 let start = lit_or_prop_to_ts(interval[0].as_ref())?;
                 let end = lit_or_prop_to_ts(interval[1].as_ref())?;
-                SqlExpr::Array(SqlArray{elem: vec![start, end], named: true})
+                SqlExpr::Array(SqlArray {
+                    elem: vec![start, end],
+                    named: true,
+                })
             }
             Expr::Null => ValExpr(Value::Null.into()),
             Expr::Geometry(v) => match v {
@@ -247,24 +245,18 @@ impl ToSqlAst for Expr {
                 }
             },
 
-            Expr::BBox { bbox } => {
-                func(
-                    "st_makeenvelope",
-                    args2ast(&bbox)?
-                )
-            }
-            Expr::Array ( ref v ) => {
-                SqlExpr::Array(SqlArray { elem: args2ast(v)?, named: true })
-            }
+            Expr::BBox { bbox } => func("st_makeenvelope", args2ast(bbox)?),
+            Expr::Array(ref v) => SqlExpr::Array(SqlArray {
+                elem: args2ast(v)?,
+                named: true,
+            }),
             Expr::Property { property } => ident(property),
             Expr::Operation { op, args } => {
                 let op_str = op.to_lowercase();
                 let a = args2ast(args)?;
                 eprintln!("Operation: {} with {} args", op_str, a.len());
                 match op_str.as_str() {
-                    "isnull" => SqlExpr::IsNull (
-                        Box::new(a[0].clone()),
-                    ),
+                    "isnull" => SqlExpr::IsNull(Box::new(a[0].clone())),
                     "not" => SqlExpr::UnaryOp {
                         op: sqlparser::ast::UnaryOperator::Not,
                         expr: Box::new(a[0].clone()),
@@ -282,7 +274,7 @@ impl ToSqlAst for Expr {
                             left: Box::new(expr),
                             compare_op: BinaryOperator::Eq,
                             right: Box::new(items),
-                            is_some: true
+                            is_some: true,
                         }
                     }
                     "like" => {
@@ -341,112 +333,95 @@ impl ToSqlAst for Expr {
                     }
                     "t_overlaps" => {
                         let t = t_args(args)?;
-                        wrap(andop(
-                            vec![
-                                ltop(t.left_start, t.right_end.clone()),
-                                ltop(t.right_start, t.left_end.clone()),
-                                ltop(t.left_end, t.right_end)
-                            ]
-                        ))
+                        wrap(andop(vec![
+                            ltop(t.left_start, t.right_end.clone()),
+                            ltop(t.right_start, t.left_end.clone()),
+                            ltop(t.left_end, t.right_end),
+                        ]))
                     }
                     "t_overlappedby" => {
                         let t = t_args(args)?;
-                        wrap(andop(
-                            vec![
-                                ltop(t.right_start, t.left_end.clone()),
-                                ltop(t.left_start, t.right_end.clone()),
-                                ltop(t.right_end, t.left_end)
-                            ]
-                        ))
+                        wrap(andop(vec![
+                            ltop(t.right_start, t.left_end.clone()),
+                            ltop(t.left_start, t.right_end.clone()),
+                            ltop(t.right_end, t.left_end),
+                        ]))
                     }
                     "t_starts" => {
                         let t = t_args(args)?;
-                        wrap(andop(
-                            vec![
-                                eqop(t.left_start, t.right_start.clone()),
-                                ltop(t.left_end, t.right_end)
-                            ]
-                        ))
+                        wrap(andop(vec![
+                            eqop(t.left_start, t.right_start.clone()),
+                            ltop(t.left_end, t.right_end),
+                        ]))
                     }
                     "t_startedby" => {
                         let t = t_args(args)?;
-                        wrap(andop(
-                            vec![
-                                eqop(t.right_start, t.left_start.clone()),
-                                ltop(t.right_end, t.left_end)
-                            ]
-                        ))
+                        wrap(andop(vec![
+                            eqop(t.right_start, t.left_start.clone()),
+                            ltop(t.right_end, t.left_end),
+                        ]))
                     }
                     "t_during" => {
                         let t = t_args(args)?;
-                        wrap(andop(
-                            vec![
-                                gtop(t.left_start, t.right_start),
-                                ltop(t.left_end, t.right_end)
-                            ]
-                        ))
+                        wrap(andop(vec![
+                            gtop(t.left_start, t.right_start),
+                            ltop(t.left_end, t.right_end),
+                        ]))
                     }
                     "t_contains" => {
                         let t = t_args(args)?;
-                        wrap(andop(
-                            vec![
-                                gtop(t.right_start, t.left_start),
-                                ltop(t.right_end, t.left_end)
-                            ]
-                        ))
+                        wrap(andop(vec![
+                            gtop(t.right_start, t.left_start),
+                            ltop(t.right_end, t.left_end),
+                        ]))
                     }
                     "t_finishes" => {
                         let t = t_args(args)?;
-                        wrap(andop(
-                            vec![
-                                eqop(t.left_end, t.right_end),
-                                gtop(t.left_start, t.right_start)
-                            ]
-                        ))
+                        wrap(andop(vec![
+                            eqop(t.left_end, t.right_end),
+                            gtop(t.left_start, t.right_start),
+                        ]))
                     }
                     "t_finishedby" => {
                         let t = t_args(args)?;
-                        wrap(andop(
-                            vec![
-                                eqop(t.right_end, t.left_end),
-                                gtop(t.right_start, t.left_start)
-                            ]
-                        ))
+                        wrap(andop(vec![
+                            eqop(t.right_end, t.left_end),
+                            gtop(t.right_start, t.left_start),
+                        ]))
                     }
                     "t_equals" => {
                         let t = t_args(args)?;
-                        wrap(andop(
-                            vec![
-                                eqop(t.left_start, t.right_start),
-                                eqop(t.left_end, t.right_end)
-                            ]
-                        ))
+                        wrap(andop(vec![
+                            eqop(t.left_start, t.right_start),
+                            eqop(t.left_end, t.right_end),
+                        ]))
                     }
                     "t_disjoint" => {
                         let t = t_args(args)?;
-                        notop(wrap(andop(
-                            vec![
-                                lteop(t.left_start, t.right_end),
-                                gteop(t.left_end, t.right_start)
-                            ]
-                        )))
+                        notop(wrap(andop(vec![
+                            lteop(t.left_start, t.right_end),
+                            gteop(t.left_end, t.right_start),
+                        ])))
                     }
                     "t_intersects" | "anyinteracts" => {
                         let t = t_args(args)?;
-                        wrap(andop(
-                            vec![
-                                lteop(t.left_start, t.right_end),
-                                gteop(t.left_end, t.right_start)
-                            ]
-                        ))
+                        wrap(andop(vec![
+                            lteop(t.left_start, t.right_end),
+                            gteop(t.left_end, t.right_start),
+                        ]))
                     }
                     _ => func(&op_str, a),
                 }
             }
         })
     }
-}
 
+    /// Converts the expression to a SQL string.
+    fn to_sql(&self) -> Result<String, Error> {
+        let ast = self.to_sql_ast()?;
+        Ok(ast.to_string())
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -469,5 +444,4 @@ mod tests {
         let sql_str = sql_ast.to_string();
         assert_eq!(sql_str, "ts_start < CAST('2020-02-01' AS DATE)");
     }
-
 }

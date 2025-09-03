@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
-use clap::{ArgAction, Parser, ValueEnum, Subcommand};
-use cql2::{Expr, Validator, ToSqlAst};
+use clap::{ArgAction, Parser, Subcommand, ValueEnum};
+use cql2::{Expr, ToSqlAst, Validator};
 use std::io::Read;
 
 /// The CQL2 command-line interface.
@@ -121,7 +121,11 @@ impl Cli {
                 })
                 .collect::<Result<Vec<_>, anyhow::Error>>()?
                 .into_iter()
-                .filter_map(|value| expr.filter(&[value]).ok().and_then(|mut v| v.pop().map(|v| v.clone())))
+                .filter_map(|value| {
+                    expr.filter(&[value])
+                        .ok()
+                        .and_then(|mut v| v.pop().cloned())
+                })
                 .for_each(|v| println!("{}", serde_json::to_string(&v).unwrap()));
             return Ok(());
         }
@@ -171,10 +175,9 @@ impl Cli {
             OutputFormat::JsonPretty => serde_json::to_writer_pretty(std::io::stdout(), &expr)?,
             OutputFormat::Json => serde_json::to_writer(std::io::stdout(), &expr)?,
             OutputFormat::Text => print!("{}", expr.to_text()?),
-            //OutputFormat::Sql => serde_json::to_writer_pretty(std::io::stdout(), &expr.to_sql()?)?,
             OutputFormat::Sql => {
                 let sql_ast = expr.to_sql_ast()?;
-                println!("{}", sql_ast.to_string());
+                println!("{}", sql_ast);
             }
         }
         println!();

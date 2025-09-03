@@ -92,21 +92,18 @@ pub enum Expr {
     Geometry(Geometry),
     Null,
 }
-
 impl TryFrom<Value> for Expr {
     type Error = Error;
     fn try_from(v: Value) -> Result<Expr, Error> {
         serde_json::from_value(v).map_err(Error::from)
     }
 }
-
 impl TryFrom<Expr> for Value {
     type Error = Error;
     fn try_from(v: Expr) -> Result<Value, Error> {
         serde_json::to_value(v).map_err(Error::from)
     }
 }
-
 impl TryFrom<Expr> for f64 {
     type Error = Error;
     fn try_from(v: Expr) -> Result<f64, Error> {
@@ -189,7 +186,6 @@ impl TryFrom<Expr> for HashSet<String> {
 }
 
 fn cmp_op<T: PartialEq + PartialOrd + Debug>(left: T, right: T, op: &str) -> Result<Expr, Error> {
-
     let out = match op {
         "=" => Ok(left == right),
         "<=" => Ok(left <= right),
@@ -268,34 +264,28 @@ impl Expr {
     ///
     /// ```
     pub fn reduce(self, j: Option<&Value>) -> Result<Expr, Error> {
-
         match self {
             Expr::Property { ref property } => {
-
                 if let Some(j) = j {
                     if let Some(value) = j.dot_get::<Value>(property)? {
-
                         Expr::try_from(value)
                     } else if let Some(value) =
                         j.dot_get::<Value>(&format!("properties.{}", property))?
                     {
-
-
                         Expr::try_from(value)
                     } else {
-
                         Ok(self)
                     }
                 } else {
-
                     Ok(self)
                 }
             }
             Expr::Interval { ref interval } => {
-
                 let start = interval[0].as_ref().clone().reduce(j)?;
                 let end = interval[1].as_ref().clone().reduce(j)?;
-                Ok(Expr::Interval{ interval: vec![Box::new(start), Box::new(end)] })
+                Ok(Expr::Interval {
+                    interval: vec![Box::new(start), Box::new(end)],
+                })
             }
             Expr::Operation { op, args } => {
                 let op = op.clone().to_lowercase();
@@ -313,8 +303,7 @@ impl Expr {
                         _ => Ok(Expr::Bool(false)),
                     }
                 } else if args.iter().any(|arg| matches!(arg.as_ref(), Expr::Null)) {
-                    return Ok(Expr::Bool(false));
-
+                    Ok(Expr::Bool(false))
                 } else if BOOLOPS.contains(&op.as_str()) {
                     let curop = op.clone();
                     let mut dedupargs: Vec<Box<Expr>> = vec![];
@@ -393,39 +382,45 @@ impl Expr {
                     // If left is Date/Timestamp and right is Literal, convert right
                     match (&left, &right) {
                         (Expr::Date { .. }, Expr::Literal(ref v)) => {
-                            right = Expr::Date { date: Box::new(Expr::Literal(v.clone())) };
+                            right = Expr::Date {
+                                date: Box::new(Expr::Literal(v.clone())),
+                            };
                         }
                         (Expr::Timestamp { .. }, Expr::Literal(ref v)) => {
-                            right = Expr::Timestamp { timestamp: Box::new(Expr::Literal(v.clone())) };
+                            right = Expr::Timestamp {
+                                timestamp: Box::new(Expr::Literal(v.clone())),
+                            };
                         }
                         (Expr::Literal(ref v), Expr::Date { .. }) => {
-                            left = Expr::Date { date: Box::new(Expr::Literal(v.clone())) };
+                            left = Expr::Date {
+                                date: Box::new(Expr::Literal(v.clone())),
+                            };
                         }
                         (Expr::Literal(ref v), Expr::Timestamp { .. }) => {
-                            left = Expr::Timestamp { timestamp: Box::new(Expr::Literal(v.clone())) };
+                            left = Expr::Timestamp {
+                                timestamp: Box::new(Expr::Literal(v.clone())),
+                            };
                         }
                         _ => {}
                     }
 
-
-
                     if TEMPORALOPS.contains(&op.as_str()) {
-
                         Ok(temporal_op(left, right, &op)
-                                .unwrap_or_else(|_| Expr::Operation { op, args }))
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
                     // Date or Timestamp comparison: convert to jiff Timestamp for correct ordering
                     } else if (matches!(left, Expr::Date { .. } | Expr::Timestamp { .. })
-                           && matches!(right, Expr::Date { .. } | Expr::Timestamp { .. })
-                           && (EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str()))) {
+                        && matches!(right, Expr::Date { .. } | Expr::Timestamp { .. })
+                        && (EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str())))
+                    {
                         // convert both operands to DateRange and compare using PartialOrd/PartialEq
                         let l_dr = crate::temporal::DateRange::try_from(left.clone())?;
                         let r_dr = crate::temporal::DateRange::try_from(right.clone())?;
                         let cmp = match op.as_str() {
-                            "="  => l_dr == r_dr,
+                            "=" => l_dr == r_dr,
                             "<=" => l_dr <= r_dr,
-                            "<"  => l_dr < r_dr,
+                            "<" => l_dr < r_dr,
                             ">=" => l_dr >= r_dr,
-                            ">"  => l_dr > r_dr,
+                            ">" => l_dr > r_dr,
                             "<>" => l_dr != r_dr,
                             _ => unreachable!(),
                         };
@@ -434,7 +429,6 @@ impl Expr {
                         if SPATIALOPS.contains(&op.as_str()) {
                             Ok(spatial_op(left, right, &op)
                                 .unwrap_or_else(|_| Expr::Operation { op, args }))
-
                         } else if ARITHOPS.contains(&op.as_str()) {
                             Ok(arith_op(left, right, &op)
                                 .unwrap_or_else(|_| Expr::Operation { op, args }))
@@ -534,8 +528,6 @@ impl Expr {
         }
         Ok(filtered)
     }
-    ///
-    ///
 
     /// Converts this expression to CQL2 text.
     ///
@@ -626,7 +618,6 @@ impl Expr {
             }
         }
     }
-
 
     /// Converts this expression to a JSON string.
     ///

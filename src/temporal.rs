@@ -90,7 +90,6 @@ impl PartialOrd for DateRange {
     }
 }
 
-
 /// Run a temporal operation.
 pub fn temporal_op(left_expr: Expr, right_expr: Expr, op: &str) -> Result<Expr, Error> {
     let invop = match op {

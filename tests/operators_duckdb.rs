@@ -1,6 +1,6 @@
 use cql2::{Expr, ToDuckSQL};
-use std::fs;
 use duckdb::{Connection, Result};
+use std::fs;
 
 #[test]
 fn operators_duckdb_filter() -> Result<()> {
@@ -13,13 +13,18 @@ fn operators_duckdb_filter() -> Result<()> {
     ")?;
 
     // Load operators tests
-    let tests = fs::read_to_string("tests/operators_expected.txt").expect("Failed to read operators tests");
+    let tests =
+        fs::read_to_string("tests/operators_expected.txt").expect("Failed to read operators tests");
     let mut lines = tests.lines();
 
     while let Some(query) = lines.next() {
-        let expected_line = lines.next().expect(&format!("Missing expected output for query: {}", query));
+        let expected_line = lines
+            .next()
+            .unwrap_or_else(|| panic!("Missing expected output for query: {}", query));
         // Parse expression and generate WHERE clause
-        let expr: Expr = query.parse().expect(&format!("Failed to parse query '{}'", query));
+        let expr: Expr = query
+            .parse()
+            .unwrap_or_else(|_| panic!("Failed to parse query '{}'", query));
         let where_clause = expr.to_ducksql().expect("to_ducksql failed");
         eprintln!("Query: {}", query);
         eprintln!("Expected output: {}", expected_line);
@@ -33,14 +38,17 @@ fn operators_duckdb_filter() -> Result<()> {
         eprintln!("Executing SQL: {}", sql);
         let mut stmt = conn.prepare(&sql)?;
         let mut rows = stmt.query([])?;
-        let ids: String = rows.next()?
+        let ids: String = rows
+            .next()?
             .expect("No data returned")
             .get::<_, String>(0)
             .expect("Failed to get result");
         eprintln!("Query IDs: {}", ids);
         eprintln!("Expected IDs: {}", expected_line);
-        assert_eq!(ids, expected_line,
-            "Query '{}' returned '{}', expected '{}'", query, ids, expected_line
+        assert_eq!(
+            ids, expected_line,
+            "Query '{}' returned '{}', expected '{}'",
+            query, ids, expected_line
         );
     }
     Ok(())

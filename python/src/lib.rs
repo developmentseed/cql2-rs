@@ -1,5 +1,5 @@
 #![allow(clippy::result_large_err)]
-
+use ::cql2::ToSqlAst;
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyIOError, PyValueError},
@@ -25,16 +25,6 @@ type Result<T> = std::result::Result<T, Error>;
 /// A CQL2 expression.
 #[pyclass]
 struct Expr(::cql2::Expr);
-
-/// A SQL query
-#[pyclass]
-struct SqlQuery {
-    #[pyo3(get)]
-    query: String,
-
-    #[pyo3(get)]
-    params: Vec<String>,
-}
 
 #[pyfunction]
 fn parse_file(path: PathBuf) -> Result<Expr> {
@@ -99,8 +89,8 @@ impl Expr {
         self.0.to_text().map_err(Error::from)
     }
 
-    fn to_sql(&self) -> Result<SqlQuery> {
-        self.0.to_sql().map(SqlQuery::from).map_err(Error::from)
+    fn to_sql(&self) -> Result<String> {
+        self.0.to_sql().map_err(Error::from)
     }
 
     fn __add__(&self, rhs: &Expr) -> Result<Expr> {
@@ -109,15 +99,6 @@ impl Expr {
 
     fn __eq__(&self, rhs: &Expr) -> bool {
         self.0 == rhs.0
-    }
-}
-
-impl From<::cql2::SqlQuery> for SqlQuery {
-    fn from(value: ::cql2::SqlQuery) -> Self {
-        SqlQuery {
-            query: value.query,
-            params: value.params,
-        }
     }
 }
 
@@ -173,7 +154,6 @@ fn main(py: Python<'_>) {
 #[pymodule]
 fn cql2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Expr>()?;
-    m.add_class::<SqlQuery>()?;
     m.add_function(wrap_pyfunction!(main, m)?)?;
     m.add_function(wrap_pyfunction!(parse_file, m)?)?;
     m.add_function(wrap_pyfunction!(parse_text, m)?)?;

@@ -1,10 +1,10 @@
-use crate::ToSqlAst;
 use crate::sql::func;
 use crate::Error;
 use crate::Expr;
-use std::ops::ControlFlow;
+use crate::ToSqlAst;
 use sqlparser::ast::visit_expressions_mut;
 use sqlparser::ast::Expr as SqlExpr;
+use std::ops::ControlFlow;
 
 /// Traits for generating SQL for DuckDB with Spatial Extension
 pub trait ToDuckSQL {

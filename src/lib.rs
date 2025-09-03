@@ -44,21 +44,10 @@ pub use error::Error;
 pub use expr::*;
 pub use geometry::{spatial_op, Geometry};
 pub use parser::parse_text;
-use serde_derive::{Deserialize, Serialize};
 pub use sql::ToSqlAst;
 use std::{fs, path::Path};
 pub use temporal::{temporal_op, DateRange};
 pub use validator::Validator;
-
-/// A SQL query, broken into the query and parameters.
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SqlQuery {
-    /// The SQL query, with placeholders for parameters.
-    pub query: String,
-
-    /// The SQL parameters, as strings.
-    pub params: Vec<String>,
-}
 
 /// Parses a cql2-json string into a CQL2 expression.
 ///
