@@ -112,7 +112,6 @@ pub fn temporal_op(left_expr: Expr, right_expr: Expr, op: &str) -> Result<Expr, 
         right = DateRange::try_from(left_expr)?;
         left = DateRange::try_from(right_expr)?;
     }
-    eprintln!("Op: {:?}, Left: {:?}, Right: {:?}", invop, left, right);
     let out = match invop {
         "t_before" => Ok(left.end < right.start),
         "t_meets" => Ok(left.end == right.start),

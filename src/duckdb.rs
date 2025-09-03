@@ -1,6 +1,10 @@
 use crate::ToSqlAst;
+use crate::sql::func;
 use crate::Error;
 use crate::Expr;
+use std::ops::ControlFlow;
+use sqlparser::ast::visit_expressions_mut;
+use sqlparser::ast::Expr as SqlExpr;
 
 /// Traits for generating SQL for DuckDB with Spatial Extension
 pub trait ToDuckSQL {
@@ -43,7 +47,25 @@ impl ToDuckSQL for Expr {
     /// assert_eq!(expr.to_ducksql().unwrap(), "(a < CAST('2020-02-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) AND CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) < b AND b < CAST('2020-02-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE))");
     /// ```
     fn to_ducksql(&self) -> Result<String, Error> {
-        let ast = self.to_sql_ast()?;
+        let mut ast = self.to_sql_ast()?;
+        let _ = visit_expressions_mut(&mut ast, |expr| {
+            if let SqlExpr::BinaryOp { op, right, left } = expr {
+                match *op {
+                    sqlparser::ast::BinaryOperator::AtArrow => {
+                        *expr = func("list_has_all", vec![*left.clone(), *right.clone()]);
+                    }
+                    sqlparser::ast::BinaryOperator::ArrowAt => {
+                        *expr = func("list_has_all", vec![*right.clone(), *left.clone()]);
+                    }
+                    sqlparser::ast::BinaryOperator::AtAt => {
+                        *expr = func("list_has_any", vec![*left.clone(), *right.clone()]);
+                    }
+                    _ => {}
+                }
+            }
+            ControlFlow::<()>::Continue(())
+        });
+
         Ok(ast.to_string())
     }
 }
@@ -57,5 +79,11 @@ mod tests {
     fn test_to_ducksql() {
         let expr: Expr = "foo = 1".parse().unwrap();
         assert_eq!(expr.to_ducksql().unwrap(), "foo = 1");
+    }
+
+    #[test]
+    fn test_array_ops() {
+        let expr: Expr = "a_contains(foo, bar)".parse().unwrap();
+        assert_eq!(expr.to_ducksql().unwrap(), "list_has_all(foo, bar)");
     }
 }

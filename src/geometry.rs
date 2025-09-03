@@ -108,7 +108,6 @@ pub fn spatial_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
     let left: GGeom = GGeom::try_from(left)?;
     let right: GGeom = GGeom::try_from(right)?;
     let rel = left.relate(&right);
-    eprintln!("Left: {:?}, Right: {:?}, Spatial relation: {:?}", left, right, rel);
     let out = match op {
         "s_equals" => rel.is_equal_topo(),
         "s_intersects" | "intersects" => rel.is_intersects(),

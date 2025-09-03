@@ -23,10 +23,10 @@ fn cast(arg: SqlExpr, data_type: sqlparser::ast::DataType) -> SqlExpr {
     }
 }
 
-fn func(name: &str, args: Vec<SqlExpr>) -> SqlExpr {
+pub(crate) fn func(name: &str, args: Vec<SqlExpr>) -> SqlExpr {
     SqlExpr::Function(
         sqlparser::ast::Function {
-            name: sqlparser::ast::ObjectName(vec![ident_inner(name)]),
+            name: sqlparser::ast::ObjectName(vec![sqlparser::ast::ObjectNamePart::Identifier(ident_inner(name))]),
             args: FunctionArguments::List(
                 FunctionArgumentList {
                     duplicate_treatment: None,
@@ -52,10 +52,10 @@ fn func(name: &str, args: Vec<SqlExpr>) -> SqlExpr {
 }
 
 fn lit_expr(value: &str) -> SqlExpr {
-    ValExpr(Value::SingleQuotedString(value.to_string()))
+    ValExpr(Value::SingleQuotedString(value.to_string()).into())
 }
 fn float_expr(value: &f64) -> SqlExpr {
-    ValExpr(Value::Number(value.to_string(), false))
+    ValExpr(Value::Number(value.to_string(), false).into())
 }
 fn args2ast(args: &Vec<Box<Expr>>) -> Result<Vec<SqlExpr>, Error> {
     args.iter()
@@ -225,7 +225,7 @@ impl ToSqlAst for Expr {
     /// Converts this expression to SQLParser AST.
     fn to_sql_ast(&self) -> Result<SqlExpr, Error> {
         Ok(match self {
-            Expr::Bool(v) => ValExpr(Value::Boolean(*v)),
+            Expr::Bool(v) => ValExpr(Value::Boolean(*v).into()),
             Expr::Float(v) => float_expr(v),
             Expr::Literal(v) => lit_expr(v),
             Expr::Date { ref date } => lit_or_prop_to_date(date.as_ref())?,
@@ -235,6 +235,7 @@ impl ToSqlAst for Expr {
                 let end = lit_or_prop_to_ts(interval[1].as_ref())?;
                 SqlExpr::Array(SqlArray{elem: vec![start, end], named: true})
             }
+            Expr::Null => ValExpr(Value::Null.into()),
             Expr::Geometry(v) => match v {
                 Geometry::GeoJSON(v) => {
                     let s = lit_expr(&v.to_string());
@@ -261,6 +262,9 @@ impl ToSqlAst for Expr {
                 let a = args2ast(args)?;
                 eprintln!("Operation: {} with {} args", op_str, a.len());
                 match op_str.as_str() {
+                    "isnull" => SqlExpr::IsNull (
+                        Box::new(a[0].clone()),
+                    ),
                     "not" => SqlExpr::UnaryOp {
                         op: sqlparser::ast::UnaryOperator::Not,
                         expr: Box::new(a[0].clone()),
@@ -461,10 +465,8 @@ mod tests {
     fn test_t_before_expression() {
         // t_before([start1, end1], [start2, end2]) => end1 < start2
         let expr: Expr = "t_before(ts_start, DATE('2020-02-01'))".parse().unwrap();
-        eprintln!("Parsed expression: {}", expr.to_text().unwrap());
         let sql_ast = expr.to_sql_ast().expect("to_sql_ast failed");
         let sql_str = sql_ast.to_string();
-        eprintln!("SQL: {}", sql_str);
         assert_eq!(sql_str, "ts_start < CAST('2020-02-01' AS DATE)");
     }
 

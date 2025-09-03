@@ -195,3 +195,19 @@ not (intfield <= 2) or (boolfield and floatfield >= 2.0)
 floatfield between -23 and 40 and in(textfield, 'item_2', 'item_3')
 s_intersects(geom, POINT(-93 45)) or s_disjoint(geom, POINT(-93 45))
 t_before(interval(ts_start, ts_end), interval('2020-01-10T00:00:00Z','2022-02-01T00:00:00Z')) and not boolfield
+
+// Array operators
+a_equals(intarrayfield, (1, 2, 3))
+a_equals((1, 2, 3), intarrayfield)
+a_contains(intarrayfield, (2, 3))
+a_contains((1, 2, 3, 4), intarrayfield)
+a_containedby(intarrayfield, (1, 2, 3, 4))
+a_containedby((1, 2), intarrayfield)
+a_overlaps(intarrayfield, (2, 4))
+a_overlaps((2, 4), intarrayfield)
+
+nfield is null
+nfield = true
+nfield <> true
+nfield is not null
+not(nfield = true)

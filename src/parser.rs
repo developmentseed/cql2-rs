@@ -109,7 +109,6 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
                 let start = primary.as_span().start();
                 let s = primary.as_str().to_string();
                 let pairs = primary.into_inner();
-                eprintln!("GEOMETRY: s: {:?}, pairs: {:?}", s, pairs);
                 if pairs.find_first_tagged("three_d").is_some() {
                     let zm = pairs
                         .flatten()
@@ -165,6 +164,7 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
                 }
                 Ok(Expr::Array(array_elements))
             }
+            Rule::Null => Ok(Expr::Null),
 
             rule => unreachable!("Expr::parse expected atomic rule, found {:?}", rule),
         })

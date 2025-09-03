@@ -113,13 +113,16 @@ impl Cli {
             };
             let file = File::open(file)?;
             let reader = BufReader::new(file);
-            for line in reader.lines() {
-                let line = line?;
-                let v: serde_json::Value = serde_json::from_str(&line)?;
-                if expr.clone().matches(Some(&v))? {
-                    println!("{}", line);
-                }
-            }
+            reader
+                .lines()
+                .map(|line| {
+                    let line = line?;
+                    Ok(serde_json::from_str(&line)?)
+                })
+                .collect::<Result<Vec<_>, anyhow::Error>>()?
+                .into_iter()
+                .filter_map(|value| expr.filter(&[value]).ok().and_then(|mut v| v.pop().map(|v| v.clone())))
+                .for_each(|v| println!("{}", serde_json::to_string(&v).unwrap()));
             return Ok(());
         }
         let input = self

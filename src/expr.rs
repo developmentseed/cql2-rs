@@ -1,4 +1,4 @@
-use crate::{geometry::spatial_op, temporal::temporal_op, Error, Geometry, SqlQuery, Validator};
+use crate::{geometry::spatial_op, temporal::temporal_op, Error, Geometry, Validator};
 use geo_types::Geometry as GGeom;
 use geo_types::{coord, Rect};
 use json_dotpath::DotPaths;
@@ -90,6 +90,7 @@ pub enum Expr {
     Bool(bool),
     Array(Vec<Box<Expr>>),
     Geometry(Geometry),
+    Null,
 }
 
 impl TryFrom<Value> for Expr {
@@ -267,19 +268,26 @@ impl Expr {
     ///
     /// ```
     pub fn reduce(self, j: Option<&Value>) -> Result<Expr, Error> {
+
         match self {
             Expr::Property { ref property } => {
+
                 if let Some(j) = j {
                     if let Some(value) = j.dot_get::<Value>(property)? {
+
                         Expr::try_from(value)
                     } else if let Some(value) =
                         j.dot_get::<Value>(&format!("properties.{}", property))?
                     {
+
+
                         Expr::try_from(value)
                     } else {
+
                         Ok(self)
                     }
                 } else {
+
                     Ok(self)
                 }
             }
@@ -290,13 +298,24 @@ impl Expr {
                 Ok(Expr::Interval{ interval: vec![Box::new(start), Box::new(end)] })
             }
             Expr::Operation { op, args } => {
+                let op = op.clone().to_lowercase();
+
                 let args: Vec<Box<Expr>> = args
                     .into_iter()
                     .map(|expr| expr.reduce(j).map(Box::new))
                     .collect::<Result<_, _>>()?;
+                eprintln!("Op: {:?}, Args: {:?}", op, args);
 
+                if op == "isnull" {
+                    match args[0].as_ref() {
+                        Expr::Null => Ok(Expr::Bool(true)),
+                        Expr::Property { property: _ } => Ok(Expr::Bool(true)),
+                        _ => Ok(Expr::Bool(false)),
+                    }
+                } else if args.iter().any(|arg| matches!(arg.as_ref(), Expr::Null)) {
+                    return Ok(Expr::Bool(false));
 
-                if BOOLOPS.contains(&op.as_str()) {
+                } else if BOOLOPS.contains(&op.as_str()) {
                     let curop = op.clone();
                     let mut dedupargs: Vec<Box<Expr>> = vec![];
                     let mut nestedargs: Vec<Box<Expr>> = vec![];
@@ -391,7 +410,7 @@ impl Expr {
 
 
                     if TEMPORALOPS.contains(&op.as_str()) {
-                        eprintln!("Op: {:?}, Left: {:?}, Right: {:?}", op, left, right);
+
                         Ok(temporal_op(left, right, &op)
                                 .unwrap_or_else(|_| Expr::Operation { op, args }))
                     // Date or Timestamp comparison: convert to jiff Timestamp for correct ordering
@@ -464,9 +483,22 @@ impl Expr {
     /// ```
     pub fn matches(self, j: Option<&Value>) -> Result<bool, Error> {
         let reduced = self.reduce(j)?;
+        eprintln!("Reduced expression (matches): {}", reduced.to_text()?);
+
         match reduced {
             Expr::Bool(v) => Ok(v),
             _ => Err(Error::NonReduced()),
+        }
+    }
+
+    /// Run CQL against a JSON Value, returning false if the expression does not reduce to a boolean.
+    pub fn matches_or_false(self, j: Option<&Value>) -> Result<bool, Error> {
+        let reduced = self.reduce(j)?;
+        eprintln!("Reduced expression (or false): {}", reduced.to_text()?);
+
+        match reduced {
+            Expr::Bool(v) => Ok(v),
+            _ => Ok(false),
         }
     }
 
@@ -495,8 +527,9 @@ impl Expr {
     {
         let mut filtered = Vec::new();
         for item in items {
-            if self.clone().matches(Some(item))? {
-                filtered.push(item);
+            match self.clone().matches_or_false(Some(item))? {
+                true => filtered.push(item),
+                false => eprintln!("Item did not match: {:?}", item),
             }
         }
         Ok(filtered)
@@ -534,6 +567,7 @@ impl Expr {
             Expr::Float(v) => Ok(v.to_string()),
             Expr::Literal(v) => Ok(quote_literal(v).to_string()),
             Expr::Property { property } => Ok(quote_identifier(property).to_string()),
+            Expr::Null => Ok("NULL".to_string()),
             Expr::Interval { interval } => {
                 check_len!(
                     "interval",
@@ -593,88 +627,6 @@ impl Expr {
         }
     }
 
-    /// Converts this expression to a [SqlQuery] struct with parameters
-    /// separated to use with parameter binding.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use cql2::Expr;
-    ///
-    /// let expr = Expr::Bool(true);
-    /// let s = expr.to_sql().unwrap();
-    /// ```
-    pub fn to_sql(&self) -> Result<SqlQuery, Error> {
-        let params: &mut Vec<String> = &mut vec![];
-        let query = self.to_sql_inner(params)?;
-        Ok(SqlQuery {
-            query,
-            params: params.to_vec(),
-        })
-    }
-
-    fn to_sql_inner(&self, params: &mut Vec<String>) -> Result<String, Error> {
-        Ok(match self {
-            Expr::Bool(v) => {
-                params.push(v.to_string());
-                format!("${}", params.len())
-            }
-            Expr::Float(v) => {
-                params.push(v.to_string());
-                format!("${}", params.len())
-            }
-            Expr::Literal(v) => {
-                params.push(v.to_string());
-                format!("${}", params.len())
-            }
-            Expr::Date { date } => date.to_sql_inner(params)?,
-            Expr::Timestamp { timestamp } => timestamp.to_sql_inner(params)?,
-
-            Expr::Interval { interval } => {
-                let a: Vec<String> = interval
-                    .iter()
-                    .map(|x| x.to_sql_inner(params))
-                    .collect::<Result<_, _>>()?;
-                format!("TSTZRANGE({},{})", a[0], a[1],)
-            }
-            Expr::Geometry(v) => {
-                params.push(format!("EPSG:4326;{}", v.to_wkt()?));
-                format!("${}", params.len())
-            }
-            Expr::Array(v) => {
-                let array_els: Vec<String> = v
-                    .iter()
-                    .map(|a| a.to_sql_inner(params))
-                    .collect::<Result<_, _>>()?;
-                format!("[{}]", array_els.join(", "))
-            }
-            Expr::Property { property } => format!("\"{property}\""),
-            Expr::Operation { op, args } => {
-                let a: Vec<String> = args
-                    .iter()
-                    .map(|x| x.to_sql_inner(params))
-                    .collect::<Result<_, _>>()?;
-                match op.as_str() {
-                    "and" => format!("({})", a.join(" AND ")),
-                    "or" => format!("({})", a.join(" OR ")),
-                    "between" => format!("({} BETWEEN {} AND {})", a[0], a[1], a[2]),
-                    "not" => format!("(NOT {})", a[0]),
-                    "is null" => format!("({} IS NULL)", a[0]),
-                    "+" | "-" | "*" | "/" | "%" | "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
-                        format!("({} {} {})", a[0], op, a[1])
-                    }
-                    _ => format!("{}({})", op, a.join(", ")),
-                }
-            }
-            Expr::BBox { bbox } => {
-                let array_els: Vec<String> = bbox
-                    .iter()
-                    .map(|a| a.to_sql_inner(params))
-                    .collect::<Result<_, _>>()?;
-                format!("[{}]", array_els.join(", "))
-            }
-        })
-    }
 
     /// Converts this expression to a JSON string.
     ///

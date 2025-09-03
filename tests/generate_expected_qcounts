@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #set -euo pipefail
-cargo build --bin cql2
+cargo build
 # Script to generate operators_expected.txt by running cql2-cli filter
 OUT_FILE="tests/operators_expected.txt"
 : > "$OUT_FILE"
