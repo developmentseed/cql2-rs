@@ -483,7 +483,7 @@ impl Expr {
         }
     }
 
-    /// Run CQL against a JSON Value, returning false if the expression does not reduce to a boolean.
+    /// Run CQL2 against a JSON Value, returning false if the expression does not reduce to a boolean.
     pub fn matches_or_false(self, j: Option<&Value>) -> Result<bool, Error> {
         let reduced = self.reduce(j)?;
 
