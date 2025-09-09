@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Bump some dependencies ([#87](https://github.com/developmentseed/cql2-rs/pull/87))
+
 ## [0.3.7] - 2025-03-28
 
 ### Added
