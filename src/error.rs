@@ -50,7 +50,7 @@ pub enum Error {
     #[error(transparent)]
     ParseInt(#[from] std::num::ParseIntError),
 
-    /// [std::num::ParseTimestamp]
+    /// [jiff::Error]
     #[error(transparent)]
     ParseTimestamp(#[from] jiff::Error),
 
