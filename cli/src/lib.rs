@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use clap::{ArgAction, Parser, Subcommand, ValueEnum};
+use clap::{ArgAction, Parser, ValueEnum};
 use cql2::{Expr, ToSqlAst, Validator};
 use std::io::Read;
 
@@ -7,9 +7,9 @@ use std::io::Read;
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
-    /// Subcommand to run (e.g., Filter)
-    #[command(subcommand)]
-    cmd: Option<Commands>,
+    /// Path to NDJSON file to filter (if set, filters using the CQL2 expression)
+    #[arg(short, long)]
+    filter: Option<String>,
 
     /// The input CQL2
     ///
@@ -43,18 +43,6 @@ pub struct Cli {
     /// Provide this argument several times to turn up the chatter.
     #[arg(short, long, action = ArgAction::Count)]
     verbose: u8,
-}
-
-#[derive(Debug, Subcommand)]
-enum Commands {
-    /// Filter an NDJSON file by a CQL2 expression
-    Filter {
-        /// The CQL2 expression (text or JSON)
-        expression: String,
-        /// Input NDJSON file path
-        #[arg(long)]
-        file: String,
-    },
 }
 
 /// The input CQL2 format.
@@ -103,15 +91,19 @@ impl Cli {
     }
 
     pub fn run_inner(self) -> Result<()> {
-        if let Some(Commands::Filter { expression, file }) = self.cmd {
+        if let Some(filter_path) = self.filter.as_ref() {
             use std::fs::File;
             use std::io::{BufRead, BufReader};
-            let expr: Expr = if expression.trim_start().starts_with('{') {
-                cql2::parse_json(&expression)?
+            // Use self.input as the CQL2 expression
+            let expr_str = self.input.as_ref().ok_or_else(|| {
+                anyhow!("CQL2 expression required as positional argument when using --filter")
+            })?;
+            let expr: Expr = if expr_str.trim_start().starts_with('{') {
+                cql2::parse_json(expr_str)?
             } else {
-                cql2::parse_text(&expression)?
+                cql2::parse_text(expr_str)?
             };
-            let file = File::open(file)?;
+            let file = File::open(filter_path)?;
             let reader = BufReader::new(file);
             reader
                 .lines()

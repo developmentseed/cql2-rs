@@ -483,14 +483,9 @@ impl Expr {
         }
     }
 
-    /// Run CQL against a JSON Value, returning false if the expression does not reduce to a boolean.
-    pub fn matches_or_false(self, j: Option<&Value>) -> Result<bool, Error> {
-        let reduced = self.reduce(j)?;
-
-        match reduced {
-            Expr::Bool(v) => Ok(v),
-            _ => Ok(false),
-        }
+    /// Returns True if the expression evaluates to true and false if either the expression evaluates to false or does not fully reduce to a boolean.
+    pub fn is_true(self) -> bool {
+        matches!(self, Expr::Bool(true))
     }
 
     /// Filters an iterable of JSON values based on this expression.
@@ -518,7 +513,8 @@ impl Expr {
     {
         let mut filtered = Vec::new();
         for item in items {
-            if self.clone().matches_or_false(Some(item))? {
+            let e = self.clone().reduce(Some(item))?;
+            if e.is_true() {
                 filtered.push(item)
             }
         }
