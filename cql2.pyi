@@ -129,11 +129,11 @@ class Expr:
             '("landsat:scene_id" = \'LC82030282019133LGN00\')'
         """
 
-    def to_sql(self) -> SqlQuery:
+    def to_sql(self) -> str:
         """Converts this cql2 expression to a SQL query.
 
         Returns:
-            SqlQuery: The SQL query and parameters
+            str: The SQL query
 
         Examples:
             >>> from cql2 import Expr
@@ -159,15 +159,6 @@ class Expr:
             >>> expr2 = Expr("landsat:cloud_cover = 10")
             >>> expr = expr1 + expr2
         """
-
-class SqlQuery:
-    """A SQL query"""
-
-    query: str
-    """The query, with parameterized fields."""
-
-    params: list[str]
-    """The parameters, to use for binding."""
 
 class ParseError(Exception):
     """An error raised when cql2 parsing fails."""

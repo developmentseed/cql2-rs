@@ -13,6 +13,5 @@ python -m pip install cql2
 ::: cql2.parse_json
 ::: cql2.parse_text
 ::: cql2.Expr
-::: cql2.SqlQuery
 ::: cql2.ParseError
 ::: cql2.ValidationError

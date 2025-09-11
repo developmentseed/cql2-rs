@@ -1,12 +1,16 @@
 use anyhow::{anyhow, Result};
 use clap::{ArgAction, Parser, ValueEnum};
-use cql2::{Expr, Validator};
+use cql2::{Expr, ToSqlAst, Validator};
 use std::io::Read;
 
 /// The CQL2 command-line interface.
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
+    /// Path to NDJSON file to filter (if set, filters using the CQL2 expression)
+    #[arg(short, long)]
+    filter: Option<String>,
+
     /// The input CQL2
     ///
     /// If not provided, or `-`, the CQL2 will be read from standard input. The
@@ -87,6 +91,36 @@ impl Cli {
     }
 
     pub fn run_inner(self) -> Result<()> {
+        if let Some(filter_path) = self.filter.as_ref() {
+            use std::fs::File;
+            use std::io::{BufRead, BufReader};
+            // Use self.input as the CQL2 expression
+            let expr_str = self.input.as_ref().ok_or_else(|| {
+                anyhow!("CQL2 expression required as positional argument when using --filter")
+            })?;
+            let expr: Expr = if expr_str.trim_start().starts_with('{') {
+                cql2::parse_json(expr_str)?
+            } else {
+                cql2::parse_text(expr_str)?
+            };
+            let file = File::open(filter_path)?;
+            let reader = BufReader::new(file);
+            reader
+                .lines()
+                .map(|line| {
+                    let line = line?;
+                    Ok(serde_json::from_str(&line)?)
+                })
+                .collect::<Result<Vec<_>, anyhow::Error>>()?
+                .into_iter()
+                .filter_map(|value| {
+                    expr.filter(&[value])
+                        .ok()
+                        .and_then(|mut v| v.pop().cloned())
+                })
+                .for_each(|v| println!("{}", serde_json::to_string(&v).unwrap()));
+            return Ok(());
+        }
         let input = self
             .input
             .and_then(|input| if input == "-" { None } else { Some(input) })
@@ -133,7 +167,10 @@ impl Cli {
             OutputFormat::JsonPretty => serde_json::to_writer_pretty(std::io::stdout(), &expr)?,
             OutputFormat::Json => serde_json::to_writer(std::io::stdout(), &expr)?,
             OutputFormat::Text => print!("{}", expr.to_text()?),
-            OutputFormat::Sql => serde_json::to_writer_pretty(std::io::stdout(), &expr.to_sql()?)?,
+            OutputFormat::Sql => {
+                let sql_ast = expr.to_sql_ast()?;
+                println!("{}", sql_ast);
+            }
         }
         println!();
         Ok(())

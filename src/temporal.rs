@@ -12,11 +12,28 @@ fn strip_quotes(s: String) -> String {
     }
 }
 
+fn parse_ts(s: &str) -> Result<Timestamp, Error> {
+    let stripped = strip_quotes(s.to_string()).replace(' ', "T");
+    let fromshort: String = match stripped.len() {
+        4 => format!("{stripped}-01-01T00:00:00Z"),
+        7 => format!("{stripped}-01T00:00:00Z"),
+        10 => format!("{stripped}T00:00:00Z"),
+        13 => format!("{stripped}:00:00Z"),
+        16 => format!("{stripped}:00Z"),
+        19 => format!("{stripped}Z"),
+        _ => stripped,
+    };
+
+    fromshort.to_string().parse().map_err(Error::ParseTimestamp)
+}
+
 /// Struct to hold a range of timestamps.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct DateRange {
-    start: Timestamp,
-    end: Timestamp,
+    /// Start timestamp of the range
+    pub start: Timestamp,
+    /// End timestamp of the range
+    pub end: Timestamp,
 }
 
 impl TryFrom<Expr> for DateRange {
@@ -24,31 +41,50 @@ impl TryFrom<Expr> for DateRange {
     fn try_from(v: Expr) -> Result<DateRange, Error> {
         match v {
             Expr::Interval { interval } => {
-                let start_str: String = strip_quotes(interval[0].to_text()?);
-                let end_str: String = strip_quotes(interval[1].to_text()?);
-                let start: Timestamp = start_str.parse().unwrap();
-                let end: Timestamp = end_str.parse().unwrap();
+                let start: Timestamp = parse_ts(&interval[0].to_text()?)?;
+                let end: Timestamp = parse_ts(&interval[1].to_text()?)?;
                 Ok(DateRange { start, end })
             }
             Expr::Timestamp { timestamp } => {
-                let start_str: String = strip_quotes(timestamp.to_text()?);
-                let start: Timestamp = start_str.parse().unwrap();
+                let start: Timestamp = parse_ts(&timestamp.to_text()?)?;
                 Ok(DateRange { start, end: start })
             }
             Expr::Date { date } => {
-                let mut start_str: String = strip_quotes(date.to_text()?);
-                if start_str.len() <= 11 {
-                    start_str = format!("{start_str} 00Z");
-                }
-                let start: Timestamp = start_str.parse().unwrap();
+                let start: Timestamp = parse_ts(&date.to_text()?)?;
                 let end: Timestamp = start + SHYOFADAY;
                 Ok(DateRange { start, end })
             }
             Expr::Literal(v) => {
-                let start: Timestamp = v.parse().unwrap();
+                let start: Timestamp = parse_ts(&v)?;
                 Ok(DateRange { start, end: start })
             }
             _ => Err(Error::ExprToDateRange(v)),
+        }
+    }
+}
+// Implement PartialEq and PartialOrd for DateRange based on start and end boundaries
+use std::cmp::Ordering;
+/// Two DateRanges are equal if both their start and end timestamps match exactly.
+impl PartialEq for DateRange {
+    fn eq(&self, other: &Self) -> bool {
+        self.start == other.start && self.end == other.end
+    }
+}
+/// Ordering for DateRanges:
+/// - Less if this range ends before the other range starts.
+/// - Greater if this range starts after the other range ends.
+/// - Equal if boundaries match exactly.
+/// - None if ranges overlap without boundary precedence.
+impl PartialOrd for DateRange {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self == other {
+            Some(Ordering::Equal)
+        } else if self.end < other.start {
+            Some(Ordering::Less)
+        } else if self.start > other.end {
+            Some(Ordering::Greater)
+        } else {
+            None
         }
     }
 }
@@ -74,7 +110,6 @@ pub fn temporal_op(left_expr: Expr, right_expr: Expr, op: &str) -> Result<Expr, 
         right = DateRange::try_from(left_expr)?;
         left = DateRange::try_from(right_expr)?;
     }
-
     let out = match invop {
         "t_before" => Ok(left.end < right.start),
         "t_meets" => Ok(left.end == right.start),

@@ -1,4 +1,4 @@
-use crate::{geometry::spatial_op, temporal::temporal_op, Error, Geometry, SqlQuery, Validator};
+use crate::{geometry::spatial_op, temporal::temporal_op, Error, Geometry, Validator};
 use geo_types::Geometry as GGeom;
 use geo_types::{coord, Rect};
 use json_dotpath::DotPaths;
@@ -47,7 +47,7 @@ pub const TEMPORALOPS: &[&str] = &[
     "t_during",
     "t_contains",
     "t_finishes",
-    "to_finishedby",
+    "t_finishedby",
     "t_equals",
     "t_disjoint",
     "t_intersects",
@@ -90,22 +90,20 @@ pub enum Expr {
     Bool(bool),
     Array(Vec<Box<Expr>>),
     Geometry(Geometry),
+    Null,
 }
-
 impl TryFrom<Value> for Expr {
     type Error = Error;
     fn try_from(v: Value) -> Result<Expr, Error> {
         serde_json::from_value(v).map_err(Error::from)
     }
 }
-
 impl TryFrom<Expr> for Value {
     type Error = Error;
     fn try_from(v: Expr) -> Result<Value, Error> {
         serde_json::to_value(v).map_err(Error::from)
     }
 }
-
 impl TryFrom<Expr> for f64 {
     type Error = Error;
     fn try_from(v: Expr) -> Result<f64, Error> {
@@ -282,13 +280,30 @@ impl Expr {
                     Ok(self)
                 }
             }
+            Expr::Interval { ref interval } => {
+                let start = interval[0].as_ref().clone().reduce(j)?;
+                let end = interval[1].as_ref().clone().reduce(j)?;
+                Ok(Expr::Interval {
+                    interval: vec![Box::new(start), Box::new(end)],
+                })
+            }
             Expr::Operation { op, args } => {
+                let op = op.clone().to_lowercase();
+
                 let args: Vec<Box<Expr>> = args
                     .into_iter()
                     .map(|expr| expr.reduce(j).map(Box::new))
                     .collect::<Result<_, _>>()?;
 
-                if BOOLOPS.contains(&op.as_str()) {
+                if op == "isnull" {
+                    match args[0].as_ref() {
+                        Expr::Null => Ok(Expr::Bool(true)),
+                        Expr::Property { property: _ } => Ok(Expr::Bool(true)),
+                        _ => Ok(Expr::Bool(false)),
+                    }
+                } else if args.iter().any(|arg| matches!(arg.as_ref(), Expr::Null)) {
+                    Ok(Expr::Bool(false))
+                } else if BOOLOPS.contains(&op.as_str()) {
                     let curop = op.clone();
                     let mut dedupargs: Vec<Box<Expr>> = vec![];
                     let mut nestedargs: Vec<Box<Expr>> = vec![];
@@ -360,15 +375,58 @@ impl Expr {
                     Ok(Expr::Operation { op, args })
                 } else {
                     // Two-arg operations
-                    let left = args[0].deref().clone();
-                    let right = args[1].deref().clone();
+                    let mut left = args[0].deref().clone();
+                    let mut right = args[1].deref().clone();
 
-                    if std::mem::discriminant(&left) == std::mem::discriminant(&right) {
+                    // If left is Date/Timestamp and right is Literal, convert right
+                    match (&left, &right) {
+                        (Expr::Date { .. }, Expr::Literal(ref v)) => {
+                            right = Expr::Date {
+                                date: Box::new(Expr::Literal(v.clone())),
+                            };
+                        }
+                        (Expr::Timestamp { .. }, Expr::Literal(ref v)) => {
+                            right = Expr::Timestamp {
+                                timestamp: Box::new(Expr::Literal(v.clone())),
+                            };
+                        }
+                        (Expr::Literal(ref v), Expr::Date { .. }) => {
+                            left = Expr::Date {
+                                date: Box::new(Expr::Literal(v.clone())),
+                            };
+                        }
+                        (Expr::Literal(ref v), Expr::Timestamp { .. }) => {
+                            left = Expr::Timestamp {
+                                timestamp: Box::new(Expr::Literal(v.clone())),
+                            };
+                        }
+                        _ => {}
+                    }
+
+                    if TEMPORALOPS.contains(&op.as_str()) {
+                        Ok(temporal_op(left, right, &op)
+                            .unwrap_or_else(|_| Expr::Operation { op, args }))
+                    // Date or Timestamp comparison: convert to jiff Timestamp for correct ordering
+                    } else if (matches!(left, Expr::Date { .. } | Expr::Timestamp { .. })
+                        && matches!(right, Expr::Date { .. } | Expr::Timestamp { .. })
+                        && (EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str())))
+                    {
+                        // convert both operands to DateRange and compare using PartialOrd/PartialEq
+                        let l_dr = crate::temporal::DateRange::try_from(left.clone())?;
+                        let r_dr = crate::temporal::DateRange::try_from(right.clone())?;
+                        let cmp = match op.as_str() {
+                            "=" => l_dr == r_dr,
+                            "<=" => l_dr <= r_dr,
+                            "<" => l_dr < r_dr,
+                            ">=" => l_dr >= r_dr,
+                            ">" => l_dr > r_dr,
+                            "<>" => l_dr != r_dr,
+                            _ => unreachable!(),
+                        };
+                        Ok(Expr::Bool(cmp))
+                    } else if std::mem::discriminant(&left) == std::mem::discriminant(&right) {
                         if SPATIALOPS.contains(&op.as_str()) {
                             Ok(spatial_op(left, right, &op)
-                                .unwrap_or_else(|_| Expr::Operation { op, args }))
-                        } else if TEMPORALOPS.contains(&op.as_str()) {
-                            Ok(temporal_op(left, right, &op)
                                 .unwrap_or_else(|_| Expr::Operation { op, args }))
                         } else if ARITHOPS.contains(&op.as_str()) {
                             Ok(arith_op(left, right, &op)
@@ -418,11 +476,51 @@ impl Expr {
     /// ```
     pub fn matches(self, j: Option<&Value>) -> Result<bool, Error> {
         let reduced = self.reduce(j)?;
+
         match reduced {
             Expr::Bool(v) => Ok(v),
             _ => Err(Error::NonReduced()),
         }
     }
+
+    /// Returns True if the expression evaluates to true and false if either the expression evaluates to false or does not fully reduce to a boolean.
+    pub fn is_true(self) -> bool {
+        matches!(self, Expr::Bool(true))
+    }
+
+    /// Filters an iterable of JSON values based on this expression.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cql2::Expr;
+    /// use serde_json::json;
+    ///
+    /// let expr: Expr = "eo:cloud_cover < 20".parse().unwrap();
+    /// let items = vec![
+    ///     json!({"properties": {"eo:cloud_cover": 10}}),
+    ///     json!({"properties": {"eo:cloud_cover": 25}}),
+    ///     json!({"properties": {"eo:cloud_cover": 15}})
+    /// ];
+    /// let filtered = expr.filter(&items).unwrap();
+    /// assert_eq!(filtered.len(), 2);
+    /// assert_eq!(filtered[0]["properties"]["eo:cloud_cover"], 10);
+    /// assert_eq!(filtered[1]["properties"]["eo:cloud_cover"], 15);
+    /// ```
+    pub fn filter<'a, I>(&self, items: I) -> Result<Vec<&'a Value>, Error>
+    where
+        I: IntoIterator<Item = &'a Value>,
+    {
+        let mut filtered = Vec::new();
+        for item in items {
+            let e = self.clone().reduce(Some(item))?;
+            if e.is_true() {
+                filtered.push(item)
+            }
+        }
+        Ok(filtered)
+    }
+
     /// Converts this expression to CQL2 text.
     ///
     /// # Examples
@@ -453,6 +551,7 @@ impl Expr {
             Expr::Float(v) => Ok(v.to_string()),
             Expr::Literal(v) => Ok(quote_literal(v).to_string()),
             Expr::Property { property } => Ok(quote_identifier(property).to_string()),
+            Expr::Null => Ok("NULL".to_string()),
             Expr::Interval { interval } => {
                 check_len!(
                     "interval",
@@ -510,89 +609,6 @@ impl Expr {
                 Ok(format!("BBOX({})", array_els.join(", ")))
             }
         }
-    }
-
-    /// Converts this expression to a [SqlQuery] struct with parameters
-    /// separated to use with parameter binding.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use cql2::Expr;
-    ///
-    /// let expr = Expr::Bool(true);
-    /// let s = expr.to_sql().unwrap();
-    /// ```
-    pub fn to_sql(&self) -> Result<SqlQuery, Error> {
-        let params: &mut Vec<String> = &mut vec![];
-        let query = self.to_sql_inner(params)?;
-        Ok(SqlQuery {
-            query,
-            params: params.to_vec(),
-        })
-    }
-
-    fn to_sql_inner(&self, params: &mut Vec<String>) -> Result<String, Error> {
-        Ok(match self {
-            Expr::Bool(v) => {
-                params.push(v.to_string());
-                format!("${}", params.len())
-            }
-            Expr::Float(v) => {
-                params.push(v.to_string());
-                format!("${}", params.len())
-            }
-            Expr::Literal(v) => {
-                params.push(v.to_string());
-                format!("${}", params.len())
-            }
-            Expr::Date { date } => date.to_sql_inner(params)?,
-            Expr::Timestamp { timestamp } => timestamp.to_sql_inner(params)?,
-
-            Expr::Interval { interval } => {
-                let a: Vec<String> = interval
-                    .iter()
-                    .map(|x| x.to_sql_inner(params))
-                    .collect::<Result<_, _>>()?;
-                format!("TSTZRANGE({},{})", a[0], a[1],)
-            }
-            Expr::Geometry(v) => {
-                params.push(format!("EPSG:4326;{}", v.to_wkt()?));
-                format!("${}", params.len())
-            }
-            Expr::Array(v) => {
-                let array_els: Vec<String> = v
-                    .iter()
-                    .map(|a| a.to_sql_inner(params))
-                    .collect::<Result<_, _>>()?;
-                format!("[{}]", array_els.join(", "))
-            }
-            Expr::Property { property } => format!("\"{property}\""),
-            Expr::Operation { op, args } => {
-                let a: Vec<String> = args
-                    .iter()
-                    .map(|x| x.to_sql_inner(params))
-                    .collect::<Result<_, _>>()?;
-                match op.as_str() {
-                    "and" => format!("({})", a.join(" AND ")),
-                    "or" => format!("({})", a.join(" OR ")),
-                    "between" => format!("({} BETWEEN {} AND {})", a[0], a[1], a[2]),
-                    "not" => format!("(NOT {})", a[0]),
-                    "is null" => format!("({} IS NULL)", a[0]),
-                    "+" | "-" | "*" | "/" | "%" | "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
-                        format!("({} {} {})", a[0], op, a[1])
-                    }
-                    _ => format!("{}({})", op, a.join(", ")),
-                }
-            }
-            Expr::BBox { bbox } => {
-                let array_els: Vec<String> = bbox
-                    .iter()
-                    .map(|a| a.to_sql_inner(params))
-                    .collect::<Result<_, _>>()?;
-                format!("[{}]", array_els.join(", "))
-            }
-        })
     }
 
     /// Converts this expression to a JSON string.

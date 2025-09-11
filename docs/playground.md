@@ -112,6 +112,11 @@
               let val = $("#cqlin").val();
               console.log("cqlin val", val);
               let e = new window.CQL2(val);
+              
+            if ($("#reduce").is(":checked")) {
+                console.log('Reducing...');
+                e = e.reduce();
+            }
               valid = e.is_valid();
               txt = e.to_text();
               jsn = e.to_json_pretty();
@@ -125,6 +130,7 @@
       }
 
       $("#cqlin").on('input propertychange', function(){check(false);});
+      $("#reduce").on('input propertychange', function(){check(false);});
 
 
       function example_change(){
@@ -166,15 +172,21 @@
 
 <p id="example-description" style="font-weight: margin-bottom: 5px;"></p>
 
-<select id="exampletype" class="searchable-dropdown" >
-<option value='cql2_text'>CQL2 Text</option>
-<option value='cql2_json'>CQL2 JSON</option>
-</select>
+<div style="display: flex; align-items: center; gap: 16px; margin-bottom: 8px;">
+    <select id="exampletype" class="searchable-dropdown">
+        <option value='cql2_text'>CQL2 Text</option>
+        <option value='cql2_json'>CQL2 JSON</option>
+    </select>
 
-<select id="examples" class="searchable-dropdown" >
-<option value=''>-</option>
+    <select id="examples" class="searchable-dropdown">
+        <option value=''>-</option>
+    </select>
 
-  </select>
+    <label for="reduce" style="display: flex; align-items: center; gap: 4px; margin-bottom: 0;">
+        <input type="checkbox" id="reduce" title="Solve parts of the CQL2 that it can." />
+        Reduce
+    </label>
+</div>
   <div id="cqlin-div">
     <textarea id="cqlin" rows="20" cols="114"></textarea>
 </div>
