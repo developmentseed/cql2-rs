@@ -164,6 +164,7 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
                 }
                 Ok(Expr::Array(array_elements))
             }
+            Rule::Null => Ok(Expr::Null),
 
             rule => unreachable!("Expr::parse expected atomic rule, found {:?}", rule),
         })

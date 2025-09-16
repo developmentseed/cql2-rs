@@ -42,9 +42,8 @@ def test_to_text(example01_json: dict[str, Any]) -> None:
 
 
 def test_to_sql(example01_text: str) -> None:
-    sql_query = cql2.Expr(example01_text).to_sql()
-    assert sql_query.query == '("landsat:scene_id" = $1)'
-    assert sql_query.params == ["LC82030282019133LGN00"]
+    sql = cql2.Expr(example01_text).to_sql()
+    assert sql == "\"landsat:scene_id\" = 'LC82030282019133LGN00'"
 
 
 def test_validate() -> None:
