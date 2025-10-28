@@ -44,7 +44,7 @@ pub use error::Error;
 pub use expr::*;
 pub use geometry::{spatial_op, Geometry};
 pub use parser::parse_text;
-pub use sql::ToSqlAst;
+pub use sql::{NameKind, ToSqlAst, ToSqlOptions};
 use std::{fs, path::Path};
 pub use temporal::{temporal_op, DateRange};
 pub use validator::Validator;
