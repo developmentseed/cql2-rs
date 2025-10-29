@@ -1,7 +1,7 @@
 use crate::sql::func;
 use crate::Error;
 use crate::Expr;
-use crate::ToSqlAst;
+use crate::{ToSqlAst, ToSqlOptions};
 use sqlparser::ast::visit_expressions_mut;
 use sqlparser::ast::Expr as SqlExpr;
 use std::ops::ControlFlow;
@@ -9,7 +9,12 @@ use std::ops::ControlFlow;
 /// Traits for generating SQL for DuckDB with Spatial Extension
 pub trait ToDuckSQL {
     /// Convert Expression to SQL for DuckDB with Spatial Extension
-    fn to_ducksql(&self) -> Result<String, Error>;
+    fn to_ducksql(&self) -> Result<String, Error> {
+        self.to_ducksql_with_options(ToSqlOptions::default())
+    }
+
+    /// Convert Expression to DuckDB SQL using custom SQL generation options.
+    fn to_ducksql_with_options(&self, options: ToSqlOptions<'_>) -> Result<String, Error>;
 }
 
 impl ToDuckSQL for Expr {
@@ -46,8 +51,8 @@ impl ToDuckSQL for Expr {
     /// let expr: Expr = "t_overlaps(interval(a,b),interval('2020-01-01T00:00:00Z','2020-02-01T00:00:00Z'))".parse().unwrap();
     /// assert_eq!(expr.to_ducksql().unwrap(), "(a < CAST('2020-02-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) AND CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) < b AND b < CAST('2020-02-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE))");
     /// ```
-    fn to_ducksql(&self) -> Result<String, Error> {
-        let mut ast = self.to_sql_ast()?;
+    fn to_ducksql_with_options(&self, options: ToSqlOptions<'_>) -> Result<String, Error> {
+        let mut ast = self.to_sql_ast_with_options(options)?;
         let _ = visit_expressions_mut(&mut ast, |expr| {
             if let SqlExpr::BinaryOp { op, right, left } = expr {
                 match *op {
@@ -73,7 +78,7 @@ impl ToDuckSQL for Expr {
 #[cfg(test)]
 mod tests {
     use super::ToDuckSQL;
-    use crate::Expr;
+    use crate::{Expr, NameKind, ToSqlOptions};
 
     #[test]
     fn test_to_ducksql() {
@@ -85,5 +90,26 @@ mod tests {
     fn test_array_ops() {
         let expr: Expr = "a_contains(foo, bar)".parse().unwrap();
         assert_eq!(expr.to_ducksql().unwrap(), "list_has_all(foo, bar)");
+    }
+
+    #[test]
+    fn test_ducksql_with_options() {
+        let expr: Expr = "collection = 'landsat' AND a_contains(tags, required)"
+            .parse()
+            .unwrap();
+        let resolver = |name: &str, kind: NameKind| match (kind, name) {
+            (NameKind::Property, "collection") => Some("payload ->> 'collection'".to_string()),
+            (NameKind::Property, "tags") => Some("payload -> 'tags'".to_string()),
+            _ => None,
+        };
+
+        let sql = expr
+            .to_ducksql_with_options(ToSqlOptions::with_callback(&resolver))
+            .unwrap();
+
+        assert_eq!(
+            sql,
+            "payload ->> 'collection' = 'landsat' AND list_has_all(payload -> 'tags', required)"
+        );
     }
 }
