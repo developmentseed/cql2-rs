@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.4.1] - 2025-10-31
+
+## Changed
+
+- Deploy abi3 wheels ([#94](https://github.com/developmentseed/cql2-rs/pull/94))
+
+## Removed
+
+- Python 3.9 ([#94](https://github.com/developmentseed/cql2-rs/pull/94))
+
 ## [0.4.0] - 2025-09-16
 
 ### Changed
@@ -103,7 +113,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Initial release.
 
-[Unreleased]: https://github.com/developmentseed/cql2-rs/compare/v0.4.0...main
+[Unreleased]: https://github.com/developmentseed/cql2-rs/compare/v0.4.1...main
+[0.4.1]: https://github.com/developmentseed/cql2-rs/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/developmentseed/cql2-rs/compare/v0.3.8...v0.4.0
 [0.3.8]: https://github.com/developmentseed/cql2-rs/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/developmentseed/cql2-rs/compare/v0.3.6...v0.3.7
