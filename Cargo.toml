@@ -54,4 +54,4 @@ members = ["cli", "python", "wasm"]
 
 
 [workspace.dependencies]
-clap = "4.5.28"
+clap = "4.5.51"
