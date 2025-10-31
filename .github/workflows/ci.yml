@@ -21,9 +21,9 @@ jobs:
         run: |
           cargo fmt --check
           cargo check --workspace
-          cargo clippy --workspace --tests -- -D warnings
+          cargo clippy --workspace --tests --no-default-features -- -D warnings
       - name: Test
-        run: cargo test
+        run: cargo test --no-default-features # the only feature turns on DuckDB bundling for tests
   test-python:
     name: Test Python
     runs-on: ubuntu-latest

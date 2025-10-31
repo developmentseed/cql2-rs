@@ -22,6 +22,9 @@ repository = { workspace = true }
 license = { workspace = true }
 keywords = ["cql2"]
 
+[features]
+default = ["dev-duckdb-bundled"]
+dev-duckdb-bundled = ["duckdb/bundled"]  # we don't want most folks to have to install DuckDB to test, but we want to avoid bundling on CI
 
 [dependencies]
 geo = "0.31.0"
@@ -45,7 +48,7 @@ sqlparser = { version = "0.58.0", features = ["visitor"] }
 
 [dev-dependencies]
 assert-json-diff = "2"
-duckdb = { version = "1.3.2", features = ["bundled"] }
+duckdb = "1.3.2"
 rstest = "0.26.1"
 
 [workspace]
