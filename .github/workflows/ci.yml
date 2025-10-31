@@ -14,10 +14,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    env:
-      DUCKDB_LIB_DIR: ${{ github.workspace }}/opt/duckdb
-      LD_LIBRARY_PATH: ${{ github.workspace }}/opt/duckdb
-      DYLD_LIBRARY_PATH: ${{ github.workspace }}/opt/duckdb
     steps:
       - uses: actions/checkout@v5
       - uses: Swatinem/rust-cache@v2
