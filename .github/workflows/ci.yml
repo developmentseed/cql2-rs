@@ -30,7 +30,7 @@ jobs:
       - name: CLI smoke test
         run: uv run cql2 < examples/text/example01.txt
   build-wasm:
-    name: Build WASM
+    name: Build wasm
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
