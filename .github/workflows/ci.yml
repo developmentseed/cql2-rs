@@ -18,7 +18,7 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v3
         with:
@@ -33,7 +33,7 @@ jobs:
     name: Build wasm
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: Swatinem/rust-cache@v2
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.4.0

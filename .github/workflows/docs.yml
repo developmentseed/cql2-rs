@@ -17,7 +17,7 @@ jobs:
       GIT_COMMITTER_NAME: ci-bot
       GIT_COMMITTER_EMAIL: ci-bot@example.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for git describe
       - name: Install Rust
