@@ -19,6 +19,6 @@ crate-type = ["cdylib"]
 clap = { workspace = true }
 cql2 = { path = ".." }
 cql2-cli = { path = "../cli" }
-pyo3 = { version = "0.26.0", features = ["extension-module"] }
+pyo3 = { version = "0.26.0", features = ["extension-module", "abi3-py310"] }
 pythonize = "0.26.0"
 serde_json = "1.0.138"

@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Removed
 
-- Python 3.9 and Python 3.10 ([#94](https://github.com/developmentseed/cql2-rs/pull/94))
+- Python 3.9 ([#94](https://github.com/developmentseed/cql2-rs/pull/94))
 
 ## [0.4.0] - 2025-09-16
 
