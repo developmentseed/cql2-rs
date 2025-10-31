@@ -15,8 +15,8 @@ dynamic = ["version"]
 [project.scripts]
 cql2 = "cql2:main"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "maturin[patchelf]>=1.7.8",
     "mike>=2.1.3",
     "mkdocs-material[imaging]>=9.5.39",
