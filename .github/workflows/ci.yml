@@ -24,19 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: Swatinem/rust-cache@v2
-      - name: Install libduckdb
-        run: |
-          wget https://github.com/duckdb/duckdb/releases/download/v${{ env.duckdb-version }}/libduckdb-linux-amd64.zip
-          mkdir -p ${{ github.workspace }}/opt/duckdb
-          unzip libduckdb-linux-amd64.zip -d ${{ github.workspace }}/opt/duckdb
       - name: Format
         run: cargo fmt --check
       - name: Check
         run: cargo check --workspace
       - name: Clippy
-        run: cargo clippy --workspace --tests --no-default-features -- -D warnings
+        run: cargo clippy --workspace --tests -- -D warnings
       - name: Test
-        run: cargo test --no-default-features # the only feature turns on DuckDB bundling for tests
+        run: cargo test
   test-python:
     name: Test Python
     runs-on: ubuntu-latest
