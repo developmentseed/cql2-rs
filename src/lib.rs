@@ -74,7 +74,7 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Expr, Error> {
 }
 
 #[cfg(test)]
-use {assert_json_diff as _, rstest as _};
+use {::duckdb as _, assert_json_diff as _, rstest as _};
 
 // From https://github.com/rust-lang/cargo/issues/383#issuecomment-720873790,
 // may they be forever blessed.
