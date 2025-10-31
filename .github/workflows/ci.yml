@@ -21,10 +21,16 @@ jobs:
         run: cargo fmt --check
       - name: Check
         run: cargo check --workspace
-      - name: Clippy
-        run: cargo clippy --workspace --tests -- -D warnings
       - name: Test
         run: cargo test
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy
+        run: cargo clippy --workspace --tests -- -D warnings
   test-python:
     name: Test Python
     runs-on: ubuntu-latest
