@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://developmentseed.org/cql2-rs/latest/</loc>
+         <lastmod>2025-11-02</lastmod>
+    </url>
+    <url>
+         <loc>https://developmentseed.org/cql2-rs/latest/cli/</loc>
+         <lastmod>2025-11-02</lastmod>
+    </url>
+    <url>
+         <loc>https://developmentseed.org/cql2-rs/latest/playground/</loc>
+         <lastmod>2025-11-02</lastmod>
+    </url>
+    <url>
+         <loc>https://developmentseed.org/cql2-rs/latest/python/</loc>
+         <lastmod>2025-11-02</lastmod>
+    </url>
+    <url>
+         <loc>https://developmentseed.org/cql2-rs/latest/pkg/</loc>
+         <lastmod>2025-11-02</lastmod>
+    </url>
+</urlset>
