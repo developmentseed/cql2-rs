@@ -1,0 +1,213 @@
+intfield = 50
+intfield <> 50
+intfield > 90
+intfield >= 94
+intfield < 7
+intfield <= 9
+
+floatfield = 21.1
+floatfield <> 32.2
+floatfield > 80.7
+floatfield >= 90.1
+floatfield < 4.0
+floatfield <= 5.1
+
+// Math operators on floatfield
+floatfield + 1.0 = 21.1
+floatfield - 0.1 = 30
+floatfield * 2 = 60.2
+floatfield / 2 = 1.05
+floatfield % 2 between 0.0999 and 0.100001
+intfield ^ 2 = 9
+
+// Between
+intfield between 1 and 2
+
+// Textfield comparisons
+textfield = 'item_1'
+textfield <> 'item_2'
+textfield > 'item_1'
+textfield >= 'item_2'
+textfield < 'item_3'
+textfield <= 'item_3'
+in(textfield, ('item_1', 'item_3', 'Item_50', 'itém_100'))
+like(textfield, 'item_%')
+like(textfield, 'Item_%')
+like(textfield, 'itém_%')
+casei(textfield) = 'item_40'
+accenti(textfield) = 'item_100'
+
+// Boolfield comparisons
+boolfield = true
+boolfield <> false
+boolfield > false
+boolfield >= false
+boolfield < true
+boolfield <= true
+
+
+// Spatial operators
+s_equals(geom, POLYGON((-164.20711184457008 -62.64591531654267,-172.10355592228504 -48.968872974814005,-187.89644407771496 -48.968872974814005,-195.79288815542992 -62.64591531654267,-187.89644407771496 -76.32295765827133,-172.10355592228504 -76.32295765827133,-164.20711184457008 -62.64591531654267)))
+s_intersects(geom, POLYGON((-164.20711184457008 -62.64591531654267,-172.10355592228504 -48.968872974814005,-187.89644407771496 -48.968872974814005,-195.79288815542992 -62.64591531654267,-187.89644407771496 -76.32295765827133,-172.10355592228504 -76.32295765827133,-164.20711184457008 -62.64591531654267)))
+s_disjoint(geom, POLYGON((-164.20711184457008 -62.64591531654267,-172.10355592228504 -48.968872974814005,-187.89644407771496 -48.968872974814005,-195.79288815542992 -62.64591531654267,-187.89644407771496 -76.32295765827133,-172.10355592228504 -76.32295765827133,-164.20711184457008 -62.64591531654267)))
+s_touches(geom, POLYGON((-164.20711184457008 -62.64591531654267,-172.10355592228504 -48.968872974814005,-187.89644407771496 -48.968872974814005,-195.79288815542992 -62.64591531654267,-187.89644407771496 -76.32295765827133,-172.10355592228504 -76.32295765827133,-164.20711184457008 -62.64591531654267)))
+s_within(geom, POLYGON((-164.20711184457008 -62.64591531654267,-172.10355592228504 -48.968872974814005,-187.89644407771496 -48.968872974814005,-195.79288815542992 -62.64591531654267,-187.89644407771496 -76.32295765827133,-172.10355592228504 -76.32295765827133,-164.20711184457008 -62.64591531654267)))
+s_overlaps(geom, POLYGON((-164.20711184457008 -62.64591531654267,-172.10355592228504 -48.968872974814005,-187.89644407771496 -48.968872974814005,-195.79288815542992 -62.64591531654267,-187.89644407771496 -76.32295765827133,-172.10355592228504 -76.32295765827133,-164.20711184457008 -62.64591531654267)))
+s_crosses(geom, LINESTRING(-170 -90, -170 90))
+s_contains(geom, POLYGON((-164.20711184457008 -62.64591531654267,-172.10355592228504 -48.968872974814005,-187.89644407771496 -48.968872974814005,-195.79288815542992 -62.64591531654267,-187.89644407771496 -76.32295765827133,-172.10355592228504 -76.32295765827133,-164.20711184457008 -62.64591531654267)))
+
+// temporal comparisons
+datefield = DATE('2020-01-02')
+datefield <> DATE('2020-01-02')
+datefield > DATE('2020-03-20')
+datefield >= DATE('2020-03-20')
+datefield < DATE('2020-01-04')
+datefield <= DATE('2020-01-04')
+
+ts_start = DATE('2020-01-02')
+ts_start <> DATE('2020-01-02')
+ts_start > DATE('2020-03-20')
+ts_start >= DATE('2020-03-20')
+ts_start < DATE('2020-01-04')
+ts_start <= DATE('2020-01-04')
+
+datefield = TIMESTAMP('2020-01-02T00:00:00Z')
+datefield <> TIMESTAMP('2020-01-02T00:00:00Z')
+datefield > TIMESTAMP('2020-03-20T00:00:00Z')
+datefield >= TIMESTAMP('2020-03-20T00:00:00Z')
+datefield < TIMESTAMP('2020-01-04T00:00:00Z')
+datefield <= TIMESTAMP('2020-01-04T00:00:00Z')
+
+ts_start = TIMESTAMP('2020-01-02T00:00:00Z')
+ts_start <> TIMESTAMP('2020-01-02T00:00:00Z')
+ts_start > TIMESTAMP('2020-03-20T00:00:00Z')
+ts_start >= TIMESTAMP('2020-03-20T00:00:00Z')
+ts_start < TIMESTAMP('2020-01-04T00:00:00Z')
+ts_start <= TIMESTAMP('2020-01-04T00:00:00Z')
+
+
+// t_before
+t_before(ts_start, DATE('2020-02-01'))
+t_before(ts_start, TIMESTAMP('2020-02-01T00:00:00Z'))
+t_before(ts_start, interval('2020-02-01T00:00:00Z', '2020-05-01T00:00:00Z'))
+t_before(DATE('2020-04-01'), ts_start)
+t_before(TIMESTAMP('2020-04-01T00:00:00Z'), ts_start)
+t_before(interval('2019-04-01T00:00:00Z', '2020-03-01T00:00:00Z'), ts_start)
+t_before(interval(ts_start, ts_end), interval('2020-03-01T00:00:00Z', '2020-05-01T00:00:00Z'))
+t_before(interval('2019-04-01T00:00:00Z', '2020-02-01T00:00:00Z'), interval(ts_start, ts_end))
+
+// t_after
+t_after(DATE('2020-02-01'), ts_start)
+t_after(TIMESTAMP('2020-02-01T00:00:00Z'), ts_start)
+t_after(interval('2020-02-01T00:00:00Z', '2020-05-01T00:00:00Z'), ts_start)
+t_after(ts_start, DATE('2020-04-01'))
+t_after(ts_start, TIMESTAMP('2020-04-01T00:00:00Z'))
+t_after(ts_start, interval('2019-04-01T00:00:00Z', '2020-03-01T00:00:00Z'))
+t_after(interval('2020-03-01T00:00:00Z', '2020-05-01T00:00:00Z'), interval(ts_start, ts_end))
+t_after(interval(ts_start, ts_end), interval('2019-04-01T00:00:00Z', '2020-02-01T00:00:00Z'))
+
+
+// t_meets
+t_meets(ts_end, TIMESTAMP('2020-04-01T01:00:00Z'))
+t_meets(ts_end, interval('2020-03-01T01:00:00Z', '2020-03-01T01:00:00Z'))
+t_meets(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
+t_meets(interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'), ts_end)
+t_meets(interval(ts_start, ts_end), interval('2020-04-01T01:00:00Z', '2020-05-01T00:00:00Z'))
+t_meets(interval('2020-03-01T00:00:00Z', '2020-04-01T00:00:00Z'), interval(ts_start, ts_end))
+
+// t_metby
+t_metby(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
+t_metby(interval('2020-03-01T01:00:00Z', '2020-03-01T01:00:00Z'), ts_end)
+t_metby(ts_end, TIMESTAMP('2020-04-01T01:00:00Z'))
+t_metby(ts_end, interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'))
+t_metby(interval('2020-04-01T01:00:00Z', '2020-05-01T00:00:00Z'), interval(ts_start, ts_end))
+t_metby(interval(ts_start, ts_end), interval('2020-03-01T00:00:00Z', '2020-04-01T00:00:00Z'))
+
+// t_overlaps
+t_overlaps(ts_start, interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'))
+t_overlaps(TIMESTAMP('2020-02-15T00:30:00Z'), interval(ts_start, ts_end))
+t_overlaps(interval(ts_start, ts_end), interval('2020-03-01T00:00:30Z', '2020-03-05T00:00:00Z'))
+t_overlaps(interval('2020-03-01T00:00:00Z', '2020-04-01T00:30:00Z'), interval(ts_start, ts_end))
+
+// t_overlappedby
+t_overlappedby(interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'), ts_start)
+t_overlappedby(interval(ts_start, ts_end), TIMESTAMP('2020-02-15T00:30:00Z'))
+t_overlappedby(interval('2020-03-01T00:00:30Z', '2020-03-05T00:00:00Z'), interval(ts_start, ts_end))
+t_overlappedby(interval(ts_start, ts_end), interval('2020-03-01T00:00:00Z', '2020-04-01T00:30:00Z'))
+
+// t_starts
+t_starts(TIMESTAMP('2020-04-01T00:00:00Z'), interval(ts_start, ts_end))
+t_starts(interval(ts_start, ts_end), interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'))
+t_starts(interval('2020-04-01T00:00:00Z', '2020-04-01T00:30:00Z'), interval(ts_start, ts_end))
+
+// t_startedby
+t_startedby(interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'), ts_start)
+t_startedby(interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'), interval(ts_start, ts_end))
+t_startedby(interval(ts_start, ts_end), interval('2020-04-01T00:00:00Z', '2020-04-01T00:30:00Z'))
+
+// t_during
+t_during(ts_start, interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'))
+t_during(TIMESTAMP('2020-04-15T00:00:30Z'), interval(ts_start, ts_end))
+t_during(interval(ts_start, ts_end), interval('2020-04-01T00:00:20Z', '2020-04-03T00:00:40Z'))
+t_during(interval('2020-04-01T00:00:20Z', '2020-04-01T00:00:40Z'), interval(ts_start, ts_end))
+
+// t_contains
+t_contains(interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'), ts_start)
+t_contains(interval(ts_start, ts_end), TIMESTAMP('2020-04-15T00:00:30Z'))
+t_contains(interval('2020-04-01T00:00:20Z', '2020-04-03T00:00:40Z'), interval(ts_start, ts_end))
+t_contains(interval(ts_start, ts_end), interval('2020-04-01T00:00:20Z', '2020-04-01T00:00:40Z'))
+
+// t_finishes
+t_finishes(TIMESTAMP('2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
+t_finishes(interval(ts_start, ts_end), interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'))
+t_finishes(interval('2020-04-01T00:00:20Z', '2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
+
+// t_finishedby
+t_finishedby(interval(ts_start, ts_end), TIMESTAMP('2020-04-01T01:00:00Z'))
+t_finishedby(interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
+t_finishedby(interval(ts_start, ts_end), interval('2020-04-01T00:00:20Z', '2020-04-01T01:00:00Z'))
+
+// t_equals
+t_equals(ts_start, TIMESTAMP('2020-04-01T00:00:00Z'))
+t_equals(TIMESTAMP('2020-04-01T00:00:00Z'), ts_start)
+t_equals(interval(ts_start, ts_end), interval('2020-04-01T00:00:00Z', '2020-04-01T01:00:00Z'))
+t_equals(interval('2020-04-01T00:00:00Z', '2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
+
+// t_disjoint
+
+t_disjoint(ts_start, interval('2020-01-01T00:00:00Z', '2020-02-01T00:00:00Z'))
+t_disjoint(interval('2020-01-01T00:00:00Z', '2020-04-01T00:00:00Z'), ts_start)
+t_disjoint(interval(ts_start, ts_end), interval('2020-01-01T00:00:00Z', '2020-03-01T00:00:00Z'))
+t_disjoint(interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'), interval(ts_start, ts_end))
+
+
+
+// Boolean logic
+boolfield and true
+boolfield or false
+not boolfield
+
+
+// Complex multi-level queries
+intfield > 1 and floatfield < 5.0
+(textfield = 'item_2' or textfield = 'item_3') and boolfield = true
+not (intfield <= 2) or (boolfield and floatfield >= 2.0)
+floatfield between -23 and 40 and in(textfield, 'item_2', 'item_3')
+s_intersects(geom, POINT(-93 45)) or s_disjoint(geom, POINT(-93 45))
+t_before(interval(ts_start, ts_end), interval('2020-01-10T00:00:00Z','2022-02-01T00:00:00Z')) and not boolfield
+
+// Array operators
+a_equals(intarrayfield, (1, 2, 3))
+a_equals((1, 2, 3), intarrayfield)
+a_contains(intarrayfield, (2, 3))
+a_contains((1, 2, 3, 4), intarrayfield)
+a_containedby(intarrayfield, (1, 2, 3, 4))
+a_containedby((1, 2), intarrayfield)
+a_overlaps(intarrayfield, (2, 4))
+a_overlaps((2, 4), intarrayfield)
+
+nfield is null
+nfield = true
+nfield <> true
+nfield is not null
+not(nfield = true)

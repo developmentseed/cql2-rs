@@ -77,6 +77,32 @@ class Expr:
             >>> expr.validate()
         """
 
+    def matches(self, item: dict[str, Any]) -> bool:
+        """Matches this expression against an item.
+
+        Args:
+            item (dict[str, Any]): The item to match against
+
+        Returns:
+            bool: True if the expression matches the item, False otherwise
+        """
+
+    def reduce(self, item: dict[str, Any] | None = None) -> Expr:
+        """Reduces this expression against an item.
+
+        Args:
+            item (dict[str, Any] | None): The item to reduce against
+
+        Returns:
+            Expr: The reduced expression
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> expr = Expr("true AND true").reduce()
+            >>> expr.to_text()
+            'true'
+        """
+
     def to_json(self) -> dict[str, Any]:
         """Converts this cql2 expression to a cql2-json dictionary.
 
@@ -103,11 +129,11 @@ class Expr:
             '("landsat:scene_id" = \'LC82030282019133LGN00\')'
         """
 
-    def to_sql(self) -> SqlQuery:
+    def to_sql(self) -> str:
         """Converts this cql2 expression to a SQL query.
 
         Returns:
-            SqlQuery: The SQL query and parameters
+            str: The SQL query
 
         Examples:
             >>> from cql2 import Expr
@@ -118,14 +144,21 @@ class Expr:
             ['LC82030282019133LGN00']
         """
 
-class SqlQuery:
-    """A SQL query"""
+    def __add__(self, other: Expr) -> Expr:
+        """Combines two cql2 expressions using the AND operator.
 
-    query: str
-    """The query, with parameterized fields."""
+        Args:
+            other (Expr): The other expression
 
-    params: list[str]
-    """The parameters, to use for binding."""
+        Returns:
+            Expr: The combined expression
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> expr1 = Expr("landsat:scene_id = 'LC82030282019133LGN00'")
+            >>> expr2 = Expr("landsat:cloud_cover = 10")
+            >>> expr = expr1 + expr2
+        """
 
 class ParseError(Exception):
     """An error raised when cql2 parsing fails."""

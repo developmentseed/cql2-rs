@@ -14,7 +14,7 @@ keywords = ["cql2"]
 [dependencies]
 anyhow = "1.0"
 clap = { workspace = true, features = ["derive"] }
-cql2 = { path = "..", version = "0.3.3-alpha.0" }
+cql2 = { path = "..", version = "0.4.0" }
 serde_json = "1.0"
 
 [[bin]]

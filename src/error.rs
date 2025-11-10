@@ -50,6 +50,10 @@ pub enum Error {
     #[error(transparent)]
     ParseInt(#[from] std::num::ParseIntError),
 
+    /// [jiff::Error]
+    #[error(transparent)]
+    ParseTimestamp(#[from] jiff::Error),
+
     /// [pest::error::Error]
     #[error(transparent)]
     Pest(#[from] Box<pest::error::Error<crate::parser::Rule>>),
@@ -86,6 +90,10 @@ pub enum Error {
     /// Operator not implemented.
     #[error("Operator {0} is not implemented for this type.")]
     OpNotImplemented(&'static str),
+
+    /// Invalid operator
+    #[error("{0} is not a valid operator.")]
+    InvalidOperator(String),
 
     /// Expression not reduced to boolean
     #[error("Could not reduce expression to boolean")]

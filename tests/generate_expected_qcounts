@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+#set -euo pipefail
+cargo build
+# Script to generate operators_expected.txt by running cql2-cli filter
+OUT_FILE="tests/operators_expected.txt"
+: > "$OUT_FILE"
+
+while IFS= read -r line; do
+    # Trim whitespace and skip empty or comment lines
+    # Remove comments after '#' and trim leading/trailing whitespace
+    q="${line%%#*}"
+    q="${q#"${q%%[![:space:]]*}"}"
+    q="${q%"${q##*[![:space:]]}"}"
+    # Skip lines that begin with //
+    if [[ "${q}" =~ ^// ]]; then
+        continue
+    fi
+    if [[ -z "$q" ]]; then
+        continue
+    fi
+    echo "$q" >> "$OUT_FILE"
+    # Use cql2-cli to filter NDJSON and extract intfield values
+    target/debug/cql2 filter --file tests/cql2testdata.ndjson "$q" \
+        | jq -r '.intfield' | paste -sd ' ' - >> "$OUT_FILE"
+done < tests/operators_tests.txt

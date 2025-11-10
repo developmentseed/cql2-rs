@@ -1,0 +1,871 @@
+[clause6_01]
+name = "Average Property Calculation"
+description = "Computes the average of a specified property."
+cql2_json = """{"op":"avg","args":[{"property":"windSpeed"}]}"""
+expected_json = """{"op":"avg","args":[{"property":"windSpeed"}]}"""
+cql2_text = "avg(windSpeed)"
+expected_text = """avg("windSpeed")"""
+
+[clause6_02a]
+name = "Equals"
+description = "Provides a Basic Equality Check."
+cql2_json = """{"op":"=","args":[{"property":"city"},"Toronto"]}"""
+expected_json = """{"op":"=","args":[{"property":"city"},"Toronto"]}"""
+cql2_text = "city='Toronto'"
+expected_text = "(city = 'Toronto')"
+
+[clause6_02b]
+name = "Less Than Check"
+description = "Performs a < operation on properties."
+cql2_json = """{"op":"<","args":[{"op":"avg","args":[{"property":"windSpeed"}]},4]}"""
+expected_json = """{"op":"<","args":[{"op":"avg","args":[{"property":"windSpeed"}]},4.0]}"""
+cql2_text = "avg(windSpeed) < 4"
+expected_text = """(avg("windSpeed") < 4)"""
+
+[clause6_02d]
+name = "Greater Than or Equal Check"
+description = "Performs a >= operation on properties."
+cql2_json = """{"op":">=","args":[{"property":"updated"},{"date":"1970-01-01"}]}"""
+expected_json = """{"op":">=","args":[{"property":"updated"},{"date":"1970-01-01"}]}"""
+cql2_text = "updated >= date('1970-01-01')"
+expected_text = "(updated >= DATE('1970-01-01'))"
+
+[clause6_03]
+name = "IS NOT NULL"
+description = "Provides a NOT IS NULL Check."
+cql2_json = """{"op":"not","args":[{"op":"isNull","args":[{"property":"geometry"}]}]}"""
+expected_json = """{"op":"not","args":[{"op":"isNull","args":[{"property":"geometry"}]}]}"""
+cql2_text = "geometry IS NOT NULL"
+expected_text = "(NOT (geometry IS NULL))"
+
+[clause7_01]
+name = "LIKE Operation"
+description = "Performs a like operation on properties."
+cql2_json = """{"op":"like","args":[{"property":"name"},"Smith%"]}"""
+expected_json = """{"op":"like","args":[{"property":"name"},"Smith%"]}"""
+cql2_text = "name LIKE 'Smith%'"
+expected_text = "(name LIKE 'Smith%')"
+
+[clause7_02]
+name = "BETWEEN"
+description = "Provides a BETWEEN check."
+cql2_json = """{"op":"between","args":[{"property":"depth"},100.0,150.0]}"""
+expected_json = """{"op":"between","args":[{"property":"depth"},100.0,150.0]}"""
+cql2_text = "depth BETWEEN 100.0 and 150.0"
+expected_text = "(depth BETWEEN 100 AND 150)"
+
+[clause7_03a]
+name = "IN"
+description = "Provides an IN check."
+cql2_json = """{"op":"in","args":[{"property":"cityName"},["Toronto","Frankfurt","Tokyo","New York"]]}"""
+expected_json = """{"op":"in","args":[{"property":"cityName"},["Toronto","Frankfurt","Tokyo","New York"]]}"""
+cql2_text = "cityName IN ('Toronto','Frankfurt','Tokyo','New York')"
+expected_text = """("cityName" IN ('Toronto', 'Frankfurt', 'Tokyo', 'New York'))"""
+
+[clause7_03b]
+name = "NOT IN Operation"
+description = "Performs a not operation on properties."
+cql2_json = """{"op":"not","args":[{"op":"in","args":[{"property":"category"},[1,2,3,4]]}]}"""
+expected_json = """{"op":"not","args":[{"op":"in","args":[{"property":"category"},[1.0,2.0,3.0,4.0]]}]}"""
+cql2_text = "category NOT IN (1,2,3,4)"
+expected_text = "(NOT (category IN (1, 2, 3, 4)))"
+
+[clause7_04]
+name = "CASEI Property List Filter"
+description = "Filters features based on a property being in a specified list case insensitively."
+cql2_json = """{"op":"in","args":[{"op":"casei","args":[{"property":"road_class"}]},[{"op":"casei","args":["Οδος"]},{"op":"casei","args":["Straße"]}]]}"""
+expected_json = """{"op":"in","args":[{"op":"casei","args":[{"property":"road_class"}]},[{"op":"casei","args":["Οδος"]},{"op":"casei","args":["Straße"]}]]}"""
+cql2_text = "CASEI(road_class) IN (CASEI('Οδος'),CASEI('Straße'))"
+expected_text = "(casei(road_class) IN (casei('Οδος'), casei('Straße')))"
+
+[clause7_05]
+name = "ACCENTI"
+description = "Provides and Accent Insensitive Equality Check."
+cql2_json = """{"op":"=","args":[{"op":"accenti","args":[{"property":"etat_vol"}]},{"op":"accenti","args":["débárquér"]}]}"""
+expected_json = """{"op":"=","args":[{"op":"accenti","args":[{"property":"etat_vol"}]},{"op":"accenti","args":["débárquér"]}]}"""
+cql2_text = "ACCENTI(etat_vol) = ACCENTI('débárquér')"
+expected_text = "(accenti(etat_vol) = accenti('débárquér'))"
+
+[clause7_07]
+name = "Spatial Intersects Check"
+description = "Performs a s_intersects operation on properties."
+cql2_json = """{"op":"s_intersects","args":[{"property":"geometry"},{"type":"Point","coordinates":[36.319836,32.288087]}]}"""
+expected_json = """{"op":"s_intersects","args":[{"property":"geometry"},{"type":"Point","coordinates":[36.319836,32.288087]}]}"""
+cql2_text = "S_INTERSECTS(geometry,POINT(36.319836 32.288087))"
+expected_text = "s_intersects(geometry, POINT(36.319836 32.288087))"
+
+[clause7_10]
+name = "S_CROSSES"
+description = "Provides a check using S_CROSSES"
+cql2_json = """{"op":"s_crosses","args":[{"property":"road"},{"type":"Polygon","coordinates":[[[43.7286,-79.2986],[43.7311,-79.2996],[43.7323,-79.2972],[43.7326,-79.2971],[43.7350,-79.2981],[43.7350,-79.2982],[43.7352,-79.2982],[43.7357,-79.2956],[43.7337,-79.2948],[43.7343,-79.2933],[43.7339,-79.2923],[43.7327,-79.2947],[43.7320,-79.2942],[43.7322,-79.2937],[43.7306,-79.2930],[43.7303,-79.2930],[43.7299,-79.2928],[43.7286,-79.2986]]]}]}"""
+expected_json = """{"op":"s_crosses","args":[{"property":"road"},{"type":"Polygon","coordinates":[[[43.7286,-79.2986],[43.7311,-79.2996],[43.7323,-79.2972],[43.7326,-79.2971],[43.735,-79.2981],[43.735,-79.2982],[43.7352,-79.2982],[43.7357,-79.2956],[43.7337,-79.2948],[43.7343,-79.2933],[43.7339,-79.2923],[43.7327,-79.2947],[43.732,-79.2942],[43.7322,-79.2937],[43.7306,-79.293],[43.7303,-79.293],[43.7299,-79.2928],[43.7286,-79.2986]]]}]}"""
+cql2_text = "S_CROSSES(road,POLYGON((43.7286 -79.2986, 43.7311 -79.2996, 43.7323 -79.2972, 43.7326 -79.2971, 43.7350 -79.2981, 43.7350 -79.2982, 43.7352 -79.2982, 43.7357 -79.2956, 43.7337 -79.2948, 43.7343 -79.2933, 43.7339 -79.2923, 43.7327 -79.2947, 43.7320 -79.2942, 43.7322 -79.2937, 43.7306 -79.2930, 43.7303 -79.2930, 43.7299 -79.2928, 43.7286 -79.2986)))"
+expected_text = "s_crosses(road, POLYGON((43.7286 -79.2986,43.7311 -79.2996,43.7323 -79.2972,43.7326 -79.2971,43.735 -79.2981,43.735 -79.2982,43.7352 -79.2982,43.7357 -79.2956,43.7337 -79.2948,43.7343 -79.2933,43.7339 -79.2923,43.7327 -79.2947,43.732 -79.2942,43.7322 -79.2937,43.7306 -79.293,43.7303 -79.293,43.7299 -79.2928,43.7286 -79.2986)))"
+
+[clause7_12]
+name = "Time Intersects Check"
+description = "Performs a t_intersects operation on properties."
+cql2_json = """{"op":"t_intersects","args":[{"property":"event_time"},{"interval":["1969-07-16T05:32:00Z","1969-07-24T16:50:35Z"]}]}"""
+expected_json = """{"op":"t_intersects","args":[{"property":"event_time"},{"interval":["1969-07-16T05:32:00Z","1969-07-24T16:50:35Z"]}]}"""
+cql2_text = "T_INTERSECTS(event_time, INTERVAL('1969-07-16T05:32:00Z', '1969-07-24T16:50:35Z'))"
+expected_text = "t_intersects(event_time, INTERVAL('1969-07-16T05:32:00Z','1969-07-24T16:50:35Z'))"
+
+[clause7_13]
+name = "Time Interval Condition Filter"
+description = "Filters features based on a time interval condition."
+cql2_json = """{"op":"t_during","args":[{"interval":[{"property":"touchdown"},{"property":"liftOff"}]},{"interval":["1969-07-16T13:32:00Z","1969-07-24T16:50:35Z"]}]}"""
+expected_json = """{"op":"t_during","args":[{"interval":[{"property":"touchdown"},{"property":"liftOff"}]},{"interval":["1969-07-16T13:32:00Z","1969-07-24T16:50:35Z"]}]}"""
+cql2_text = "T_DURING(INTERVAL(touchdown, liftOff), INTERVAL('1969-07-16T13:32:00Z', '1969-07-24T16:50:35Z'))"
+expected_text = """t_during(INTERVAL(touchdown,"liftOff"), INTERVAL('1969-07-16T13:32:00Z','1969-07-24T16:50:35Z'))"""
+
+[clause7_15]
+name = "A_CONTAINS"
+description = "Provides an Array Containment Check."
+cql2_json = """{"op":"a_contains","args":[{"property":"layer:ids"},["layers-ca","layers-us"]]}"""
+expected_json = """{"op":"a_contains","args":[{"property":"layer:ids"},["layers-ca","layers-us"]]}"""
+cql2_text = "A_CONTAINS(layer:ids, ('layers-ca','layers-us'))"
+expected_text = """a_contains("layer:ids", ('layers-ca', 'layers-us'))"""
+
+[clause7_16]
+name = "Line String Crosses Polygon Check"
+description = "Checks if a line string crosses a specified polygon."
+cql2_json = """{"op":"s_crosses","args":[{"type":"LineString","coordinates":[[43.72992,-79.2998],[43.73005,-79.2991],[43.73006,-79.2984],[43.73140,-79.2956],[43.73259,-79.2950],[43.73266,-79.2945],[43.73320,-79.2936],[43.73378,-79.2936],[43.73486,-79.2917]]},{"type":"Polygon","coordinates":[[[43.7286,-79.2986],[43.7311,-79.2996],[43.7323,-79.2972],[43.7326,-79.2971],[43.7350,-79.2981],[43.7350,-79.2982],[43.7352,-79.2982],[43.7357,-79.2956],[43.7337,-79.2948],[43.7343,-79.2933],[43.7339,-79.2923],[43.7327,-79.2947],[43.7320,-79.2942],[43.7322,-79.2937],[43.7306,-79.2930],[43.7303,-79.2930],[43.7299,-79.2928],[43.7286,-79.2986]]]}]}"""
+expected_json = """{"op":"s_crosses","args":[{"type":"LineString","coordinates":[[43.72992,-79.2998],[43.73005,-79.2991],[43.73006,-79.2984],[43.7314,-79.2956],[43.73259,-79.295],[43.73266,-79.2945],[43.7332,-79.2936],[43.73378,-79.2936],[43.73486,-79.2917]]},{"type":"Polygon","coordinates":[[[43.7286,-79.2986],[43.7311,-79.2996],[43.7323,-79.2972],[43.7326,-79.2971],[43.735,-79.2981],[43.735,-79.2982],[43.7352,-79.2982],[43.7357,-79.2956],[43.7337,-79.2948],[43.7343,-79.2933],[43.7339,-79.2923],[43.7327,-79.2947],[43.732,-79.2942],[43.7322,-79.2937],[43.7306,-79.293],[43.7303,-79.293],[43.7299,-79.2928],[43.7286,-79.2986]]]}]}"""
+cql2_text = "S_CROSSES(LINESTRING(43.72992 -79.2998, 43.73005 -79.2991, 43.73006 -79.2984, 43.73140 -79.2956, 43.73259 -79.2950, 43.73266 -79.2945, 43.73320 -79.2936, 43.73378 -79.2936, 43.73486 -79.2917), POLYGON((43.7286 -79.2986, 43.7311 -79.2996, 43.7323 -79.2972, 43.7326 -79.2971, 43.7350 -79.2981, 43.7350 -79.2982, 43.7352 -79.2982, 43.7357 -79.2956, 43.7337 -79.2948, 43.7343 -79.2933, 43.7339 -79.2923, 43.7327 -79.2947, 43.7320 -79.2942, 43.7322 -79.2937, 43.7306 -79.2930, 43.7303 -79.2930, 43.7299 -79.2928, 43.7286 -79.2986)))"
+expected_text = "s_crosses(LINESTRING(43.72992 -79.2998,43.73005 -79.2991,43.73006 -79.2984,43.7314 -79.2956,43.73259 -79.295,43.73266 -79.2945,43.7332 -79.2936,43.73378 -79.2936,43.73486 -79.2917), POLYGON((43.7286 -79.2986,43.7311 -79.2996,43.7323 -79.2972,43.7326 -79.2971,43.735 -79.2981,43.735 -79.2982,43.7352 -79.2982,43.7357 -79.2956,43.7337 -79.2948,43.7343 -79.2933,43.7339 -79.2923,43.7327 -79.2947,43.732 -79.2942,43.7322 -79.2937,43.7306 -79.293,43.7303 -79.293,43.7299 -79.2928,43.7286 -79.2986)))"
+
+[clause7_17]
+name = "Time Interval Condition Filter"
+description = "Filters features based on a time interval condition."
+cql2_json = """{"op":"t_during","args":[{"interval":["1969-07-20T20:17:40Z","1969-07-21T17:54:00Z"]},{"interval":["1969-07-16T13:32:00Z","1969-07-24T16:50:35Z"]}]}"""
+expected_json = """{"op":"t_during","args":[{"interval":["1969-07-20T20:17:40Z","1969-07-21T17:54:00Z"]},{"interval":["1969-07-16T13:32:00Z","1969-07-24T16:50:35Z"]}]}"""
+cql2_text = "T_DURING(INTERVAL('1969-07-20T20:17:40Z', '1969-07-21T17:54:00Z'), INTERVAL('1969-07-16T13:32:00Z', '1969-07-24T16:50:35Z'))"
+expected_text = "t_during(INTERVAL('1969-07-20T20:17:40Z','1969-07-21T17:54:00Z'), INTERVAL('1969-07-16T13:32:00Z','1969-07-24T16:50:35Z'))"
+
+[clause7_18]
+name = "S_WITHIN"
+description = "Provides a search using S_WITHIN and a custom Buffer Function."
+cql2_json = """{"op":"s_within","args":[{"property":"road"},{"op":"Buffer","args":[{"property":"geometry"},10,"m"]}]}"""
+expected_json = """{"op":"s_within","args":[{"property":"road"},{"op":"Buffer","args":[{"property":"geometry"},10.0,"m"]}]}"""
+cql2_text = "S_WITHIN(road,Buffer(geometry,10,'m'))"
+expected_text = """s_within(road, "Buffer"(geometry, 10, 'm'))"""
+
+[example01]
+name = "="
+description = "Provides a basic Equality Search"
+cql2_json = """{"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]}"""
+expected_json = """{"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]}"""
+cql2_text = "landsat:scene_id = 'LC82030282019133LGN00'"
+expected_text = """("landsat:scene_id" = 'LC82030282019133LGN00')"""
+
+[example02]
+name = "LIKE"
+description = "Provides a basic like check"
+cql2_json = """{"op":"like","args":[{"property":"eo:instrument"},"OLI%"]}"""
+expected_json = """{"op":"like","args":[{"property":"eo:instrument"},"OLI%"]}"""
+cql2_text = "eo:instrument LIKE 'OLI%'"
+expected_text = """("eo:instrument" LIKE 'OLI%')"""
+
+[example03]
+name = "IN"
+description = "Provides basic IN check."
+cql2_json = """{"op":"in","args":[{"property":"landsat:wrs_path"},["153","154","15X"]]}"""
+expected_json = """{"op":"in","args":[{"property":"landsat:wrs_path"},["153","154","15X"]]}"""
+cql2_text = "landsat:wrs_path IN ('153','154','15X')"
+expected_text = """("landsat:wrs_path" IN ('153', '154', '15X'))"""
+
+[example04]
+name = "AND"
+description = "Provides a check using AND and comparisons."
+cql2_json = """{"op":"and","args":[{"op":"<","args":[{"property":"eo:cloud_cover"},0.1]},{"op":"=","args":[{"property":"landsat:wrs_row"},28]},{"op":"=","args":[{"property":"landsat:wrs_path"},203]}]}"""
+expected_json = """{"op":"and","args":[{"op":"<","args":[{"property":"eo:cloud_cover"},0.1]},{"op":"=","args":[{"property":"landsat:wrs_row"},28.0]},{"op":"=","args":[{"property":"landsat:wrs_path"},203.0]}]}"""
+cql2_text = "eo:cloud_cover < 0.1 AND landsat:wrs_row=28 AND landsat:wrs_path=203"
+expected_text = """(("eo:cloud_cover" < 0.1) AND ("landsat:wrs_row" = 28) AND ("landsat:wrs_path" = 203))"""
+
+[example05a]
+name = "OR"
+description = "Provides a check using OR"
+cql2_json = """{"op":"or","args":[{"op":"=","args":[{"property":"eo:cloud_cover"},0.1]},{"op":"=","args":[{"property":"eo:cloud_cover"},0.2]}]}"""
+expected_json = """{"op":"or","args":[{"op":"=","args":[{"property":"eo:cloud_cover"},0.1]},{"op":"=","args":[{"property":"eo:cloud_cover"},0.2]}]}"""
+cql2_text = "eo:cloud_cover=0.1 OR eo:cloud_cover=0.2"
+expected_text = """(("eo:cloud_cover" = 0.1) OR ("eo:cloud_cover" = 0.2))"""
+
+[example05b]
+name = "Property List Filter"
+description = "Filters features based on a property being in a specified list."
+cql2_json = """{"op":"in","args":[{"property":"eo:cloud_cover"},[0.1,0.2]]}"""
+expected_json = """{"op":"in","args":[{"property":"eo:cloud_cover"},[0.1,0.2]]}"""
+cql2_text = "eo:cloud_cover IN (0.1,0.2)"
+expected_text = """("eo:cloud_cover" IN (0.1, 0.2))"""
+
+[example06a]
+name = "AND Operation"
+description = "Performs a and operation on properties."
+cql2_json = """{"op":"and","args":[{"op":"between","args":[{"property":"eo:cloud_cover"},0.1,0.2]},{"op":"=","args":[{"property":"landsat:wrs_row"},28]},{"op":"=","args":[{"property":"landsat:wrs_path"},203]}]}"""
+expected_json = """{"op":"and","args":[{"op":"between","args":[{"property":"eo:cloud_cover"},0.1,0.2]},{"op":"=","args":[{"property":"landsat:wrs_row"},28.0]},{"op":"=","args":[{"property":"landsat:wrs_path"},203.0]}]}"""
+cql2_text = "eo:cloud_cover BETWEEN 0.1 AND 0.2 AND landsat:wrs_row=28 AND landsat:wrs_path=203"
+expected_text = """(("eo:cloud_cover" BETWEEN 0.1 AND 0.2) AND ("landsat:wrs_row" = 28) AND ("landsat:wrs_path" = 203))"""
+
+[example06b]
+name = "Equality and AND"
+description = "Provides a check with equality and AND"
+cql2_json = """{"op":"and","args":[{"op":">=","args":[{"property":"eo:cloud_cover"},0.1]},{"op":"<=","args":[{"property":"eo:cloud_cover"},0.2]},{"op":"=","args":[{"property":"landsat:wrs_row"},28]},{"op":"=","args":[{"property":"landsat:wrs_path"},203]}]}"""
+expected_json = """{"op":"and","args":[{"op":">=","args":[{"property":"eo:cloud_cover"},0.1]},{"op":"<=","args":[{"property":"eo:cloud_cover"},0.2]},{"op":"=","args":[{"property":"landsat:wrs_row"},28.0]},{"op":"=","args":[{"property":"landsat:wrs_path"},203.0]}]}"""
+cql2_text = "eo:cloud_cover >= 0.1 AND eo:cloud_cover <= 0.2 AND landsat:wrs_row=28 AND landsat:wrs_path=203"
+expected_text = """(("eo:cloud_cover" >= 0.1) AND ("eo:cloud_cover" <= 0.2) AND ("landsat:wrs_row" = 28) AND ("landsat:wrs_path" = 203))"""
+
+[example07]
+name = "LIKE, S_INTERSECTS"
+description = "Provides a check using LIKE and S_INTERSECTS"
+cql2_json = """{"op":"and","args":[{"op":"like","args":[{"property":"eo:instrument"},"OLI%"]},{"op":"s_intersects","args":[{"property":"footprint"},{"type":"Polygon","coordinates":[[[43.5845,-79.5442],[43.6079,-79.4893],[43.5677,-79.4632],[43.6129,-79.3925],[43.6223,-79.3238],[43.6576,-79.3163],[43.7945,-79.1178],[43.8144,-79.1542],[43.8555,-79.1714],[43.7509,-79.639],[43.5845,-79.5442]]]}]}]}"""
+expected_json = """{"op":"and","args":[{"op":"like","args":[{"property":"eo:instrument"},"OLI%"]},{"op":"s_intersects","args":[{"property":"footprint"},{"type":"Polygon","coordinates":[[[43.5845,-79.5442],[43.6079,-79.4893],[43.5677,-79.4632],[43.6129,-79.3925],[43.6223,-79.3238],[43.6576,-79.3163],[43.7945,-79.1178],[43.8144,-79.1542],[43.8555,-79.1714],[43.7509,-79.639],[43.5845,-79.5442]]]}]}]}"""
+cql2_text = "eo:instrument LIKE 'OLI%' AND S_INTERSECTS(footprint,POLYGON((43.5845 -79.5442, 43.6079 -79.4893, 43.5677 -79.4632, 43.6129 -79.3925, 43.6223 -79.3238, 43.6576 -79.3163, 43.7945 -79.1178, 43.8144 -79.1542, 43.8555 -79.1714, 43.7509 -79.6390, 43.5845 -79.5442)))"
+expected_text = """(("eo:instrument" LIKE 'OLI%') AND s_intersects(footprint, POLYGON((43.5845 -79.5442,43.6079 -79.4893,43.5677 -79.4632,43.6129 -79.3925,43.6223 -79.3238,43.6576 -79.3163,43.7945 -79.1178,43.8144 -79.1542,43.8555 -79.1714,43.7509 -79.639,43.5845 -79.5442))))"""
+
+[example08]
+name = "S_INTERSECTS"
+description = "Provides a check using S_INTERSECTS"
+cql2_json = """{"op":"and","args":[{"op":"=","args":[{"property":"beamMode"},"ScanSAR Narrow"]},{"op":"=","args":[{"property":"swathDirection"},"ascending"]},{"op":"=","args":[{"property":"polarization"},"HH+VV+HV+VH"]},{"op":"s_intersects","args":[{"property":"footprint"},{"type":"Polygon","coordinates":[[[-77.117938,38.936860],[-77.040604,39.995648],[-76.910536,38.892912],[-77.039359,38.791753],[-77.047906,38.841462],[-77.034183,38.840655],[-77.033142,38.857490],[-77.117938,38.936860]]]}]}]}"""
+expected_json = """{"op":"and","args":[{"op":"=","args":[{"property":"beamMode"},"ScanSAR Narrow"]},{"op":"=","args":[{"property":"swathDirection"},"ascending"]},{"op":"=","args":[{"property":"polarization"},"HH+VV+HV+VH"]},{"op":"s_intersects","args":[{"property":"footprint"},{"type":"Polygon","coordinates":[[[-77.117938,38.93686],[-77.040604,39.995648],[-76.910536,38.892912],[-77.039359,38.791753],[-77.047906,38.841462],[-77.034183,38.840655],[-77.033142,38.85749],[-77.117938,38.93686]]]}]}]}"""
+cql2_text = "beamMode='ScanSAR Narrow' AND swathDirection='ascending' AND polarization='HH+VV+HV+VH' AND s_intersects(footprint,POLYGON((-77.117938 38.936860, -77.040604 39.995648, -76.910536 38.892912, -77.039359 38.791753, -77.047906 38.841462, -77.034183 38.840655, -77.033142 38.857490, -77.117938 38.936860)))"
+expected_text = """(("beamMode" = 'ScanSAR Narrow') AND ("swathDirection" = 'ascending') AND (polarization = 'HH+VV+HV+VH') AND s_intersects(footprint, POLYGON((-77.117938 38.93686,-77.040604 39.995648,-76.910536 38.892912,-77.039359 38.791753,-77.047906 38.841462,-77.034183 38.840655,-77.033142 38.85749,-77.117938 38.93686))))"""
+
+[example09]
+name = "Greater Than Check"
+description = "Performs a > operation on properties."
+cql2_json = """{"op":">","args":[{"property":"floors"},5]}"""
+expected_json = """{"op":">","args":[{"property":"floors"},5.0]}"""
+cql2_text = "floors>5"
+expected_text = "(floors > 5)"
+
+[example10]
+name = "<="
+description = "Provides a check using <="
+cql2_json = """{"op":"<=","args":[{"property":"taxes"},500]}"""
+expected_json = """{"op":"<=","args":[{"property":"taxes"},500.0]}"""
+cql2_text = "taxes <= 500"
+expected_text = "(taxes <= 500)"
+
+[example11]
+name = "LIKE"
+description = "Provides a check using LIKE"
+cql2_json = """{"op":"like","args":[{"property":"owner"},"%Jones%"]}"""
+expected_json = """{"op":"like","args":[{"property":"owner"},"%Jones%"]}"""
+cql2_text = "owner LIKE '%Jones%'"
+expected_text = "(owner LIKE '%Jones%')"
+
+[example12]
+name = "LIKE Operation"
+description = "Performs a like operation on properties."
+cql2_json = """{"op":"like","args":[{"property":"owner"},"Mike%"]}"""
+expected_json = """{"op":"like","args":[{"property":"owner"},"Mike%"]}"""
+cql2_text = "owner LIKE 'Mike%'"
+expected_text = "(owner LIKE 'Mike%')"
+
+[example13]
+name = "NOT Operation"
+description = "Performs a not operation on properties."
+cql2_json = """{"op":"not","args":[{"op":"like","args":[{"property":"owner"},"%Mike%"]}]}"""
+expected_json = """{"op":"not","args":[{"op":"like","args":[{"property":"owner"},"%Mike%"]}]}"""
+cql2_text = "owner NOT LIKE '%Mike%'"
+expected_text = "(NOT (owner LIKE '%Mike%'))"
+
+[example14]
+name = "Equals Operation"
+description = "Performs a = operation on properties."
+cql2_json = """{"op":"=","args":[{"property":"swimming_pool"},true]}"""
+expected_json = """{"op":"=","args":[{"property":"swimming_pool"},true]}"""
+cql2_text = "swimming_pool = true"
+expected_text = "(swimming_pool = true)"
+
+[example15]
+name = ">, =, AND"
+description = "Provides a check using >, =, and AND"
+cql2_json = """{"op":"and","args":[{"op":">","args":[{"property":"floors"},5]},{"op":"=","args":[{"property":"swimming_pool"},true]}]}"""
+expected_json = """{"op":"and","args":[{"op":">","args":[{"property":"floors"},5.0]},{"op":"=","args":[{"property":"swimming_pool"},true]}]}"""
+cql2_text = "floors>5 AND swimming_pool=true"
+expected_text = "((floors > 5) AND (swimming_pool = true))"
+
+[example16]
+name = "AND Operation"
+description = "Performs a and operation on properties."
+cql2_json = """{"op":"and","args":[{"op":"=","args":[{"property":"swimming_pool"},true]},{"op":"or","args":[{"op":">","args":[{"property":"floors"},5]},{"op":"like","args":[{"property":"material"},"brick%"]},{"op":"like","args":[{"property":"material"},"%brick"]}]}]}"""
+expected_json = """{"op":"and","args":[{"op":"=","args":[{"property":"swimming_pool"},true]},{"op":"or","args":[{"op":">","args":[{"property":"floors"},5.0]},{"op":"like","args":[{"property":"material"},"brick%"]},{"op":"like","args":[{"property":"material"},"%brick"]}]}]}"""
+cql2_text = "swimming_pool=true AND (floors>5 OR material LIKE 'brick%' OR material LIKE '%brick')"
+expected_text = "((swimming_pool = true) AND ((floors > 5) OR (material LIKE 'brick%') OR (material LIKE '%brick')))"
+
+[example17]
+name = "OR Operation"
+description = "Performs a or operation on properties."
+cql2_json = """{"op":"or","args":[{"op":"and","args":[{"op":">","args":[{"property":"floors"},5]},{"op":"=","args":[{"property":"material"},"brick"]}]},{"op":"=","args":[{"property":"swimming_pool"},true]}]}"""
+expected_json = """{"op":"or","args":[{"op":"and","args":[{"op":">","args":[{"property":"floors"},5.0]},{"op":"=","args":[{"property":"material"},"brick"]}]},{"op":"=","args":[{"property":"swimming_pool"},true]}]}"""
+cql2_text = "(floors>5 AND material='brick') OR swimming_pool=true"
+expected_text = "(((floors > 5) AND (material = 'brick')) OR (swimming_pool = true))"
+
+[example18]
+name = "NOT OR ="
+description = "Provides a check using NOT, OR, and ="
+cql2_json = """{"op":"or","args":[{"op":"not","args":[{"op":"<","args":[{"property":"floors"},5]}]},{"op":"=","args":[{"property":"swimming_pool"},true]}]}"""
+expected_json = """{"op":"or","args":[{"op":"not","args":[{"op":"<","args":[{"property":"floors"},5.0]}]},{"op":"=","args":[{"property":"swimming_pool"},true]}]}"""
+cql2_text = "NOT (floors<5) OR swimming_pool=true"
+expected_text = "((NOT (floors < 5)) OR (swimming_pool = true))"
+
+[example19]
+name = "LIKE OR <"
+description = "Provides a Check using Like, OR, and <"
+cql2_json = """{"op":"and","args":[{"op":"or","args":[{"op":"like","args":[{"property":"owner"},"mike%"]},{"op":"like","args":[{"property":"owner"},"Mike%"]}]},{"op":"<","args":[{"property":"floors"},4]}]}"""
+expected_json = """{"op":"and","args":[{"op":"or","args":[{"op":"like","args":[{"property":"owner"},"mike%"]},{"op":"like","args":[{"property":"owner"},"Mike%"]}]},{"op":"<","args":[{"property":"floors"},4.0]}]}"""
+cql2_text = "(owner LIKE 'mike%' OR owner LIKE 'Mike%') AND floors<4"
+expected_text = "(((owner LIKE 'mike%') OR (owner LIKE 'Mike%')) AND (floors < 4))"
+
+[example20]
+name = "Time Before Check"
+description = "Performs a t_before operation on properties."
+cql2_json = """{"op":"t_before","args":[{"property":"built"},{"date":"2015-01-01"}]}"""
+expected_json = """{"op":"t_before","args":[{"property":"built"},{"date":"2015-01-01"}]}"""
+cql2_text = "T_BEFORE(built, DATE('2015-01-01'))"
+expected_text = "t_before(built, DATE('2015-01-01'))"
+
+[example21]
+name = "Time After Check"
+description = "Performs a t_after operation on properties."
+cql2_json = """{"op":"t_after","args":[{"property":"built"},{"date":"2012-06-05"}]}"""
+expected_json = """{"op":"t_after","args":[{"property":"built"},{"date":"2012-06-05"}]}"""
+cql2_text = "T_AFTER(built,DATE('2012-06-05'))"
+expected_text = "t_after(built, DATE('2012-06-05'))"
+
+[example22]
+name = "T_DURING"
+description = "Performs a T_DURING Check."
+cql2_json = """{"op":"t_during","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["2017-06-10T07:30:00Z","2017-06-11T10:30:00Z"]}]}"""
+expected_json = """{"op":"t_during","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["2017-06-10T07:30:00Z","2017-06-11T10:30:00Z"]}]}"""
+cql2_text = "T_DURING(INTERVAL(starts_at, ends_at), INTERVAL('2017-06-10T07:30:00Z', '2017-06-11T10:30:00Z'))"
+expected_text = "t_during(INTERVAL(starts_at,ends_at), INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+
+[example23]
+name = "S_WITHIN BBOX"
+description = "Provides a Check with S_WITHIN and BBOX"
+cql2_json = """{"op":"s_within","args":[{"property":"location"},{"bbox":[-118,33.8,-117.9,34]}]}"""
+expected_json = """{"op":"s_within","args":[{"property":"location"},{"bbox":[-118.0,33.8,-117.9,34.0]}]}"""
+cql2_text = "S_WITHIN(location,BBOX(-118,33.8,-117.9,34))"
+expected_text = "s_within(location, BBOX(-118, 33.8, -117.9, 34))"
+
+[example24]
+name = "Spatial Intersects Check"
+description = "Performs a s_intersects operation on properties."
+cql2_json = """{"op":"s_intersects","args":[{"property":"geometry"},{"type":"Polygon","coordinates":[[[-10,-10],[10,-10],[10,10],[-10,-10]]]}]}"""
+expected_json = """{"op":"s_intersects","args":[{"property":"geometry"},{"type":"Polygon","coordinates":[[[-10.0,-10.0],[10.0,-10.0],[10.0,10.0],[-10.0,-10.0]]]}]}"""
+cql2_text = "S_INTERSECTS(geometry,POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))"
+expected_text = "s_intersects(geometry, POLYGON((-10 -10,10 -10,10 10,-10 -10)))"
+
+[example25]
+name = "> AND S_WITHIN"
+description = "Provides a check using > AND S_WITHIN"
+cql2_json = """{"op":"and","args":[{"op":">","args":[{"property":"floors"},5]},{"op":"s_within","args":[{"property":"geometry"},{"bbox":[-118,33.8,-117.9,34]}]}]}"""
+expected_json = """{"op":"and","args":[{"op":">","args":[{"property":"floors"},5.0]},{"op":"s_within","args":[{"property":"geometry"},{"bbox":[-118.0,33.8,-117.9,34.0]}]}]}"""
+cql2_text = "floors>5 AND S_WITHIN(geometry,BBOX(-118,33.8,-117.9,34))"
+expected_text = "((floors > 5) AND s_within(geometry, BBOX(-118, 33.8, -117.9, 34)))"
+
+[example26]
+name = "CASEI IN"
+description = "Provides a Case Insensitive IN Check"
+cql2_json = """{"op":"in","args":[{"op":"casei","args":[{"property":"road_class"}]},[{"op":"casei","args":["Οδος"]},{"op":"casei","args":["Straße"]}]]}"""
+expected_json = """{"op":"in","args":[{"op":"casei","args":[{"property":"road_class"}]},[{"op":"casei","args":["Οδος"]},{"op":"casei","args":["Straße"]}]]}"""
+cql2_text = "CASEI(road_class) IN (CASEI('Οδος'),CASEI('Straße'))"
+expected_text = "(casei(road_class) IN (casei('Οδος'), casei('Straße')))"
+
+[example27]
+name = "ACCENTI"
+description = "Provides an Accent Insensitive Equality Check."
+cql2_json = """{"op":"=","args":[{"op":"accenti","args":[{"property":"etat_vol"}]},{"op":"accenti","args":["débárquér"]}]}"""
+expected_json = """{"op":"=","args":[{"op":"accenti","args":[{"property":"etat_vol"}]},{"op":"accenti","args":["débárquér"]}]}"""
+cql2_text = "ACCENTI(etat_vol) = ACCENTI('débárquér')"
+expected_text = "(accenti(etat_vol) = accenti('débárquér'))"
+
+[example28]
+name = "LIKE Operation"
+description = "Performs a like operation on properties."
+cql2_json = """{"op":"like","args":[{"op":"casei","args":[{"property":"geophys:SURVEY_NAME"}]},{"op":"casei","args":["%calcutta%"]}]}"""
+expected_json = """{"op":"like","args":[{"op":"casei","args":[{"property":"geophys:SURVEY_NAME"}]},{"op":"casei","args":["%calcutta%"]}]}"""
+cql2_text = "CASEI(geophys:SURVEY_NAME) LIKE CASEI('%calcutta%')"
+expected_text = """(casei("geophys:SURVEY_NAME") LIKE casei('%calcutta%'))"""
+
+[example29]
+name = "Equals"
+description = "Provides a check using Equals"
+cql2_json = """{"op":"=","args":[{"property":"id"},"fa7e1920-9107-422d-a3db-c468cbc5d6df"]}"""
+expected_json = """{"op":"=","args":[{"property":"id"},"fa7e1920-9107-422d-a3db-c468cbc5d6df"]}"""
+cql2_text = """"id" = 'fa7e1920-9107-422d-a3db-c468cbc5d6df'"""
+expected_text = "(id = 'fa7e1920-9107-422d-a3db-c468cbc5d6df')"
+
+[example30]
+name = "Not Equal Operation"
+description = "Performs a <> operation on properties."
+cql2_json = """{"op":"<>","args":[{"property":"id"},"fa7e1920-9107-422d-a3db-c468cbc5d6df"]}"""
+expected_json = """{"op":"<>","args":[{"property":"id"},"fa7e1920-9107-422d-a3db-c468cbc5d6df"]}"""
+cql2_text = """"id" <> 'fa7e1920-9107-422d-a3db-c468cbc5d6df'"""
+expected_text = "(id <> 'fa7e1920-9107-422d-a3db-c468cbc5d6df')"
+
+[example31]
+name = "Less Than Check"
+description = "Performs a < operation on properties."
+cql2_json = """{"op":"<","args":[{"property":"value"},10]}"""
+expected_json = """{"op":"<","args":[{"property":"value"},10.0]}"""
+cql2_text = """"value" < 10"""
+expected_text = "(value < 10)"
+
+[example32]
+name = "Greater Than Check"
+description = "Performs a > operation on properties."
+cql2_json = """{"op":">","args":[{"property":"value"},10]}"""
+expected_json = """{"op":">","args":[{"property":"value"},10.0]}"""
+cql2_text = """"value" > 10"""
+expected_text = "(value > 10)"
+
+[example33]
+name = "Less Than or Equal Check"
+description = "Performs a <= operation on properties."
+cql2_json = """{"op":"<=","args":[{"property":"value"},10]}"""
+expected_json = """{"op":"<=","args":[{"property":"value"},10.0]}"""
+cql2_text = """"value" <= 10"""
+expected_text = "(value <= 10)"
+
+[example34]
+name = ">="
+description = "Provides a check using >="
+cql2_json = """{"op":">=","args":[{"property":"value"},10]}"""
+expected_json = """{"op":">=","args":[{"property":"value"},10.0]}"""
+cql2_text = """"value" >= 10"""
+expected_text = "(value >= 10)"
+
+[example35]
+name = "LIKE"
+description = "Provides a check using LIKE"
+cql2_json = """{"op":"like","args":[{"property":"name"},"foo%"]}"""
+expected_json = """{"op":"like","args":[{"property":"name"},"foo%"]}"""
+cql2_text = """"name" LIKE 'foo%'"""
+expected_text = "(name LIKE 'foo%')"
+
+[example36]
+name = "NOT Operation"
+description = "Performs a not operation on properties."
+cql2_json = """{"op":"not","args":[{"op":"like","args":[{"property":"name"},"foo%"]}]}"""
+expected_json = """{"op":"not","args":[{"op":"like","args":[{"property":"name"},"foo%"]}]}"""
+cql2_text = """NOT "name" LIKE 'foo%'"""
+expected_text = "(NOT (name LIKE 'foo%'))"
+
+[example37]
+name = "Between Operation"
+description = "Performs a between operation on properties."
+cql2_json = """{"op":"between","args":[{"property":"value"},10,20]}"""
+expected_json = """{"op":"between","args":[{"property":"value"},10.0,20.0]}"""
+cql2_text = """"value" BETWEEN 10 AND 20"""
+expected_text = "(value BETWEEN 10 AND 20)"
+
+[example38]
+name = "NOT BETWEEN"
+description = "Provides a check using NOT BETWEEN"
+cql2_json = """{"op":"not","args":[{"op":"between","args":[{"property":"value"},10,20]}]}"""
+expected_json = """{"op":"not","args":[{"op":"between","args":[{"property":"value"},10.0,20.0]}]}"""
+cql2_text = """NOT "value" BETWEEN 10 AND 20"""
+expected_text = "(NOT (value BETWEEN 10 AND 20))"
+
+[example39]
+name = "IN"
+description = "Provides a check using IN"
+cql2_json = """{"op":"in","args":[{"property":"value"},[1.0,2.0,3.0]]}"""
+expected_json = """{"op":"in","args":[{"property":"value"},[1.0,2.0,3.0]]}"""
+cql2_text = """"value" IN (1.0, 2.0, 3.0)"""
+expected_text = "(value IN (1, 2, 3))"
+
+[example40]
+name = "NOT IN"
+description = "Provides a check using NOT and IN"
+cql2_json = """{"op":"not","args":[{"op":"in","args":[{"property":"value"},["a","b","c"]]}]}"""
+expected_json = """{"op":"not","args":[{"op":"in","args":[{"property":"value"},["a","b","c"]]}]}"""
+cql2_text = """NOT "value" IN ('a', 'b', 'c')"""
+expected_text = "(NOT (value IN ('a', 'b', 'c')))"
+
+[example41]
+name = "isNull Operation"
+description = "Performs a isNull operation on properties."
+cql2_json = """{"op":"isNull","args":[{"property":"value"}]}"""
+expected_json = """{"op":"isNull","args":[{"property":"value"}]}"""
+cql2_text = """"value" IS NULL"""
+expected_text = "(value IS NULL)"
+
+[example42]
+name = "NOT NULL"
+description = "Provides a test with NOT and IS NULL"
+cql2_json = """{"op":"not","args":[{"op":"isNull","args":[{"property":"value"}]}]}"""
+expected_json = """{"op":"not","args":[{"op":"isNull","args":[{"property":"value"}]}]}"""
+cql2_text = """NOT "value" IS NULL"""
+expected_text = "(NOT (value IS NULL))"
+
+[example43]
+name = "NOT"
+description = "Provides a Check with NOT and LIKE"
+cql2_json = """{"op":"and","args":[{"op":"not","args":[{"op":"like","args":[{"property":"name"},"foo%"]}]},{"op":">","args":[{"property":"value"},10]}]}"""
+expected_json = """{"op":"and","args":[{"op":"not","args":[{"op":"like","args":[{"property":"name"},"foo%"]}]},{"op":">","args":[{"property":"value"},10.0]}]}"""
+cql2_text = """(NOT "name" LIKE 'foo%' AND "value" > 10)"""
+expected_text = "((NOT (name LIKE 'foo%')) AND (value > 10))"
+
+[example44]
+name = "OR Operation"
+description = "Performs a or operation on properties."
+cql2_json = """{"op":"or","args":[{"op":"isNull","args":[{"property":"value"}]},{"op":"between","args":[{"property":"value"},10,20]}]}"""
+expected_json = """{"op":"or","args":[{"op":"isNull","args":[{"property":"value"}]},{"op":"between","args":[{"property":"value"},10.0,20.0]}]}"""
+cql2_text = """("value" IS NULL OR "value" BETWEEN 10 AND 20)"""
+expected_text = "((value IS NULL) OR (value BETWEEN 10 AND 20))"
+
+[example45]
+name = "Spatial Intersects Check"
+description = "Performs a s_intersects operation on properties."
+cql2_json = """{"op":"s_intersects","args":[{"property":"geometry"},{"bbox":[-128.098193,-1.1,-99999.0,180.0,90.0,100000.0]}]}"""
+expected_json = """{"op":"s_intersects","args":[{"property":"geometry"},{"bbox":[-128.098193,-1.1,-99999.0,180.0,90.0,100000.0]}]}"""
+cql2_text = """S_INTERSECTS("geometry", BBOX(-128.098193, -1.1, -99999.0, 180.0, 90.0, 100000.0))"""
+expected_text = "s_intersects(geometry, BBOX(-128.098193, -1.1, -99999, 180, 90, 100000))"
+
+[example46]
+name = "S_EQUALS"
+description = "Provides a Spatial Equality Check."
+cql2_json = """{"op":"s_equals","args":[{"type":"Polygon","coordinates":[[[-0.333333,89.0],[-102.723546,-0.5],[-179.0,-89.0],[-1.9,89.0],[-0.0,89.0],[2.00001,-1.9],[-0.333333,89.0]]]},{"property":"geometry"}]}"""
+expected_json = """{"op":"s_equals","args":[{"type":"Polygon","coordinates":[[[-0.333333,89.0],[-102.723546,-0.5],[-179.0,-89.0],[-1.9,89.0],[-0.0,89.0],[2.00001,-1.9],[-0.333333,89.0]]]},{"property":"geometry"}]}"""
+cql2_text = """S_EQUALS(POLYGON ((-0.333333 89.0, -102.723546 -0.5, -179.0 -89.0, -1.9 89.0, -0.0 89.0, 2.00001 -1.9, -0.333333 89.0)), "geometry")"""
+expected_text = "s_equals(POLYGON((-0.333333 89,-102.723546 -0.5,-179 -89,-1.9 89,-0 89,2.00001 -1.9,-0.333333 89)), geometry)"
+
+[example47]
+name = "Spatial Disjoint Check"
+description = "Performs a s_disjoint operation on properties."
+cql2_json = """{"op":"s_disjoint","args":[{"property":"geometry"},{"type":"MultiPolygon","coordinates":[[[[144.022387,45.176126],[-1.1,0.0],[180.0,47.808086],[144.022387,45.176126]]]]}]}"""
+expected_json = """{"op":"s_disjoint","args":[{"property":"geometry"},{"type":"MultiPolygon","coordinates":[[[[144.022387,45.176126],[-1.1,0.0],[180.0,47.808086],[144.022387,45.176126]]]]}]}"""
+cql2_text = """S_DISJOINT("geometry", MULTIPOLYGON (((144.022387 45.176126, -1.1 0.0, 180.0 47.808086, 144.022387 45.176126))))"""
+expected_text = "s_disjoint(geometry, MULTIPOLYGON(((144.022387 45.176126,-1.1 0,180 47.808086,144.022387 45.176126))))"
+
+[example48]
+name = "Spatial Touches Check"
+description = "Performs a s_touches operation on properties."
+cql2_json = """{"op":"s_touches","args":[{"property":"geometry"},{"type":"MultiLineString","coordinates":[[[-1.9,-0.99999],[75.292574,1.5],[-0.5,-4.016458],[-31.708594,-74.743801],[179.0,-90.0]],[[-1.9,-1.1],[1.5,8.547371]]]}]}"""
+expected_json = """{"op":"s_touches","args":[{"property":"geometry"},{"type":"MultiLineString","coordinates":[[[-1.9,-0.99999],[75.292574,1.5],[-0.5,-4.016458],[-31.708594,-74.743801],[179.0,-90.0]],[[-1.9,-1.1],[1.5,8.547371]]]}]}"""
+cql2_text = """S_TOUCHES("geometry", MULTILINESTRING ((-1.9 -0.99999, 75.292574 1.5, -0.5 -4.016458, -31.708594 -74.743801, 179.0 -90.0),(-1.9 -1.1, 1.5 8.547371)))"""
+expected_text = "s_touches(geometry, MULTILINESTRING((-1.9 -0.99999,75.292574 1.5,-0.5 -4.016458,-31.708594 -74.743801,179 -90),(-1.9 -1.1,1.5 8.547371)))"
+
+[example49]
+name = "Spatial Within Check"
+description = "Performs a s_within operation on properties."
+cql2_json = """{"op":"s_within","args":[{"type":"Polygon","coordinates":[[[-49.88024,0.5,-75993.341684],[-1.5,-0.99999,-100000.0],[0.0,0.5,-0.333333],[-49.88024,0.5,-75993.341684]],[[-65.887123,2.00001,-100000.0],[0.333333,-53.017711,-79471.332949],[180.0,0.0,1852.616704],[-65.887123,2.00001,-100000.0]]]},{"property":"geometry"}]}"""
+expected_json = """{"op":"s_within","args":[{"type":"Polygon","coordinates":[[[-49.88024,0.5,-75993.341684],[-1.5,-0.99999,-100000.0],[0.0,0.5,-0.333333],[-49.88024,0.5,-75993.341684]],[[-65.887123,2.00001,-100000.0],[0.333333,-53.017711,-79471.332949],[180.0,0.0,1852.616704],[-65.887123,2.00001,-100000.0]]]},{"property":"geometry"}]}"""
+cql2_text = """S_WITHIN(POLYGON Z ((-49.88024 0.5 -75993.341684, -1.5 -0.99999 -100000.0, 0.0 0.5 -0.333333, -49.88024 0.5 -75993.341684), (-65.887123 2.00001 -100000.0, 0.333333 -53.017711 -79471.332949, 180.0 0.0 1852.616704, -65.887123 2.00001 -100000.0)), "geometry")"""
+expected_text = "s_within(POLYGON((-49.88024 0.5,-1.5 -0.99999,0 0.5,-49.88024 0.5),(-65.887123 2.00001,0.333333 -53.017711,180 0,-65.887123 2.00001)), geometry)"
+
+[example50]
+name = "Spatial Overlaps Check"
+description = "Performs a s_overlaps operation on properties."
+cql2_json = """{"op":"s_overlaps","args":[{"property":"geometry"},{"bbox":[-179.912109,1.9,180.0,16.897016]}]}"""
+expected_json = """{"op":"s_overlaps","args":[{"property":"geometry"},{"bbox":[-179.912109,1.9,180.0,16.897016]}]}"""
+cql2_text = """S_OVERLAPS("geometry", BBOX(-179.912109, 1.9, 180.0, 16.897016))"""
+expected_text = "s_overlaps(geometry, BBOX(-179.912109, 1.9, 180, 16.897016))"
+
+[example51]
+name = "S_CROSSES"
+description = "Performs a spatial crosses check."
+cql2_json = """{"op":"s_crosses","args":[{"property":"geometry"},{"type":"LineString","coordinates":[[172.03086,1.5],[1.1,-90.0],[-159.757695,0.99999],[-180.0,0.5],[-12.111235,81.336403],[-0.5,64.43958],[0.0,81.991815],[-155.93831,90.0]]}]}"""
+expected_json = """{"op":"s_crosses","args":[{"property":"geometry"},{"type":"LineString","coordinates":[[172.03086,1.5],[1.1,-90.0],[-159.757695,0.99999],[-180.0,0.5],[-12.111235,81.336403],[-0.5,64.43958],[0.0,81.991815],[-155.93831,90.0]]}]}"""
+cql2_text = """S_CROSSES("geometry", LINESTRING (172.03086 1.5, 1.1 -90.0, -159.757695 0.99999, -180.0 0.5, -12.111235 81.336403, -0.5 64.43958, 0.0 81.991815, -155.93831 90.0))"""
+expected_text = "s_crosses(geometry, LINESTRING(172.03086 1.5,1.1 -90,-159.757695 0.99999,-180 0.5,-12.111235 81.336403,-0.5 64.43958,0 81.991815,-155.93831 90))"
+
+[example52]
+name = "Spatial Contains Check"
+description = "Performs a s_contains operation on properties."
+cql2_json = """{"op":"s_contains","args":[{"property":"geometry"},{"type":"Point","coordinates":[-3.508362,-1.754181]}]}"""
+expected_json = """{"op":"s_contains","args":[{"property":"geometry"},{"type":"Point","coordinates":[-3.508362,-1.754181]}]}"""
+cql2_text = """S_CONTAINS("geometry", POINT (-3.508362 -1.754181))"""
+expected_text = "s_contains(geometry, POINT(-3.508362 -1.754181))"
+
+[example53]
+name = "Time After Check"
+description = "Performs a t_after operation on properties."
+cql2_json = """{"op":"t_after","args":[{"property":"updated_at"},{"date":"2010-02-10"}]}"""
+expected_json = """{"op":"t_after","args":[{"property":"updated_at"},{"date":"2010-02-10"}]}"""
+cql2_text = """T_AFTER("updated_at", DATE('2010-02-10'))"""
+expected_text = "t_after(updated_at, DATE('2010-02-10'))"
+
+[example54]
+name = "T_BEFORE"
+description = "Performs a T_BEFORE Check."
+cql2_json = """{"op":"t_before","args":[{"property":"updated_at"},{"timestamp":"2012-08-10T05:30:00Z"}]}"""
+expected_json = """{"op":"t_before","args":[{"property":"updated_at"},{"timestamp":"2012-08-10T05:30:00Z"}]}"""
+cql2_text = """T_BEFORE("updated_at", TIMESTAMP('2012-08-10T05:30:00.000000Z'))"""
+expected_text = "t_before(updated_at, TIMESTAMP('2012-08-10T05:30:00Z'))"
+
+[example55]
+name = "Time Contains Check"
+description = "Performs a t_contains operation on properties."
+cql2_json = """{"op":"t_contains","args":[{"interval":["2000-01-01T00:00:00Z","2005-01-10T01:01:01.393216Z"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+expected_json = """{"op":"t_contains","args":[{"interval":["2000-01-01T00:00:00Z","2005-01-10T01:01:01.393216Z"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+cql2_text = "T_CONTAINS(INTERVAL('2000-01-01T00:00:00.000000Z', '2005-01-10T01:01:01.393216Z'), INTERVAL(starts_at, ends_at))"
+expected_text = "t_contains(INTERVAL('2000-01-01T00:00:00Z','2005-01-10T01:01:01.393216Z'), INTERVAL(starts_at,ends_at))"
+
+[example56]
+name = "Time Disjoint Check"
+description = "Performs a t_disjoint operation on properties."
+cql2_json = """{"op":"t_disjoint","args":[{"interval":["..","2005-01-10T01:01:01.393216Z"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+expected_json = """{"op":"t_disjoint","args":[{"interval":["..","2005-01-10T01:01:01.393216Z"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+cql2_text = "T_DISJOINT(INTERVAL('..', '2005-01-10T01:01:01.393216Z'), INTERVAL(starts_at, ends_at))"
+expected_text = "t_disjoint(INTERVAL('..','2005-01-10T01:01:01.393216Z'), INTERVAL(starts_at,ends_at))"
+
+[example57]
+name = "Time Interval Filter"
+description = "Filters features based on a time interval condition."
+cql2_json = """{"op":"t_during","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["2005-01-10","2010-02-10"]}]}"""
+expected_json = """{"op":"t_during","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["2005-01-10","2010-02-10"]}]}"""
+cql2_text = "T_DURING(INTERVAL(starts_at, ends_at), INTERVAL('2005-01-10', '2010-02-10'))"
+expected_text = "t_during(INTERVAL(starts_at,ends_at), INTERVAL('2005-01-10','2010-02-10'))"
+
+[example58]
+name = "Time Equals Check"
+description = "Performs a t_equals operation on properties."
+cql2_json = """{"op":"t_equals","args":[{"property":"updated_at"},{"date":"1851-04-29"}]}"""
+expected_json = """{"op":"t_equals","args":[{"property":"updated_at"},{"date":"1851-04-29"}]}"""
+cql2_text = """T_EQUALS("updated_at", DATE('1851-04-29'))"""
+expected_text = "t_equals(updated_at, DATE('1851-04-29'))"
+
+[example59]
+name = "T_FINISHEDBY"
+description = "Performs T_FINISHED_BY Check"
+cql2_json = """{"op":"t_finishedBy","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07T08:21:06.393262Z","2010-02-10T05:29:20.073225Z"]}]}"""
+expected_json = """{"op":"t_finishedBy","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07T08:21:06.393262Z","2010-02-10T05:29:20.073225Z"]}]}"""
+cql2_text = "T_FINISHEDBY(INTERVAL(starts_at, ends_at), INTERVAL('1991-10-07T08:21:06.393262Z', '2010-02-10T05:29:20.073225Z'))"
+expected_text = """"t_finishedBy"(INTERVAL(starts_at,ends_at), INTERVAL('1991-10-07T08:21:06.393262Z','2010-02-10T05:29:20.073225Z'))"""
+
+[example60]
+name = "Time Finishes Check"
+description = "Performs a t_finishes operation on properties."
+cql2_json = """{"op":"t_finishes","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07","2010-02-10T05:29:20.073225Z"]}]}"""
+expected_json = """{"op":"t_finishes","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07","2010-02-10T05:29:20.073225Z"]}]}"""
+cql2_text = "T_FINISHES(INTERVAL(starts_at, ends_at), INTERVAL('1991-10-07', '2010-02-10T05:29:20.073225Z'))"
+expected_text = "t_finishes(INTERVAL(starts_at,ends_at), INTERVAL('1991-10-07','2010-02-10T05:29:20.073225Z'))"
+
+[example61]
+name = "Time Intersects Check"
+description = "Performs a t_intersects operation on properties."
+cql2_json = """{"op":"t_intersects","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07T08:21:06.393262Z","2010-02-10T05:29:20.073225Z"]}]}"""
+expected_json = """{"op":"t_intersects","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07T08:21:06.393262Z","2010-02-10T05:29:20.073225Z"]}]}"""
+cql2_text = "T_INTERSECTS(INTERVAL(starts_at, ends_at), INTERVAL('1991-10-07T08:21:06.393262Z', '2010-02-10T05:29:20.073225Z'))"
+expected_text = "t_intersects(INTERVAL(starts_at,ends_at), INTERVAL('1991-10-07T08:21:06.393262Z','2010-02-10T05:29:20.073225Z'))"
+
+[example62]
+name = "Time Meets Check"
+description = "Performs a t_meets operation on properties."
+cql2_json = """{"op":"t_meets","args":[{"interval":["2005-01-10","2010-02-10"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+expected_json = """{"op":"t_meets","args":[{"interval":["2005-01-10","2010-02-10"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+cql2_text = "T_MEETS(INTERVAL('2005-01-10', '2010-02-10'), INTERVAL(starts_at, ends_at))"
+expected_text = "t_meets(INTERVAL('2005-01-10','2010-02-10'), INTERVAL(starts_at,ends_at))"
+
+[example63]
+name = "Time MetBy Check"
+description = "Performs a t_metBy operation on properties."
+cql2_json = """{"op":"t_metBy","args":[{"interval":["2010-02-10T05:29:20.073225Z","2010-10-07"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+expected_json = """{"op":"t_metBy","args":[{"interval":["2010-02-10T05:29:20.073225Z","2010-10-07"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+cql2_text = "T_METBY(INTERVAL('2010-02-10T05:29:20.073225Z', '2010-10-07'), INTERVAL(starts_at, ends_at))"
+expected_text = """"t_metBy"(INTERVAL('2010-02-10T05:29:20.073225Z','2010-10-07'), INTERVAL(starts_at,ends_at))"""
+
+[example64]
+name = "Time OverlappedBy Check"
+description = "Performs a t_overlappedBy operation on properties."
+cql2_json = """{"op":"t_overlappedBy","args":[{"interval":["1991-10-07T08:21:06.393262Z","2010-02-10T05:29:20.073225Z"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+expected_json = """{"op":"t_overlappedBy","args":[{"interval":["1991-10-07T08:21:06.393262Z","2010-02-10T05:29:20.073225Z"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+cql2_text = "T_OVERLAPPEDBY(INTERVAL('1991-10-07T08:21:06.393262Z', '2010-02-10T05:29:20.073225Z'), INTERVAL(starts_at, ends_at))"
+expected_text = """"t_overlappedBy"(INTERVAL('1991-10-07T08:21:06.393262Z','2010-02-10T05:29:20.073225Z'), INTERVAL(starts_at,ends_at))"""
+
+[example65]
+name = "Time Overlaps Check"
+description = "Performs a t_overlaps operation on properties."
+cql2_json = """{"op":"t_overlaps","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07T08:21:06.393262Z","1992-10-09T08:08:08.393473Z"]}]}"""
+expected_json = """{"op":"t_overlaps","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07T08:21:06.393262Z","1992-10-09T08:08:08.393473Z"]}]}"""
+cql2_text = "T_OVERLAPS(INTERVAL(starts_at, ends_at), INTERVAL('1991-10-07T08:21:06.393262Z', '1992-10-09T08:08:08.393473Z'))"
+expected_text = "t_overlaps(INTERVAL(starts_at,ends_at), INTERVAL('1991-10-07T08:21:06.393262Z','1992-10-09T08:08:08.393473Z'))"
+
+[example66]
+name = "Time StartedBy Check"
+description = "Performs a t_startedBy operation on properties."
+cql2_json = """{"op":"t_startedBy","args":[{"interval":["1991-10-07T08:21:06.393262Z","2010-02-10T05:29:20.073225Z"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+expected_json = """{"op":"t_startedBy","args":[{"interval":["1991-10-07T08:21:06.393262Z","2010-02-10T05:29:20.073225Z"]},{"interval":[{"property":"starts_at"},{"property":"ends_at"}]}]}"""
+cql2_text = "T_STARTEDBY(INTERVAL('1991-10-07T08:21:06.393262Z', '2010-02-10T05:29:20.073225Z'), INTERVAL(starts_at, ends_at))"
+expected_text = """"t_startedBy"(INTERVAL('1991-10-07T08:21:06.393262Z','2010-02-10T05:29:20.073225Z'), INTERVAL(starts_at,ends_at))"""
+
+[example67]
+name = "Time Starts Check"
+description = "Performs a t_starts operation on properties."
+cql2_json = """{"op":"t_starts","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07T08:21:06.393262Z",".."]}]}"""
+expected_json = """{"op":"t_starts","args":[{"interval":[{"property":"starts_at"},{"property":"ends_at"}]},{"interval":["1991-10-07T08:21:06.393262Z",".."]}]}"""
+cql2_text = "T_STARTS(INTERVAL(starts_at, ends_at), INTERVAL('1991-10-07T08:21:06.393262Z', '..'))"
+expected_text = "t_starts(INTERVAL(starts_at,ends_at), INTERVAL('1991-10-07T08:21:06.393262Z','..'))"
+
+[example68]
+name = "Function"
+description = "Provides Equality Test While Applying a Function"
+cql2_json = """{"op":"=","args":[{"op":"Foo","args":[{"property":"geometry"}]},true]}"""
+expected_json = """{"op":"=","args":[{"op":"Foo","args":[{"property":"geometry"}]},true]}"""
+cql2_text = """Foo("geometry") = TRUE"""
+expected_text = """("Foo"(geometry) = true)"""
+
+[example69]
+name = "Not Equal Operation"
+description = "Performs a <> operation on properties."
+cql2_json = """{"op":"<>","args":[false,{"op":"Bar","args":[{"property":"geometry"},100,"a","b",false]}]}"""
+expected_json = """{"op":"<>","args":[false,{"op":"Bar","args":[{"property":"geometry"},100.0,"a","b",false]}]}"""
+cql2_text = """FALSE <> Bar("geometry", 100, 'a', 'b', FALSE)"""
+expected_text = """(false <> "Bar"(geometry, 100, 'a', 'b', false))"""
+
+[example70]
+name = "ACCENTI"
+description = "Provides Accent Insensitive Equality Check"
+cql2_json = """{"op":"=","args":[{"op":"accenti","args":[{"property":"owner"}]},{"op":"accenti","args":["Beyoncé"]}]}"""
+expected_json = """{"op":"=","args":[{"op":"accenti","args":[{"property":"owner"}]},{"op":"accenti","args":["Beyoncé"]}]}"""
+cql2_text = """ACCENTI("owner") = ACCENTI('Beyoncé')"""
+expected_text = "(accenti(owner) = accenti('Beyoncé'))"
+
+[example71]
+name = "CASEI"
+description = "Performs Case Insensitive Equality Check"
+cql2_json = """{"op":"=","args":[{"op":"casei","args":[{"property":"owner"}]},{"op":"casei","args":["somebody else"]}]}"""
+expected_json = """{"op":"=","args":[{"op":"casei","args":[{"property":"owner"}]},{"op":"casei","args":["somebody else"]}]}"""
+cql2_text = """CASEI("owner") = CASEI('somebody else')"""
+expected_text = "(casei(owner) = casei('somebody else'))"
+
+[example72]
+name = "Greater Than Check"
+description = "Performs a > operation on properties."
+cql2_json = """{"op":">","args":[{"property":"value"},{"op":"+","args":[{"property":"foo"},10]}]}"""
+expected_json = """{"op":">","args":[{"property":"value"},{"op":"+","args":[{"property":"foo"},10.0]}]}"""
+cql2_text = """"value" > ("foo" + 10)"""
+expected_text = "(value > foo + 10)"
+
+[example74]
+name = "Does Not Equal"
+description = "Performs Does Not Equal Check"
+cql2_json = """{"op":"<>","args":[{"property":"value"},{"op":"*","args":[22.1,{"property":"foo"}]}]}"""
+expected_json = """{"op":"<>","args":[{"property":"value"},{"op":"*","args":[22.1,{"property":"foo"}]}]}"""
+cql2_text = """"value" <> (22.1 * "foo")"""
+expected_text = "(value <> 22.1 * foo)"
+
+[example75]
+name = "Equality With Division"
+description = "Performs Equality Check with Division"
+cql2_json = """{"op":"=","args":[{"property":"value"},{"op":"/","args":[2,{"property":"foo"}]}]}"""
+expected_json = """{"op":"=","args":[{"property":"value"},{"op":"/","args":[2.0,{"property":"foo"}]}]}"""
+cql2_text = """"value" = (2 / "foo")"""
+expected_text = "(value = 2 / foo)"
+
+[example76]
+name = "Less Than or Equal Check"
+description = "Performs a <= operation on properties."
+cql2_json = """{"op":"<=","args":[{"property":"value"},{"op":"^","args":[2,{"property":"foo"}]}]}"""
+expected_json = """{"op":"<=","args":[{"property":"value"},{"op":"^","args":[2.0,{"property":"foo"}]}]}"""
+cql2_text = """"value" <= (2 ^ "foo")"""
+expected_text = "(value <= (2 ^ foo))"
+
+[example77]
+name = "Equals Operation"
+description = "Performs a = operation on properties."
+cql2_json = """{"op":"=","args":[0,{"op":"%","args":[{"property":"foo"},2]}]}"""
+expected_json = """{"op":"=","args":[0.0,{"op":"%","args":[{"property":"foo"},2.0]}]}"""
+cql2_text = """0 = ("foo" % 2)"""
+expected_text = "(0 = foo % 2)"
+
+[example78]
+name = "Math Operations"
+description = "Performs Equality With Division Operator"
+cql2_json = """{"op":"=","args":[1,{"op":"div","args":[{"property":"foo"},2]}]}"""
+expected_json = """{"op":"=","args":[1.0,{"op":"div","args":[{"property":"foo"},2.0]}]}"""
+cql2_text = """1 = ("foo" div 2)"""
+expected_text = "(1 = div(foo, 2))"
+
+[example79]
+name = "Array Contained By"
+description = "Performs Array Contained By Check"
+cql2_json = """{"op":"a_containedBy","args":[{"property":"values"},["a","b","c"]]}"""
+expected_json = """{"op":"a_containedBy","args":[{"property":"values"},["a","b","c"]]}"""
+cql2_text = """A_CONTAINEDBY("values", ('a', 'b', 'c'))"""
+expected_text = """"a_containedBy"("values", ('a', 'b', 'c'))"""
+
+[example80]
+name = "Array Contains"
+description = "Performs Array Containment Check"
+cql2_json = """{"op":"a_contains","args":[{"property":"values"},["a","b","c"]]}"""
+expected_json = """{"op":"a_contains","args":[{"property":"values"},["a","b","c"]]}"""
+cql2_text = """A_CONTAINS("values", ('a', 'b', 'c'))"""
+expected_text = """a_contains("values", ('a', 'b', 'c'))"""
+
+[example81]
+name = "Array Equals"
+description = "Performs Array Equality Check"
+cql2_json = """{"op":"a_equals","args":[["a",true,1.0,8],{"property":"values"}]}"""
+expected_json = """{"op":"a_equals","args":[["a",true,1.0,8.0],{"property":"values"}]}"""
+cql2_text = """A_EQUALS(('a', TRUE, 1.0, 8), "values")"""
+expected_text = """a_equals(('a', true, 1, 8), "values")"""
+
+[example82]
+name = "Overlapping Attribute Values Check"
+description = "Checks for overlapping attribute values within a specified date range."
+cql2_json = """{"op":"a_overlaps","args":[{"property":"values"},[{"timestamp":"2012-08-10T05:30:00Z"},{"date":"2010-02-10"},false]]}"""
+expected_json = """{"op":"a_overlaps","args":[{"property":"values"},[{"timestamp":"2012-08-10T05:30:00Z"},{"date":"2010-02-10"},false]]}"""
+cql2_text = """A_OVERLAPS("values", (TIMESTAMP('2012-08-10T05:30:00.000000Z'), DATE('2010-02-10'), FALSE))"""
+expected_text = """a_overlaps("values", (TIMESTAMP('2012-08-10T05:30:00Z'), DATE('2010-02-10'), false))"""
+
+[example83]
+name = "Spatial Equals Check"
+description = "Performs a s_equals operation on properties."
+cql2_json = """{"op":"s_equals","args":[{"type":"MultiPoint","coordinates":[[180.0,-0.5],[179.0,-47.121701],[180.0,-0.0],[33.470475,-0.99999],[179.0,-15.333062]]},{"property":"geometry"}]}"""
+expected_json = """{"op":"s_equals","args":[{"type":"MultiPoint","coordinates":[[180.0,-0.5],[179.0,-47.121701],[180.0,-0.0],[33.470475,-0.99999],[179.0,-15.333062]]},{"property":"geometry"}]}"""
+cql2_text = """S_EQUALS(MULTIPOINT ((180.0 -0.5), (179.0 -47.121701), (180.0 -0.0), (33.470475 -0.99999), (179.0 -15.333062)), "geometry")"""
+expected_text = "s_equals(MULTIPOINT(180 -0.5,179 -47.121701,180 -0,33.470475 -0.99999,179 -15.333062), geometry)"
+
+[example84]
+name = "Spatial Equality"
+description = "Performs Spatial Equality with GeometryCollection"
+cql2_json = """{"op":"s_equals","args":[{"type":"GeometryCollection","geometries":[{"type":"Point","coordinates":[1.9,2.00001]},{"type":"Point","coordinates":[0.0,-2.00001]},{"type":"MultiLineString","coordinates":[[[-2.00001,-0.0],[-77.292642,-0.5],[-87.515626,-0.0],[-180.0,12.502773],[21.204842,-1.5],[-21.878857,-90.0]]]},{"type":"Point","coordinates":[1.9,0.5]},{"type":"LineString","coordinates":[[179.0,1.179148],[-148.192487,-65.007816],[0.5,0.333333]]}]},{"property":"geometry"}]}"""
+expected_json = """{"op":"s_equals","args":[{"type":"GeometryCollection","geometries":[{"type":"Point","coordinates":[1.9,2.00001]},{"type":"Point","coordinates":[0.0,-2.00001]},{"type":"MultiLineString","coordinates":[[[-2.00001,-0.0],[-77.292642,-0.5],[-87.515626,-0.0],[-180.0,12.502773],[21.204842,-1.5],[-21.878857,-90.0]]]},{"type":"Point","coordinates":[1.9,0.5]},{"type":"LineString","coordinates":[[179.0,1.179148],[-148.192487,-65.007816],[0.5,0.333333]]}]},{"property":"geometry"}]}"""
+cql2_text = """S_EQUALS(GEOMETRYCOLLECTION (POINT (1.9 2.00001), POINT (0.0 -2.00001), MULTILINESTRING ((-2.00001 -0.0, -77.292642 -0.5, -87.515626 -0.0, -180.0 12.502773, 21.204842 -1.5, -21.878857 -90.0)), POINT (1.9 0.5), LINESTRING (179.0 1.179148, -148.192487 -65.007816, 0.5 0.333333)), "geometry")"""
+expected_text = "s_equals(GEOMETRYCOLLECTION(POINT(1.9 2.00001),POINT(0 -2.00001),MULTILINESTRING((-2.00001 -0,-77.292642 -0.5,-87.515626 -0,-180 12.502773,21.204842 -1.5,-21.878857 -90)),POINT(1.9 0.5),LINESTRING(179 1.179148,-148.192487 -65.007816,0.5 0.333333)), geometry)"
+
+[example85]
+name = "Math Operations"
+description = "Performs Various Math Operations"
+cql2_json = """{"op":"=","args":[{"property":"value"},{"op":"-","args":[{"op":"+","args":[{"op":"*","args":[{"op":"*","args":[-1,{"property":"foo"}]},2.0]},{"op":"/","args":[{"property":"bar"},6.1234]}]},{"op":"^","args":[{"property":"x"},2.0]}]}]}"""
+expected_json = """{"op":"=","args":[{"property":"value"},{"op":"-","args":[{"op":"+","args":[{"op":"*","args":[{"op":"*","args":[-1.0,{"property":"foo"}]},2.0]},{"op":"/","args":[{"property":"bar"},6.1234]}]},{"op":"^","args":[{"property":"x"},2.0]}]}]}"""
+cql2_text = """"value" = ((((-1 * "foo") * 2.0) + ("bar" / 6.1234)) - ("x" ^ 2.0))"""
+expected_text = "(value = -1 * foo * 2 + bar / 6.1234 - (x ^ 2))"
+
+[example86]
+name = "LIKE Operation"
+description = "Performs a like operation on properties."
+cql2_json = """{"op":"like","args":[{"property":"name"},{"op":"casei","args":["FOO%"]}]}"""
+expected_json = """{"op":"like","args":[{"property":"name"},{"op":"casei","args":["FOO%"]}]}"""
+cql2_text = """"name" LIKE CASEI('FOO%')"""
+expected_text = "(name LIKE casei('FOO%'))"
+
+[clause6_02c]
+name = "Greater Than Check"
+description = "Performs a > operation on properties."
+cql2_json = """{"op":">","args":[{"op":"-","args":[{"property":"balance"},150.0]},0]}"""
+expected_json = """{"op":">","args":[{"op":"-","args":[{"property":"balance"},150.0]},0.0]}"""
+cql2_text = "balance-150.0 > 0"
+expected_text = "(balance - 150 > 0)"
+
+[clause7_19]
+name = "Greater Than Check 2"
+description = "Performs a > operation on properties."
+cql2_json = """{"op":">","args":[{"property":"vehicle_height"},{"op":"-","args":[{"property":"bridge_clearance"},1]}]}"""
+expected_json = """{"op":">","args":[{"property":"vehicle_height"},{"op":"-","args":[{"property":"bridge_clearance"},1.0]}]}"""
+cql2_text = "vehicle_height > (bridge_clearance-1)"
+expected_text = "(vehicle_height > bridge_clearance - 1)"
+
+[example73]
+name = "Less Than Check"
+description = "Performs a < operation on properties."
+cql2_json = """{"op":"<","args":[{"property":"value"},{"op":"-","args":[{"property":"foo"},10]}]}"""
+expected_json = """{"op":"<","args":[{"property":"value"},{"op":"-","args":[{"property":"foo"},10.0]}]}"""
+cql2_text = """"value" < ("foo" - 10)"""
+expected_text = "(value < foo - 10)"

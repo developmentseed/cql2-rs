@@ -17,10 +17,10 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 cql2 = { path = ".." }
 wasm-bindgen = "0.2"
-getrandom = { version = "0.2.15", features = ["js"] }
+getrandom = { version = "0.3.3", features = ["wasm_js"] }
 
 [dependencies.web-sys]
-version = "0.3.4"
+version = "0.3.82"
 features = ['Document', 'Element', 'HtmlElement', 'Node', 'Window']
 
 [dev-dependencies]

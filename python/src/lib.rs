@@ -1,10 +1,12 @@
 #![allow(clippy::result_large_err)]
-
+use ::cql2::ToSqlAst;
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyIOError, PyValueError},
     prelude::*,
+    types::PyDict,
 };
+use serde_json::Value;
 use std::path::PathBuf;
 
 create_exception!(cql2, ValidationError, PyException);
@@ -23,16 +25,6 @@ type Result<T> = std::result::Result<T, Error>;
 /// A CQL2 expression.
 #[pyclass]
 struct Expr(::cql2::Expr);
-
-/// A SQL query
-#[pyclass]
-struct SqlQuery {
-    #[pyo3(get)]
-    query: String,
-
-    #[pyo3(get)]
-    params: Vec<String>,
-}
 
 #[pyfunction]
 fn parse_file(path: PathBuf) -> Result<Expr> {
@@ -74,6 +66,21 @@ impl Expr {
         }
     }
 
+    fn matches(&self, item: Bound<'_, PyDict>) -> Result<bool> {
+        let value: Value = pythonize::depythonize(&item)?;
+        self.0.clone().matches(Some(&value)).map_err(Error::from)
+    }
+
+    #[pyo3(signature = (item=None))]
+    fn reduce(&self, item: Option<Bound<'_, PyDict>>) -> Result<Expr> {
+        let value = item.map(|item| pythonize::depythonize(&item)).transpose()?;
+        self.0
+            .clone()
+            .reduce(value.as_ref())
+            .map(Expr)
+            .map_err(Error::from)
+    }
+
     fn to_json<'py>(&self, py: Python<'py>) -> Result<Bound<'py, PyAny>> {
         pythonize::pythonize(py, &self.0).map_err(Error::from)
     }
@@ -82,17 +89,16 @@ impl Expr {
         self.0.to_text().map_err(Error::from)
     }
 
-    fn to_sql(&self) -> Result<SqlQuery> {
-        self.0.to_sql().map(SqlQuery::from).map_err(Error::from)
+    fn to_sql(&self) -> Result<String> {
+        self.0.to_sql().map_err(Error::from)
     }
-}
 
-impl From<::cql2::SqlQuery> for SqlQuery {
-    fn from(value: ::cql2::SqlQuery) -> Self {
-        SqlQuery {
-            query: value.query,
-            params: value.params,
-        }
+    fn __add__(&self, rhs: &Expr) -> Result<Expr> {
+        Ok(Expr(self.0.clone() + rhs.0.clone()))
+    }
+
+    fn __eq__(&self, rhs: &Expr) -> bool {
+        self.0 == rhs.0
     }
 }
 
@@ -148,7 +154,6 @@ fn main(py: Python<'_>) {
 #[pymodule]
 fn cql2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Expr>()?;
-    m.add_class::<SqlQuery>()?;
     m.add_function(wrap_pyfunction!(main, m)?)?;
     m.add_function(wrap_pyfunction!(parse_file, m)?)?;
     m.add_function(wrap_pyfunction!(parse_text, m)?)?;
