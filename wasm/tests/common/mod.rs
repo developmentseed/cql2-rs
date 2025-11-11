@@ -30,13 +30,15 @@ fn test_parse_json() {
 
 #[wasm_bindgen_test]
 fn test_validate_valid_expression() {
-    let expr = CQL2Expression::new("landsat:scene_id = 'LC82030282019133LGN00'".to_string()).unwrap();
+    let expr =
+        CQL2Expression::new("landsat:scene_id = 'LC82030282019133LGN00'".to_string()).unwrap();
     assert!(expr.validate().is_ok());
 }
 
 #[wasm_bindgen_test]
 fn test_to_json() {
-    let expr = CQL2Expression::new("landsat:scene_id = 'LC82030282019133LGN00'".to_string()).unwrap();
+    let expr =
+        CQL2Expression::new("landsat:scene_id = 'LC82030282019133LGN00'".to_string()).unwrap();
     let json = expr.to_json().unwrap();
     assert!(json.contains("landsat:scene_id"));
     assert!(json.contains("LC82030282019133LGN00"));
@@ -44,7 +46,8 @@ fn test_to_json() {
 
 #[wasm_bindgen_test]
 fn test_to_json_pretty() {
-    let expr = CQL2Expression::new("landsat:scene_id = 'LC82030282019133LGN00'".to_string()).unwrap();
+    let expr =
+        CQL2Expression::new("landsat:scene_id = 'LC82030282019133LGN00'".to_string()).unwrap();
     let json = expr.to_json_pretty().unwrap();
     assert!(json.contains("landsat:scene_id"));
     assert!(json.contains("\n")); // Should have newlines for pretty printing
@@ -61,7 +64,8 @@ fn test_to_text() {
 
 #[wasm_bindgen_test]
 fn test_to_sql() {
-    let expr = CQL2Expression::new("landsat:scene_id = 'LC82030282019133LGN00'".to_string()).unwrap();
+    let expr =
+        CQL2Expression::new("landsat:scene_id = 'LC82030282019133LGN00'".to_string()).unwrap();
     let sql = expr.to_sql().unwrap();
     assert!(sql.contains("landsat:scene_id"));
     assert!(sql.contains("LC82030282019133LGN00"));
