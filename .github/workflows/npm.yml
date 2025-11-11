@@ -1,0 +1,52 @@
+name: npm
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Build WASM package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: Swatinem/rust-cache@v2
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "latest"
+      - name: Build WASM for npm
+        run: wasm-pack build --target web --out-dir pkg wasm
+      - name: Upload package
+        uses: actions/upload-artifact@v5
+        with:
+          name: npm-package
+          path: wasm/pkg
+
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/cql2-wasm
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          name: npm-package
+          path: package
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: "package/*"
+      - name: Publish to npm
+        working-directory: package
+        run: npm publish --provenance --access public
