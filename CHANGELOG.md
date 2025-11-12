@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.4.2] - 2025-11-12
+
+### Changed
+
+- Better package metadata and automated releasing
+
 ## [0.4.1] - 2025-10-31
 
 ## Changed
@@ -113,7 +119,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Initial release.
 
-[Unreleased]: https://github.com/developmentseed/cql2-rs/compare/v0.4.1...main
+[Unreleased]: https://github.com/developmentseed/cql2-rs/compare/v0.4.2...main
+[0.4.2]: https://github.com/developmentseed/cql2-rs/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/developmentseed/cql2-rs/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/developmentseed/cql2-rs/compare/v0.3.8...v0.4.0
 [0.3.8]: https://github.com/developmentseed/cql2-rs/compare/v0.3.7...v0.3.8
