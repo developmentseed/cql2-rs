@@ -66,13 +66,13 @@ jobs:
         run: scripts/buildwasm
       - name: Test WASM for Node.js
         run: wasm-pack test --node wasm
-      - name: Build WASM for Node.js
-        run: wasm-pack build --target nodejs wasm
       - name: Build WASM for web (browser) target
         run: wasm-pack build --target web wasm
       # TODO: these don't currently work
       # - name: Test WASM for web (browser) target
       #   run: wasm-pack test --firefox --headless wasm
+      - name: Build WASM for Node.js
+        run: wasm-pack build --target nodejs wasm
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
