@@ -12,9 +12,13 @@
         <meta name="author" content="David Bitner">
       
       
-        <link rel="canonical" href="https://developmentseed.org/cql2-rs/latest/pkg/">
+        <link rel="canonical" href="https://developmentseed.org/cql2-rs/latest/cli/">
       
       
+        <link rel="prev" href="../python/">
+      
+      
+        <link rel="next" href="../playground/">
       
       
       <link rel="icon" href="../favicon.png">
@@ -22,7 +26,7 @@
     
     
       
-        <title>cql2-wasm - cql2-rs</title>
+        <title>CLI - cql2-rs</title>
       
     
     
@@ -59,11 +63,11 @@
       
         <meta  property="og:type"  content="website" >
       
-        <meta  property="og:title"  content="cql2-wasm - cql2-rs" >
+        <meta  property="og:title"  content="CLI - cql2-rs" >
       
         <meta  property="og:description"  content="Command-line interface (CLI), Python package, and Rust crate for parsing, validating, and converting Common Query Language (CQL2)" >
       
-        <meta  property="og:image"  content="https://developmentseed.org/cql2-rs/latest/assets/images/social/pkg/README.png" >
+        <meta  property="og:image"  content="https://developmentseed.org/cql2-rs/latest/assets/images/social/cli.png" >
       
         <meta  property="og:image:type"  content="image/png" >
       
@@ -71,15 +75,15 @@
       
         <meta  property="og:image:height"  content="630" >
       
-        <meta  property="og:url"  content="https://developmentseed.org/cql2-rs/latest/pkg/" >
+        <meta  property="og:url"  content="https://developmentseed.org/cql2-rs/latest/cli/" >
       
         <meta  name="twitter:card"  content="summary_large_image" >
       
-        <meta  name="twitter:title"  content="cql2-wasm - cql2-rs" >
+        <meta  name="twitter:title"  content="CLI - cql2-rs" >
       
         <meta  name="twitter:description"  content="Command-line interface (CLI), Python package, and Rust crate for parsing, validating, and converting Common Query Language (CQL2)" >
       
-        <meta  name="twitter:image"  content="https://developmentseed.org/cql2-rs/latest/assets/images/social/pkg/README.png" >
+        <meta  name="twitter:image"  content="https://developmentseed.org/cql2-rs/latest/assets/images/social/cli.png" >
       
     
     
@@ -100,7 +104,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cql2-wasm" class="md-skip">
+        <a href="#cli" class="md-skip">
           Skip to content
         </a>
       
@@ -137,7 +141,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              cql2-wasm
+              CLI
             
           </span>
         </div>
@@ -265,9 +269,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../cli/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -412,10 +418,32 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../cli/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    CLI
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -426,6 +454,44 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -490,7 +556,7 @@
 
 
   
-    <a href="https://github.com/developmentseed/cql2-rs/edit/master/docs/pkg/README.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/developmentseed/cql2-rs/edit/master/docs/cli.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -498,66 +564,55 @@
   
 
 
-<h1 id="cql2-wasm">cql2-wasm</h1>
-<p>A small <a href="https://webassembly.org/">WebAssembly</a> module for parsing and translating <a href="https://www.ogc.org/standards/cql2/">CQL2</a>.</p>
+<h1 id="cli">CLI</h1>
+<p><strong>cql2-rs</strong> includes a command-line interface (CLI).</p>
+<h2 id="installation">Installation</h2>
+<p>Install from <a href="https://pypi.org/project/cql2/">PyPI</a>:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>cql2
+</span></code></pre></div>
+<p>Or, if you have <a href="https://rustup.rs/">Rust</a>:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>cargo<span class="w"> </span>install<span class="w"> </span>cql2-cli
+</span></code></pre></div>
 <h2 id="usage">Usage</h2>
-<p>Add to your project:</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>npm<span class="w"> </span>i<span class="w"> </span>cql2-wasm
+<p>At its simplest, the CLI is a pass-through validator:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>cql2<span class="w"> </span>&lt;<span class="w"> </span>tests/fixtures/text/example01.txt<span class="w"> </span><span class="c1"># will succeed if the CQL2 is valid</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="o">(</span><span class="s2">&quot;landsat:scene_id&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;LC82030282019133LGN00&#39;</span><span class="o">)</span>
 </span></code></pre></div>
-<p>Then:</p>
-<div class="language-js highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">CQL2</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;cql2-wasm&#39;</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kd">const</span><span class="w"> </span><span class="nx">cql2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">CQL2</span><span class="p">(</span><span class="s1">&#39;collection = foo&#39;</span><span class="p">)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1">// Parse and display results</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;is_valid():&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">cql2</span><span class="p">.</span><span class="nx">is_valid</span><span class="p">())</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;to_json():&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">cql2</span><span class="p">.</span><span class="nx">to_json</span><span class="p">())</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;to_text():&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">cql2</span><span class="p">.</span><span class="nx">to_text</span><span class="p">())</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="sb">````</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="err">##</span><span class="w"> </span><span class="nx">Building</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="nx">Get</span><span class="w"> </span><span class="p">[</span><span class="nx">wasm</span><span class="o">-</span><span class="nx">pack</span><span class="p">](</span><span class="nx">https</span><span class="o">:</span><span class="c1">//rustwasm.github.io/wasm-pack/installer/).</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="nx">Then</span><span class="w"> </span><span class="p">(</span><span class="kr">from</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">top</span><span class="o">-</span><span class="nx">level</span><span class="w"> </span><span class="nx">directory</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="k">this</span><span class="w"> </span><span class="nx">repo</span><span class="p">)</span><span class="o">:</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="sb">```shell</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="sb">scripts/buildwasm</span>
+<p>You can convert formats:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>cql2<span class="w"> </span>-o<span class="w"> </span>json<span class="w"> </span>&lt;<span class="w"> </span>tests/fixtures/text/example01.txt
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="o">{</span><span class="s2">&quot;op&quot;</span>:<span class="s2">&quot;=&quot;</span>,<span class="s2">&quot;args&quot;</span>:<span class="o">[{</span><span class="s2">&quot;property&quot;</span>:<span class="s2">&quot;landsat:scene_id&quot;</span><span class="o">}</span>,<span class="s2">&quot;LC82030282019133LGN00&quot;</span><span class="o">]}</span>
 </span></code></pre></div>
-<p>You can then preview our WASM playground locally.
-Get <a href="https://docs.astral.sh/uv/getting-started/installation/">uv</a>, then:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>sync
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>uv<span class="w"> </span>run<span class="w"> </span>mkdocs<span class="w"> </span>serve
+<p>Use <code>-v</code> to get detailed validation information:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>cql2<span class="w"> </span><span class="s1">&#39;wrong&#39;</span><span class="w"> </span>-v
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">[</span>ERROR<span class="o">]</span><span class="w"> </span>Invalid<span class="w"> </span>CQL2:<span class="w"> </span>wrong
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>For<span class="w"> </span>more<span class="w"> </span>detailed<span class="w"> </span>validation<span class="w"> </span>information,<span class="w"> </span>use<span class="w"> </span>-vv
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>jsonschema<span class="w"> </span>validation<span class="w"> </span>failed<span class="w"> </span>with<span class="w"> </span>file:///tmp/cql2.json#
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>oneOf<span class="w"> </span>failed,<span class="w"> </span>none<span class="w"> </span>matched
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>missing<span class="w"> </span>properties<span class="w"> </span><span class="s1">&#39;op&#39;</span>,<span class="w"> </span><span class="s1">&#39;args&#39;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>missing<span class="w"> </span>properties<span class="w"> </span><span class="s1">&#39;op&#39;</span>,<span class="w"> </span><span class="s1">&#39;args&#39;</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>oneOf<span class="w"> </span>failed,<span class="w"> </span>none<span class="w"> </span>matched
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>missing<span class="w"> </span>properties<span class="w"> </span><span class="s1">&#39;op&#39;</span>,<span class="w"> </span><span class="s1">&#39;args&#39;</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>missing<span class="w"> </span>properties<span class="w"> </span><span class="s1">&#39;op&#39;</span>,<span class="w"> </span><span class="s1">&#39;args&#39;</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>missing<span class="w"> </span>properties<span class="w"> </span><span class="s1">&#39;op&#39;</span>,<span class="w"> </span><span class="s1">&#39;args&#39;</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">    </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>missing<span class="w"> </span>properties<span class="w"> </span><span class="s1">&#39;op&#39;</span>,<span class="w"> </span><span class="s1">&#39;args&#39;</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">    </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>missing<span class="w"> </span>properties<span class="w"> </span><span class="s1">&#39;op&#39;</span>,<span class="w"> </span><span class="s1">&#39;args&#39;</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">  </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>missing<span class="w"> </span>properties<span class="w"> </span><span class="s1">&#39;op&#39;</span>,<span class="w"> </span><span class="s1">&#39;args&#39;</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">  </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>missing<span class="w"> </span>properties<span class="w"> </span><span class="s1">&#39;op&#39;</span>,<span class="w"> </span><span class="s1">&#39;args&#39;</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>missing<span class="w"> </span>properties<span class="w"> </span><span class="s1">&#39;op&#39;</span>,<span class="w"> </span><span class="s1">&#39;args&#39;</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">  </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>missing<span class="w"> </span>properties<span class="w"> </span><span class="s1">&#39;op&#39;</span>,<span class="w"> </span><span class="s1">&#39;args&#39;</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">  </span>-<span class="w"> </span>at<span class="w"> </span><span class="s1">&#39;&#39;</span>:<span class="w"> </span>want<span class="w"> </span>boolean,<span class="w"> </span>but<span class="w"> </span>got<span class="w"> </span>object
 </span></code></pre></div>
-<p>The playground will be available at <a href="http://127.0.0.1:8000/cql2-rs/playground/">http://127.0.0.1:8000/cql2-rs/playground/</a>.
-There is a live version available at <a href="http://developmentseed.org/cql2-rs/latest/playground/">http://developmentseed.org/cql2-rs/latest/playground/</a>.</p>
-<h2 id="testing">Testing</h2>
-<p>This package includes two types of tests:</p>
-<h3 id="rust-unit-tests">Rust Unit Tests</h3>
-<p>Unit tests are written in <code>tests/common/mod.rs</code> and support execution in various environments.</p>
-<blockquote>
-<p>[!NOTE]
-All demonstrated commands are to be run from the root of the repository</p>
-</blockquote>
-<h4 id="firefox">Firefox</h4>
-<p>Run <code>tests/web.rs</code> browser tests in a WASM environment using <code>wasm-bindgen-test</code>:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>wasm-pack<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--firefox<span class="w"> </span>wasm
+<p>cql2-text parsing errors are pretty-printed:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>cql2<span class="w"> </span><span class="s1">&#39;(foo ~= &quot;bar&quot;)&#39;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="o">[</span>ERROR<span class="o">]</span><span class="w"> </span>Parsing<span class="w"> </span>error:<span class="w"> </span><span class="o">(</span>foo<span class="w"> </span>~<span class="o">=</span><span class="w"> </span><span class="s2">&quot;bar&quot;</span><span class="o">)</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w"> </span>--&gt;<span class="w"> </span><span class="m">1</span>:6
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="p">|</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="o">(</span>foo<span class="w"> </span>~<span class="o">=</span><span class="w"> </span><span class="s2">&quot;bar&quot;</span><span class="o">)</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="p">|</span><span class="w">      </span>^---
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="p">|</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span><span class="o">=</span><span class="w"> </span>expected<span class="w"> </span>NotFlag,<span class="w"> </span>And,<span class="w"> </span>Or,<span class="w"> </span>ConcatInfixOp,<span class="w"> </span>Add,<span class="w"> </span>Subtract,<span class="w"> </span>Multiply,<span class="w"> </span>Divide,<span class="w"> </span>Modulo,<span class="w"> </span>Power,<span class="w"> </span>Eq,<span class="w"> </span>Gt,<span class="w"> </span>GtEq,<span class="w"> </span>Lt,<span class="w"> </span>LtEq,<span class="w"> </span>NotEq,<span class="w"> </span>Is,<span class="w"> </span>or<span class="w"> </span>IsNullPostfix
 </span></code></pre></div>
-<p>Then, open <a href="http://127.0.0.1:8000/">http://127.0.0.1:8000/</a> to see the test(s) run.</p>
-<h4 id="node">Node</h4>
-<p>Run <code>tests/node.rs</code> browser tests in a WASM environment using <code>wasm-bindgen-test</code>:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>wasm-pack<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--node<span class="w"> </span>wasm
-</span></code></pre></div>
-<h3 id="javascript-integration-tests">JavaScript Integration Tests</h3>
-<p>These tests are written in JavaScript and verify the actual JavaScript API surface that developers will use.
-The tests work with both nodejs and web targets:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Test with nodejs target</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>wasm-pack<span class="w"> </span>build<span class="w"> </span>--target<span class="w"> </span>nodejs<span class="w"> </span>wasm
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>npm<span class="w"> </span>--prefix<span class="w"> </span>wasm<span class="w"> </span><span class="nb">test</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># Test with web target</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>wasm-pack<span class="w"> </span>build<span class="w"> </span>--target<span class="w"> </span>web<span class="w"> </span>wasm
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>npm<span class="w"> </span>--prefix<span class="w"> </span>wasm<span class="w"> </span><span class="nb">test</span>
-</span></code></pre></div>
+<p>Use <code>cql2 --help</code> to get a complete listing of the CLI arguments and formats.</p>
 
 
 

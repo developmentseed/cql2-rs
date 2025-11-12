@@ -1,10 +1,15 @@
 [
   {
-    "version": "v0.4.1-pypi",
-    "title": "v0.4.1-pypi",
+    "version": "v0.4.2",
+    "title": "v0.4.2",
     "aliases": [
       "latest"
     ]
+  },
+  {
+    "version": "v0.4.1-pypi",
+    "title": "v0.4.1-pypi",
+    "aliases": []
   },
   {
     "version": "v0.4.1",
