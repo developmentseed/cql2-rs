@@ -11,7 +11,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-dynamic = ["version"]
+dynamic = ["version", "readme", "summary", "description", "description_content_type", "keywords", "home_page", "author", "author_email", "license", "project_url"]
 
 [project.scripts]
 cql2 = "cql2:main"

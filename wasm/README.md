@@ -1,6 +1,27 @@
 # cql2-wasm
 
-This is a no-release crate to build a small [WebAssembly](https://webassembly.org/) wrapper for this crate.
+A small [WebAssembly](https://webassembly.org/) module for parsing and translating [CQL2](https://www.ogc.org/standards/cql2/).
+
+## Usage
+
+Add to your project:
+
+```sh
+npm i cql2-wasm
+```
+
+Then:
+
+```js
+import { CQL2 } from 'cql2-wasm'
+
+const cql2 = new CQL2('collection = foo')
+
+// Parse and display results
+console.log('is_valid():', cql2.is_valid())
+console.log('to_json():', cql2.to_json())
+console.log('to_text():', cql2.to_text())
+````
 
 ## Building
 
@@ -29,10 +50,3 @@ wasm-pack test --firefox wasm
 ```
 
 Then, open <http://127.0.0.1:8000/> to see the test(s) run.
-
-## Releasing to NPM
-
-```shell
-wasm-pack build wasm
-# TODO actually release
-```
