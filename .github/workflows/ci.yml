@@ -52,8 +52,8 @@ jobs:
         run: uv run pytest
       - name: CLI smoke test
         run: uv run cql2 < examples/text/example01.txt
-  test-wasm:
-    name: WASM
+  wasm-nodejs:
+    name: WASM (Node.js)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -62,20 +62,34 @@ jobs:
         uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: "latest"
-      - name: Build WASM for docs (web target)
-        run: scripts/buildwasm
-      - name: Test WASM for Node.js
-        run: wasm-pack test --node wasm
-      - name: Build WASM for web (browser) target
-        run: wasm-pack build --target web wasm
-      # TODO: these don't currently work
-      # - name: Test WASM for web (browser) target
-      #   run: wasm-pack test --firefox --headless wasm
-      - name: Build WASM for Node.js
+      - name: Build for Node.js
         run: wasm-pack build --target nodejs wasm
+      - name: Test (Rust unit tests in Node.js)
+        run: wasm-pack test --node wasm
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: Test WASM via JavaScript integration tests
+          node-version: "20"
+      - name: Test (JavaScript integration tests)
+        run: npm --prefix wasm test
+
+  wasm-web:
+    name: WASM (web)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: Swatinem/rust-cache@v2
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "latest"
+      - name: Build for web
+        run: scripts/buildwasm
+      - name: Test (Rust unit tests in web)
+        run: wasm-pack test --headless --firefox wasm
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Test (JavaScript integration tests)
         run: npm --prefix wasm test

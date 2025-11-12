@@ -74,9 +74,15 @@ wasm-pack test --node wasm
 
 ### JavaScript Integration Tests
 
-These tests are written in JavaScript and verify the actual JavaScript API surface that developers will use:
+These tests are written in JavaScript and verify the actual JavaScript API surface that developers will use.
+The tests work with both nodejs and web targets:
 
 ```shell
+# Test with nodejs target
 wasm-pack build --target nodejs wasm
+npm --prefix wasm test
+
+# Test with web target
+wasm-pack build --target web wasm
 npm --prefix wasm test
 ```
