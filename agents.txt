@@ -1,0 +1,119 @@
+# CQL2-RS Project AI Agent Configuration
+
+## Project Overview
+This is cql2-rs, a Rust library with Python bindings for parsing, validating, and converting Common Query Language 2 (CQL2) expressions. The project supports text and JSON CQL2 formats and can convert to SQL for various database backends.
+
+## Key Technologies
+- **Primary Language**: Rust (edition 2021)
+- **Python Bindings**: PyO3 and maturin
+- **Parser**: Pest parser generator
+- **SQL Generation**: sqlparser-rs with serde features
+- **Geometry**: geo-types, geojson, geozero, wkt
+- **Testing**: rstest, pytest
+- **Documentation**: mkdocs
+- **Package Management**: Cargo (Rust), uv (Python)
+- **Linting**: rustfmt, ruff, clippy
+
+## Project Structure
+```
+├── src/           # Core Rust library (CQL2 parsing, validation, SQL conversion)
+├── python/        # Python bindings using PyO3
+├── cli/           # Command-line interface
+├── wasm/          # WebAssembly bindings
+├── tests/         # Rust unit and integration tests
+├── examples/      # Example CQL2 expressions and usage demos
+├── docs/          # Documentation source
+└── scripts/       # Development scripts (test, lint, build)
+```
+
+## Core Capabilities
+- Parse CQL2 text and JSON expressions
+- Validate CQL2 syntax and semantics
+- Convert between CQL2 text, JSON, and SQL formats
+- Support for spatial, temporal, and array operations
+- Database-specific SQL generation (standard SQL, DuckDB)
+- Direct AST access without string reparsing
+- Python API with comprehensive type stubs
+
+## Development Guidelines
+
+### Code Quality
+- Use `scripts/lint` for comprehensive linting (rustfmt, clippy, ruff)
+- Use `scripts/test` for running all tests (Rust + Python)
+- Maintain type safety and comprehensive error handling
+- Follow Rust API guidelines and naming conventions
+- Use descriptive error messages and documentation
+
+### Testing
+- Write unit tests for all core functionality
+- Include integration tests for CQL2 -> SQL conversion
+- Test Python bindings separately with pytest
+- Use rstest for parameterized Rust tests
+- Validate against OGC CQL2 specification examples
+
+### Documentation
+- Maintain rustdoc comments for all public APIs
+- Keep Python type stubs (cql2.pyi) synchronized
+- Update README examples when adding features
+- Document breaking changes in CHANGELOG.md
+
+### Dependencies
+- Prefer well-maintained crates with active communities
+- Use workspace dependencies for version consistency
+- Enable only necessary features to minimize build time
+- Keep Python dependencies minimal and compatible
+
+## Common Tasks
+
+### Adding New CQL2 Features
+1. Update grammar in `src/cql2.pest`
+2. Modify parser in `src/parser.rs`
+3. Add SQL conversion logic in `src/sql.rs` or `src/duckdb.rs`
+4. Update Python bindings in `python/src/lib.rs`
+5. Add comprehensive tests and examples
+6. Update type stubs and documentation
+
+### SQL Backend Support
+- Standard SQL: `src/sql.rs`
+- DuckDB-specific: `src/duckdb.rs`
+- Consider spatial function differences between backends
+- Test array operations thoroughly
+
+### Python Binding Changes
+- Use PyO3 best practices for error handling
+- Maintain compatibility with sqloxide and other AST tools
+- Provide both string and direct AST access methods
+- Update type stubs in `cql2.pyi`
+
+## Performance Considerations
+- Parser uses zero-copy where possible
+- AST manipulation avoids string reparsing
+- SQL generation is lazy and cached
+- Python bindings minimize copies between Rust/Python
+
+## Error Handling
+- Use thiserror for Rust error definitions
+- Provide context-rich error messages
+- Map Rust errors to appropriate Python exceptions
+- Include position information for parse errors
+
+## Release Process
+- Follow semantic versioning
+- Update CHANGELOG.md with all changes
+- Coordinate Rust crate and Python package releases
+- Test across supported Python versions
+- Update documentation and examples
+
+## External Integration
+- Compatible with sqloxide for AST manipulation
+- Supports geospatial libraries (geo, geojson)
+- Works with popular SQL databases
+- Can be embedded in larger geospatial applications
+
+## Troubleshooting
+- Use `RUST_LOG=debug` for detailed logging
+- Check `target/debug/` for intermediate build artifacts
+- Python binding issues often relate to maturin configuration
+- Spatial operations may need specific geometry formats
+
+This project bridges the gap between CQL2 specifications and practical SQL usage, making it easier to work with geospatial query languages in both Rust and Python ecosystems.
