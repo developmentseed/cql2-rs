@@ -84,7 +84,7 @@ jobs:
         with:
           version: "latest"
       - name: Build for web
-        run: scripts/buildwasm
+        run: wasm-pack build --target web wasm
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
