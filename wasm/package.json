@@ -1,0 +1,10 @@
+{
+  "name": "cql2-wasm-tests",
+  "version": "0.4.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/integration.mjs"
+  },
+  "devDependencies": {}
+}
