@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: Swatinem/rust-cache@v2
+      - name: Update
+        # Ensure the lockfile is up-to-date, which is required for publishing
+        run: cargo update --locked
       - name: Format
         run: cargo fmt --check
       - name: Check
@@ -72,7 +75,6 @@ jobs:
           node-version: "20"
       - name: Test (JavaScript integration tests)
         run: npm --prefix wasm test
-
   wasm-web:
     name: WASM (web)
     runs-on: ubuntu-latest
