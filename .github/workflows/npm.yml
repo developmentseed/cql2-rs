@@ -49,8 +49,6 @@ jobs:
         uses: actions/attest-build-provenance@v3
         with:
           subject-path: "package/*"
-      - name: Set up npm
-        run: npm ci
       - name: Publish to npm
         working-directory: package
         run: npm publish --provenance --access public
