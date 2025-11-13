@@ -69,7 +69,7 @@
 </style>
 
 <script type="module">
-  import init, { CQL2 } from '../pkg/cql2_wasm.js';
+  import init, { Expr as CQL2 } from '../pkg/cql2_wasm.js';
 
   await init();
   window.CQL2 = CQL2;

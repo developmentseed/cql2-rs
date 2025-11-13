@@ -15,10 +15,10 @@ pub fn parse_json(s: &str) -> Result<CQL2Expression, JsError> {
     Ok(CQL2Expression(expr))
 }
 
-#[wasm_bindgen(js_name = CQL2)]
+#[wasm_bindgen(js_name = Expr)]
 pub struct CQL2Expression(cql2::Expr);
 
-#[wasm_bindgen(js_class = CQL2)]
+#[wasm_bindgen(js_class = Expr)]
 impl CQL2Expression {
     #[wasm_bindgen(constructor)]
     pub fn new(v: String) -> Result<CQL2Expression, JsError> {
