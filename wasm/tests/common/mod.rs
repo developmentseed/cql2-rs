@@ -6,6 +6,7 @@
 #![cfg(target_arch = "wasm32")]
 
 use cql2_wasm::{parse_json, parse_text, CQL2Expression};
+use js_sys;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_test::*;
 
@@ -41,8 +42,11 @@ fn test_to_json() {
     let expr =
         CQL2Expression::new("landsat:scene_id = 'LC82030282019133LGN00'".to_string()).unwrap();
     let json = expr.to_json().unwrap();
-    assert!(json.contains("landsat:scene_id"));
-    assert!(json.contains("LC82030282019133LGN00"));
+    // Convert JsValue to JSON string for validation
+    let json_str = js_sys::JSON::stringify(&json).unwrap();
+    let json_str = json_str.as_string().unwrap();
+    assert!(json_str.contains("landsat:scene_id"));
+    assert!(json_str.contains("LC82030282019133LGN00"));
 }
 
 #[wasm_bindgen_test]

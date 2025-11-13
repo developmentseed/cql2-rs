@@ -66,16 +66,17 @@ impl CQL2Expression {
         Ok(CQL2Expression(r))
     }
 
-    pub fn to_json(&self) -> Result<String, JsError> {
+    pub fn to_json(&self) -> Result<JsValue, JsError> {
         let r = self.0.to_json()?;
-        Ok(r)
+        let js_value = serde_wasm_bindgen::to_value(&r)?;
+        Ok(js_value)
     }
-
+    
     pub fn to_json_pretty(&self) -> Result<String, JsError> {
         let r = self.0.to_json_pretty()?;
         Ok(r)
     }
-
+    
     pub fn to_text(&self) -> Result<String, JsError> {
         let r = self.0.to_text()?;
         Ok(r)

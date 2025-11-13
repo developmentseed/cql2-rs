@@ -632,6 +632,7 @@ version = "0.4.2"
 dependencies = [
  "cql2",
  "getrandom 0.3.4",
+ "js-sys",
  "serde-wasm-bindgen",
  "serde_json",
  "wasm-bindgen",
