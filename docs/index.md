@@ -11,6 +11,15 @@
 {'op': '=', 'args': [{'property': 'landsat:scene_id'}, 'LC82030282019133LGN00']}
 ```
 
+## Javascript
+
+```js
+> import { Expr } from 'cql2-wasm';
+> const expr = new Expr("landsat:scene_id = 'LC82030282019133LGN00'");
+> expr.to_json()
+{'op': '=', 'args': [{'property': 'landsat:scene_id'}, 'LC82030282019133LGN00']}
+```
+
 ## CLI
 
 ```shell
