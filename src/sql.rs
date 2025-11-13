@@ -1,13 +1,11 @@
-use crate::Error;
-use crate::Expr;
-use crate::Geometry;
+use crate::{Error, Expr, Geometry};
 use pg_escape::quote_identifier;
-use sqlparser::ast::DataType::{Date, Timestamp};
-use sqlparser::ast::Expr::Value as ValExpr;
-use sqlparser::ast::Expr::{Cast, Nested};
 use sqlparser::ast::{
-    Array as SqlArray, BinaryOperator, CastKind, Expr as SqlExpr, FunctionArgumentList,
-    FunctionArguments, Ident, TimezoneInfo, Value,
+    Array as SqlArray, BinaryOperator, CastKind,
+    DataType::{Date, Timestamp},
+    Expr as SqlExpr,
+    Expr::{Cast, Nested, Value as ValExpr},
+    FunctionArgumentList, FunctionArguments, Ident, TimezoneInfo, Value,
 };
 use std::vec;
 

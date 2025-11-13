@@ -1,15 +1,16 @@
 use crate::{geometry::spatial_op, temporal::temporal_op, Error, Geometry, Validator};
-use geo_types::Geometry as GGeom;
-use geo_types::{coord, Rect};
+use geo_types::{coord, Geometry as GGeom, Rect};
 use json_dotpath::DotPaths;
 use like::Like;
 use pg_escape::{quote_identifier, quote_literal};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashSet;
-use std::fmt::Debug;
-use std::ops::{Add, Deref};
-use std::str::FromStr;
+use std::{
+    collections::HashSet,
+    fmt::Debug,
+    ops::{Add, Deref},
+    str::FromStr,
+};
 use unaccent::unaccent;
 use wkt::TryFromWkt;
 
