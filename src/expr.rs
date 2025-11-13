@@ -451,6 +451,9 @@ impl Expr {
                             Ok(Expr::Operation { op, args })
                         }
                     } else if op == "in" {
+                        let Some(_) = j else {
+                            return Ok(Expr::Operation { op, args });
+                        };
                         let l: String = left.to_text()?;
                         let r: HashSet<String> = right.try_into()?;
                         let isin: bool = r.contains(&l);
