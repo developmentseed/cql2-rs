@@ -6,6 +6,11 @@ import cql2
 import pytest
 
 
+def test_version() -> None:
+    assert isinstance(cql2.__version__, str)
+    assert len(cql2.__version__.split(".")) == 3
+
+
 def test_parse_file(fixtures: Path) -> None:
     cql2.parse_file(fixtures / "text" / "example01.txt")
 
@@ -63,6 +68,16 @@ def test_add() -> None:
 
 def test_eq() -> None:
     assert cql2.Expr("True") == cql2.Expr("true")
+
+
+def test_str() -> None:
+    expr = cql2.Expr("landsat:scene_id = 'LC82030282019133LGN00'")
+    assert str(expr) == "(\"landsat:scene_id\" = 'LC82030282019133LGN00')"
+
+
+def test_repr() -> None:
+    expr = cql2.Expr("landsat:scene_id = 'LC82030282019133LGN00'")
+    assert repr(expr) == "Expr((\"landsat:scene_id\" = 'LC82030282019133LGN00'))"
 
 
 @pytest.mark.parametrize(

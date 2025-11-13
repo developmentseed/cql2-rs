@@ -100,6 +100,14 @@ impl Expr {
     fn __eq__(&self, rhs: &Expr) -> bool {
         self.0 == rhs.0
     }
+
+    fn __str__(&self) -> Result<String> {
+        self.to_text()
+    }
+
+    fn __repr__(&self) -> Result<String> {
+        Ok(format!("Expr({})", self.to_text()?))
+    }
 }
 
 impl From<Error> for PyErr {
@@ -160,5 +168,6 @@ fn cql2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_json, m)?)?;
     m.add("ParseError", py.get_type::<ParseError>())?;
     m.add("ValidationError", py.get_type::<ValidationError>())?;
+    m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

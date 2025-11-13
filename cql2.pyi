@@ -1,6 +1,8 @@
 from typing import Any
 from os import PathLike
 
+__version__: str
+
 def parse_file(path: PathLike | str) -> Expr:
     """Parses CQL2 from a filesystem path.
 
