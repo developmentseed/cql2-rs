@@ -70,6 +70,16 @@ def test_eq() -> None:
     assert cql2.Expr("True") == cql2.Expr("true")
 
 
+def test_str() -> None:
+    expr = cql2.Expr("landsat:scene_id = 'LC82030282019133LGN00'")
+    assert str(expr) == "(\"landsat:scene_id\" = 'LC82030282019133LGN00')"
+
+
+def test_repr() -> None:
+    expr = cql2.Expr("landsat:scene_id = 'LC82030282019133LGN00'")
+    assert repr(expr) == "Expr((\"landsat:scene_id\" = 'LC82030282019133LGN00'))"
+
+
 @pytest.mark.parametrize(
     "expr, item, should_match",
     [

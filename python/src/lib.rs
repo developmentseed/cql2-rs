@@ -100,6 +100,14 @@ impl Expr {
     fn __eq__(&self, rhs: &Expr) -> bool {
         self.0 == rhs.0
     }
+
+    fn __str__(&self) -> Result<String> {
+        self.to_text()
+    }
+
+    fn __repr__(&self) -> Result<String> {
+        Ok(format!("Expr({})", self.to_text()?))
+    }
 }
 
 impl From<Error> for PyErr {
