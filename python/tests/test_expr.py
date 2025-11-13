@@ -6,6 +6,11 @@ import cql2
 import pytest
 
 
+def test_version() -> None:
+    assert isinstance(cql2.__version__, str)
+    assert len(cql2.__version__.split(".")) == 3
+
+
 def test_parse_file(fixtures: Path) -> None:
     cql2.parse_file(fixtures / "text" / "example01.txt")
 
