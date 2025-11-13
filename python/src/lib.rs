@@ -160,5 +160,6 @@ fn cql2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_json, m)?)?;
     m.add("ParseError", py.get_type::<ParseError>())?;
     m.add("ValidationError", py.get_type::<ValidationError>())?;
+    m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }
