@@ -132,15 +132,13 @@ await (async () => {
 
   await test("matches() returns true for matching item", () => {
     const expr = new Expr("id = 1");
-    const item = JSON.stringify({ id: 1, name: "test" });
-    const result = expr.matches(item);
+    const result = expr.matches({ id: 1, name: "test" });
     assert.equal(result, true);
   });
 
   await test("matches() returns false for non-matching item", () => {
     const expr = new Expr("id = 1");
-    const item = JSON.stringify({ id: 2, name: "test" });
-    const result = expr.matches(item);
+    const result = expr.matches({ id: 2, name: "test" });
     assert.equal(result, false);
   });
 
@@ -166,8 +164,7 @@ await (async () => {
 
   await test("reduce() simplifies expressions with item context", () => {
     const expr = new Expr("id + 10");
-    const item = JSON.stringify({ id: 5 });
-    const reduced = expr.reduce(item);
+    const reduced = expr.reduce({ id: 5 });
     const text = reduced.to_text();
     assert.equal(text, "15");
   });

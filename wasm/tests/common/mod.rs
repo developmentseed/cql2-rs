@@ -6,6 +6,7 @@
 #![cfg(target_arch = "wasm32")]
 
 use cql2_wasm::{parse_json, parse_text, CQL2Expression};
+use wasm_bindgen::JsValue;
 use wasm_bindgen_test::*;
 
 #[wasm_bindgen_test]
@@ -75,7 +76,9 @@ fn test_to_sql() {
 fn test_matches_with_matching_item() {
     let expr = CQL2Expression::new("id = 1".to_string()).unwrap();
     let item = r#"{"id": 1, "name": "test"}"#;
-    let result = expr.matches(Some(item.to_string())).unwrap();
+    let value: serde_json::Value = serde_json::from_str(item).unwrap();
+    let js_value: JsValue = serde_wasm_bindgen::to_value(&value).unwrap();
+    let result = expr.matches(js_value).unwrap();
     assert!(result);
 }
 
@@ -83,21 +86,23 @@ fn test_matches_with_matching_item() {
 fn test_matches_with_non_matching_item() {
     let expr = CQL2Expression::new("id = 1".to_string()).unwrap();
     let item = r#"{"id": 2, "name": "test"}"#;
-    let result = expr.matches(Some(item.to_string())).unwrap();
+    let value: serde_json::Value = serde_json::from_str(item).unwrap();
+    let js_value: JsValue = serde_wasm_bindgen::to_value(&value).unwrap();
+    let result = expr.matches(js_value).unwrap();
     assert!(!result);
 }
 
 #[wasm_bindgen_test]
 fn test_matches_without_item() {
     let expr = CQL2Expression::new("true".to_string()).unwrap();
-    let result = expr.matches(None).unwrap();
+    let result = expr.matches(JsValue::NULL).unwrap();
     assert!(result);
 }
 
 #[wasm_bindgen_test]
 fn test_reduce_without_item() {
     let expr = CQL2Expression::new("1 + 2".to_string()).unwrap();
-    let reduced = expr.reduce(None).unwrap();
+    let reduced = expr.reduce(JsValue::NULL).unwrap();
     let text = reduced.to_text().unwrap();
     assert_eq!(text, "3");
 }
@@ -106,7 +111,9 @@ fn test_reduce_without_item() {
 fn test_reduce_with_item() {
     let expr = CQL2Expression::new("id + 10".to_string()).unwrap();
     let item = r#"{"id": 5}"#;
-    let reduced = expr.reduce(Some(item.to_string())).unwrap();
+    let value: serde_json::Value = serde_json::from_str(item).unwrap();
+    let js_value: JsValue = serde_wasm_bindgen::to_value(&value).unwrap();
+    let reduced = expr.reduce(js_value).unwrap();
     let text = reduced.to_text().unwrap();
     assert_eq!(text, "15");
 }
