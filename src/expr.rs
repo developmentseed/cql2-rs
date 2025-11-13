@@ -257,6 +257,11 @@ impl Expr {
     /// let toexpr: Expr = Expr::from_str("20").unwrap();
     /// assert_eq!(reduced, toexpr);
     ///
+    /// let fromexpr: Expr = Expr::from_str("cityName IN ('Toronto','Frankfurt','Tokyo','New York')").unwrap();
+    /// let reduced = fromexpr.reduce(None).unwrap();
+    /// let toexpr: Expr = Expr::from_str("cityName IN ('Toronto','Frankfurt','Tokyo','New York')").unwrap();
+    /// assert_eq!(reduced, toexpr);
+    ///
     /// let fromexpr: Expr = Expr::from_str("(bork=1) and (bork=1) and (bork=1 and true)").unwrap();
     /// let reduced = fromexpr.reduce(Some(&item)).unwrap();
     /// let toexpr: Expr = Expr::from_str("bork=1").unwrap();
