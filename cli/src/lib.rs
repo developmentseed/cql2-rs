@@ -92,8 +92,10 @@ impl Cli {
 
     pub fn run_inner(self) -> Result<()> {
         if let Some(filter_path) = self.filter.as_ref() {
-            use std::fs::File;
-            use std::io::{BufRead, BufReader};
+            use std::{
+                fs::File,
+                io::{BufRead, BufReader},
+            };
             // Use self.input as the CQL2 expression
             let expr_str = self.input.as_ref().ok_or_else(|| {
                 anyhow!("CQL2 expression required as positional argument when using --filter")

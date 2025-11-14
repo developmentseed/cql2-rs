@@ -15,10 +15,10 @@ pub fn parse_json(s: &str) -> Result<CQL2Expression, JsError> {
     Ok(CQL2Expression(expr))
 }
 
-#[wasm_bindgen(js_name = CQL2)]
+#[wasm_bindgen(js_name = Expr)]
 pub struct CQL2Expression(cql2::Expr);
 
-#[wasm_bindgen(js_class = CQL2)]
+#[wasm_bindgen(js_class = Expr)]
 impl CQL2Expression {
     #[wasm_bindgen(constructor)]
     pub fn new(v: String) -> Result<CQL2Expression, JsError> {
@@ -42,12 +42,12 @@ impl CQL2Expression {
     /// Check if the expression matches the given item
     ///
     /// # Arguments
-    /// * `item` - JSON string representing the item to match against
-    pub fn matches(&self, item: Option<String>) -> Result<bool, JsError> {
-        let value = if let Some(item_str) = item {
-            Some(serde_json::from_str(&item_str)?)
-        } else {
+    /// * `item` - JavaScript object representing the item to match against
+    pub fn matches(&self, item: JsValue) -> Result<bool, JsError> {
+        let value = if item.is_null() || item.is_undefined() {
             None
+        } else {
+            Some(serde_wasm_bindgen::from_value(item)?)
         };
         Ok(self.0.clone().matches(value.as_ref())?)
     }
@@ -55,20 +55,21 @@ impl CQL2Expression {
     /// Reduce the expression, optionally with an item context
     ///
     /// # Arguments
-    /// * `item` - Optional JSON string representing the item context for reduction
-    pub fn reduce(&self, item: Option<String>) -> Result<CQL2Expression, JsError> {
-        let value = if let Some(item_str) = item {
-            Some(serde_json::from_str(&item_str)?)
-        } else {
+    /// * `item` - JavaScript object representing the item context for reduction
+    pub fn reduce(&self, item: JsValue) -> Result<CQL2Expression, JsError> {
+        let value = if item.is_null() || item.is_undefined() {
             None
+        } else {
+            Some(serde_wasm_bindgen::from_value(item)?)
         };
         let r = self.0.clone().reduce(value.as_ref())?;
         Ok(CQL2Expression(r))
     }
 
-    pub fn to_json(&self) -> Result<String, JsError> {
+    pub fn to_json(&self) -> Result<JsValue, JsError> {
         let r = self.0.to_json()?;
-        Ok(r)
+        let js_value = serde_wasm_bindgen::to_value(&r)?;
+        Ok(js_value)
     }
 
     pub fn to_json_pretty(&self) -> Result<String, JsError> {

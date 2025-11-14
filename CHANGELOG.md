@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Normalized WASM interface to match Python API ([#120](https://github.com/developmentseed/cql2-rs/pull/120))
+  - Renamed `CQL2` to `Expr` for consistency with Python
+  - Changed `Expr.matches()` and `Expr.reduce()` to accept JS objects instead of strings
+  - Changed `Expr.to_json()` to return JS objects instead of strings
+
 ## [0.4.2] - 2025-11-12
 
 ### Changed
