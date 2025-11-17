@@ -67,7 +67,7 @@ jobs:
       - name: Test (Rust unit tests in Node.js)
         run: wasm-pack test --node wasm
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
       - name: Test (JavaScript integration tests)
@@ -85,7 +85,7 @@ jobs:
       - name: Build for web
         run: wasm-pack build --target web wasm
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
       - name: Test (JavaScript integration tests with web target)
