@@ -579,7 +579,7 @@ dependencies = [
 
 [[package]]
 name = "cql2"
-version = "0.4.2"
+version = "0.5.0-rc1"
 dependencies = [
  "assert-json-diff",
  "duckdb",
@@ -606,7 +606,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-cli"
-version = "0.4.2"
+version = "0.5.0-rc1"
 dependencies = [
  "anyhow",
  "clap",
@@ -616,7 +616,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-python"
-version = "0.4.2"
+version = "0.5.0-rc1"
 dependencies = [
  "clap",
  "cql2",
@@ -628,7 +628,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-wasm"
-version = "0.4.2"
+version = "0.5.0-rc1"
 dependencies = [
  "cql2",
  "getrandom 0.3.4",
