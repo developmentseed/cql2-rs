@@ -53,4 +53,11 @@ jobs:
           subject-path: "package/*"
       - name: Publish to npm
         working-directory: package
-        run: npm publish --provenance --access public
+        run: |
+          # Check if version contains prerelease identifier (e.g., -rc1, -alpha, -beta)
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *-* ]]; then
+            npm publish --provenance --access public --tag next
+          else
+            npm publish --provenance --access public
+          fi
