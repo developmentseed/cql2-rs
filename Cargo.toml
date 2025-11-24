@@ -53,7 +53,7 @@ members = ["cli", "python", "wasm"]
 
 
 [workspace.dependencies]
-clap = "4.5.51"
+clap = "4.5.53"
 
 [profile.release]
 opt-level = "s"
