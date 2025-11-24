@@ -1,4 +1,10 @@
 version: 2
+
+multi-ecosystem-groups:
+  rust-crates:
+    schedule:
+      interval: "weekly"
+
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -6,17 +12,17 @@ updates:
       interval: "weekly"
   - package-ecosystem: "cargo"
     directory: "/"
-    schedule:
-      interval: "weekly"
+    patterns: ["*"]
+    multi-ecosystem-group: "rust-crates"
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
   - package-ecosystem: "cargo"
     directory: "/python"
-    schedule:
-      interval: "weekly"
+    patterns: ["*"]
+    multi-ecosystem-group: "rust-crates"
   - package-ecosystem: "cargo"
     directory: "/cli"
-    schedule:
-      interval: "weekly"
+    patterns: ["*"]
+    multi-ecosystem-group: "rust-crates"
