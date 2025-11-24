@@ -15,7 +15,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
       - name: Update
         # Ensure the lockfile is up-to-date, which is required for publishing
@@ -30,7 +30,7 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
       - name: Clippy
         run: cargo clippy --workspace --tests -- -D warnings
@@ -41,7 +41,7 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v7
         with:
@@ -59,7 +59,7 @@ jobs:
     name: WASM (Node.js)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.4.0
@@ -79,7 +79,7 @@ jobs:
     name: WASM (web)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
       - name: Install wasm-pack
         uses: jetli/wasm-pack-action@v0.4.0
