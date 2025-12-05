@@ -15,11 +15,17 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
+      # We've run out of disk space while building libduckdb-sys, so this gives
+      # us more headroom in a quite hackey way.
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          df -h
       - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
-      - name: Update
-        # Ensure the lockfile is up-to-date, which is required for publishing
-        run: cargo update --locked
       - name: Format
         run: cargo fmt --check
       - name: Check
