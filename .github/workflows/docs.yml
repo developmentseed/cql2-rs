@@ -24,9 +24,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: "latest"
+        run: cargo install wasm-pack
       - name: build wasm
         run: scripts/buildwasm
       - uses: astral-sh/setup-uv@v7
