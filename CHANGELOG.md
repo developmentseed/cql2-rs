@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.4.2...cql2-v0.5.0) - 2025-12-08
+
+### Added
+
+- add __str__ and __repr__ ([#122](https://github.com/developmentseed/cql2-rs/pull/122))
+- add __version__ to python module ([#121](https://github.com/developmentseed/cql2-rs/pull/121))
+
+### Fixed
+
+- *(ci)* remove locked check ([#125](https://github.com/developmentseed/cql2-rs/pull/125))
+- it wasn't used anywhere and it was broken ([#124](https://github.com/developmentseed/cql2-rs/pull/124))
+- *(ci)* update to latest npm for publishing
+- *(ci)* remove clean install from npm publish
+
+### Other
+
+- use release bot for releasing ([#145](https://github.com/developmentseed/cql2-rs/pull/145))
+- *(deps)* bump the production-dependencies group across 1 directory with 3 updates ([#144](https://github.com/developmentseed/cql2-rs/pull/144))
+- fix ci config ([#143](https://github.com/developmentseed/cql2-rs/pull/143))
+- *(deps)* bump the production-dependencies group with 3 updates ([#142](https://github.com/developmentseed/cql2-rs/pull/142))
+- add release-plz workflow ([#140](https://github.com/developmentseed/cql2-rs/pull/140))
+- *(deps)* bump the production-dependencies group with 6 updates ([#138](https://github.com/developmentseed/cql2-rs/pull/138))
+- *(deps)* bump actions/checkout from 5 to 6 ([#134](https://github.com/developmentseed/cql2-rs/pull/134))
+- try groups ([#136](https://github.com/developmentseed/cql2-rs/pull/136))
+- group dependencies ([#135](https://github.com/developmentseed/cql2-rs/pull/135))
+- *(ci)* actually keep the locked check ([#127](https://github.com/developmentseed/cql2-rs/pull/127))
+- *(deps)* bump actions/setup-node from 4 to 6 ([#126](https://github.com/developmentseed/cql2-rs/pull/126))
+- *(wasm)* [**breaking**] Make WASM module interface more like Python module ([#120](https://github.com/developmentseed/cql2-rs/pull/120))
+- update cargo lock
+
 ### Changed
 
 - Normalized WASM interface to match Python API ([#120](https://github.com/developmentseed/cql2-rs/pull/120))

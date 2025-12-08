@@ -611,7 +611,7 @@ dependencies = [
 
 [[package]]
 name = "cql2"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "assert-json-diff",
  "duckdb",
@@ -638,7 +638,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-cli"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -648,7 +648,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-python"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "clap",
  "cql2",
@@ -660,7 +660,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-wasm"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "cql2",
  "getrandom 0.3.4",
@@ -2597,9 +2597,9 @@ dependencies = [
 
 [[package]]
 name = "sqlparser"
-version = "0.60.0"
+version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "505aa16b045c4c1375bf5f125cce3813d0176325bfe9ffc4a903f423de7774ff"
+checksum = "ec4b661c54b1e4b603b37873a18c59920e4c51ea8ea2cf527d925424dbd4437c"
 dependencies = [
  "log",
  "recursive",
@@ -2608,9 +2608,9 @@ dependencies = [
 
 [[package]]
 name = "sqlparser_derive"
-version = "0.4.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "028e551d5e270b31b9f3ea271778d9d827148d4287a5d96167b6bb9787f5cc38"
+checksum = "da5fc6819faabb412da764b99d3b713bb55083c11e7e0c00144d386cd6a1939c"
 dependencies = [
  "proc-macro2",
  "quote",
