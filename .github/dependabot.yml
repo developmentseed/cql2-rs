@@ -6,7 +6,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "cargo"
-    directory: "/"
+    directories:
+      - "/"
+      - "/python"
+      - "/cli"
     groups:
       production-dependencies:
         dependency-type: "production"
@@ -16,23 +19,5 @@ updates:
       interval: "weekly"
   - package-ecosystem: "pip"
     directory: "/"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "cargo"
-    directory: "/python"
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-      development-dependencies:
-        dependency-type: "development"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "cargo"
-    directory: "/cli"
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-      development-dependencies:
-        dependency-type: "development"
     schedule:
       interval: "weekly"
