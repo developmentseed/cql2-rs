@@ -152,7 +152,7 @@ jobs:
       name: pypi
       url: https://pypi.org/project/cql2/
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
         with:
