@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1](https://github.com/developmentseed/cql2-rs/compare/cql2-cli-v0.5.0...cql2-cli-v0.5.1) - 2026-01-05
+
+### Other
+
+- update Cargo.toml dependencies
+
 ## [0.5.0](https://github.com/developmentseed/cql2-rs/compare/cql2-cli-v0.4.2...cql2-cli-v0.5.0) - 2025-12-08
 
 ### Other
