@@ -1,4 +1,4 @@
-use cql2::ToSqlAst;
+use cql2::{ToDuckSQL, ToSqlAst};
 use wasm_bindgen::prelude::*;
 
 /// Parse CQL2 text format
@@ -85,6 +85,11 @@ impl CQL2Expression {
     /// Convert the expression to SQL
     pub fn to_sql(&self) -> Result<String, JsError> {
         Ok(self.0.to_sql()?)
+    }
+
+    /// Convert the expression to DuckDB SQL with Spatial Extension
+    pub fn to_ducksql(&self) -> Result<String, JsError> {
+        Ok(self.0.to_ducksql()?)
     }
 
     /// Add two expressions together (AND operation)

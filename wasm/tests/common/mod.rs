@@ -146,3 +146,55 @@ fn test_equals_different_expressions() {
     let expr2 = CQL2Expression::new("id = 2".to_string()).unwrap();
     assert!(!expr1.equals(&expr2));
 }
+
+#[wasm_bindgen_test]
+fn test_to_ducksql_simple() {
+    let expr = CQL2Expression::new("foo = 1".to_string()).unwrap();
+    let ducksql = expr.to_ducksql().unwrap();
+    assert_eq!(ducksql, "foo = 1");
+}
+
+#[wasm_bindgen_test]
+fn test_to_ducksql_spatial() {
+    let expr = CQL2Expression::new("s_intersects(geom, POINT(0 0))".to_string()).unwrap();
+    let ducksql = expr.to_ducksql().unwrap();
+    assert!(ducksql.contains("st_intersects"));
+    assert!(ducksql.contains("st_geomfromtext"));
+    assert!(ducksql.contains("POINT(0 0)"));
+}
+
+#[wasm_bindgen_test]
+fn test_to_ducksql_complex() {
+    let expr = CQL2Expression::new(
+        "s_intersects(geom, POINT(0 0)) and foo >= 1 and bar = 'baz'".to_string(),
+    )
+    .unwrap();
+    let ducksql = expr.to_ducksql().unwrap();
+    assert!(ducksql.contains("st_intersects"));
+    assert!(ducksql.contains("foo >= 1"));
+    assert!(ducksql.contains("bar = 'baz'"));
+}
+
+#[wasm_bindgen_test]
+fn test_to_ducksql_array_contains() {
+    let expr = CQL2Expression::new("a_contains(foo, bar)".to_string()).unwrap();
+    let ducksql = expr.to_ducksql().unwrap();
+    assert_eq!(ducksql, "list_has_all(foo, bar)");
+}
+
+#[wasm_bindgen_test]
+fn test_to_ducksql_timestamp() {
+    let expr =
+        CQL2Expression::new("TIMESTAMP('2020-01-01 00:00:00Z') >= somedate".to_string()).unwrap();
+    let ducksql = expr.to_ducksql().unwrap();
+    assert!(ducksql.contains("CAST('2020-01-01 00:00:00Z' AS TIMESTAMP WITH TIME ZONE)"));
+    assert!(ducksql.contains(">="));
+}
+
+#[wasm_bindgen_test]
+fn test_to_ducksql_date() {
+    let expr = CQL2Expression::new("DATE('2020-01-01') > b".to_string()).unwrap();
+    let ducksql = expr.to_ducksql().unwrap();
+    assert!(ducksql.contains("CAST('2020-01-01' AS DATE)"));
+    assert!(ducksql.contains("> b"));
+}
