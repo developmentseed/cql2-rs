@@ -3,7 +3,7 @@ name: npm
 on:
   push:
     tags:
-      - "v*"
+      - "cql2-v*"
   workflow_dispatch:
 
 jobs:

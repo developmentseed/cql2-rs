@@ -3,7 +3,7 @@ name: Python
 on:
   push:
     tags:
-      - "v*"
+      - "cql2-v*"
   workflow_dispatch:
 
 concurrency:
@@ -103,9 +103,9 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runner: macos-13
+          - runner: macos-15-intel
             target: x86_64
-          - runner: macos-14
+          - runner: macos-latest
             target: aarch64
     steps:
       - uses: actions/checkout@v6
