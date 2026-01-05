@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.1](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.0...cql2-v0.5.1) - 2026-01-05
+
+### Added
+
+- *(wasm)* add to_ducksql ([#156](https://github.com/developmentseed/cql2-rs/pull/156))
+
+### Other
+
+- *(deps)* bump the production-dependencies group across 1 directory with 7 updates ([#155](https://github.com/developmentseed/cql2-rs/pull/155))
+- *(deps)* bump the production-dependencies group across 1 directory with 6 updates ([#154](https://github.com/developmentseed/cql2-rs/pull/154))
+- *(deps)* bump the production-dependencies group across 1 directory with 4 updates ([#152](https://github.com/developmentseed/cql2-rs/pull/152))
+- *(deps)* bump actions/download-artifact from 6 to 7 ([#147](https://github.com/developmentseed/cql2-rs/pull/147))
+- *(deps)* bump actions/create-github-app-token from 2.0.6 to 2.2.1 ([#148](https://github.com/developmentseed/cql2-rs/pull/148))
+- *(deps)* bump actions/upload-artifact from 5 to 6 ([#149](https://github.com/developmentseed/cql2-rs/pull/149))
+- *(deps)* bump the production-dependencies group across 1 directory with 5 updates ([#150](https://github.com/developmentseed/cql2-rs/pull/150))
+
 ## [0.5.0](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.4.2...cql2-v0.5.0) - 2025-12-08
 
 ### Added
