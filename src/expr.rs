@@ -763,6 +763,6 @@ mod tests {
     fn keep_one_element_lists() {
         // https://github.com/developmentseed/cql2-rs/issues/91
         let expr: Expr = "ogc_fid IN ('1')".parse().unwrap();
-        assert_eq!(expr.to_text().unwrap(), "ogc_fid IN ('1')");
+        assert_eq!(expr.to_text().unwrap(), "(ogc_fid IN ('1'))");
     }
 }

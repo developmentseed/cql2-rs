@@ -179,10 +179,18 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
                 notflag = true;
             }
 
-            let origargs = vec![Box::new(lhs.clone()), Box::new(rhs.clone())];
+            let rhsclone = if opstring == "in" {
+                match rhs {
+                    Expr::Array(_) => rhs.clone(),
+                    _ => Expr::Array(vec![Box::new(rhs.clone())]),
+                }
+            } else {
+                rhs.clone()
+            };
+
+            let origargs = vec![Box::new(lhs.clone()), Box::new(rhsclone.clone())];
             let mut retexpr: Expr;
             let mut lhsclone = lhs.clone();
-            let rhsclone = rhs.clone();
 
             let mut lhsargs: Vec<Box<Expr>> = Vec::new();
             let mut rhsargs: Vec<Box<Expr>> = Vec::new();
