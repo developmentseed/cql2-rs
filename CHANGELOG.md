@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.3](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.2...cql2-v0.5.3) - 2026-01-26
+
+### Other
+
+- *(deps)* bump the production-dependencies group across 1 directory with 4 updates ([#163](https://github.com/developmentseed/cql2-rs/pull/163))
+- *(deps)* bump the production-dependencies group across 1 directory with 9 updates ([#161](https://github.com/developmentseed/cql2-rs/pull/161))
+
 ## [0.5.2](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.1...cql2-v0.5.2) - 2026-01-16
 
 ### Fixed
