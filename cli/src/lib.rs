@@ -30,12 +30,12 @@ pub struct Cli {
     #[arg(short, long)]
     output_format: Option<OutputFormat>,
 
-    /// Validate the CQL2
-    #[arg(long, default_value_t = true, action = ArgAction::Set)]
-    validate: bool,
+    /// Don't validate the CQL2
+    #[arg(long)]
+    no_validate: bool,
 
     /// Reduce the CQL2
-    #[arg(long, default_value_t = false, action = ArgAction::Set)]
+    #[arg(long)]
     reduce: bool,
 
     /// Verbosity.
@@ -147,7 +147,7 @@ impl Cli {
         if self.reduce {
             expr = expr.reduce(None)?;
         }
-        if self.validate {
+        if !self.no_validate {
             let validator = Validator::new().unwrap();
             let value = serde_json::to_value(&expr).unwrap();
             if let Err(error) = validator.validate(&value) {
