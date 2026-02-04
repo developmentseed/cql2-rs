@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3](https://github.com/developmentseed/cql2-rs/compare/cql2-cli-v0.5.2...cql2-cli-v0.5.3) - 2026-02-04
+
+### Fixed
+
+- use flags, not values, for validate and reduce in CLI ([#165](https://github.com/developmentseed/cql2-rs/pull/165))
+
 ## [0.5.2](https://github.com/developmentseed/cql2-rs/compare/cql2-cli-v0.5.1...cql2-cli-v0.5.2) - 2026-01-16
 
 ### Other
