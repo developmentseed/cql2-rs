@@ -17,7 +17,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 cql2 = { path = ".." }
 wasm-bindgen = "0.2"
-getrandom = { version = "0.4.1", features = ["wasm_js"] }
+getrandom = { version = "0.3.4", features = ["wasm_js"] }
 serde_json = "1.0"
 serde-wasm-bindgen = "0.6"
 
