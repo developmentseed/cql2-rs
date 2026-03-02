@@ -35,7 +35,7 @@ jobs:
       name: npm
       url: https://www.npmjs.com/package/cql2-wasm
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: npm-package
           path: package
