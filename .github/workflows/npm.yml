@@ -18,7 +18,7 @@ jobs:
       - name: Build WASM for npm
         run: wasm-pack build --target web --out-dir pkg wasm
       - name: Upload package
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: npm-package
           path: wasm/pkg
