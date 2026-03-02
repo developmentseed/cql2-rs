@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.4](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.3...cql2-v0.5.4) - 2026-03-02
+
+### Other
+
+- *(deps)* bump actions/download-artifact from 7 to 8 ([#171](https://github.com/developmentseed/cql2-rs/pull/171))
+- *(deps)* bump actions/upload-artifact from 6 to 7 ([#172](https://github.com/developmentseed/cql2-rs/pull/172))
+- *(deps)* bump actions/attest-build-provenance from 3 to 4 ([#173](https://github.com/developmentseed/cql2-rs/pull/173))
+- *(deps)* bump the production-dependencies group across 1 directory with 12 updates ([#169](https://github.com/developmentseed/cql2-rs/pull/169))
+
 ## [0.5.3](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.2...cql2-v0.5.3) - 2026-02-04
 
 ### Fixed
