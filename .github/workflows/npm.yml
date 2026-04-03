@@ -11,14 +11,14 @@ jobs:
     name: Build WASM package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Install wasm-pack
         run: cargo install wasm-pack
       - name: Build WASM for npm
         run: wasm-pack build --target web --out-dir pkg wasm
       - name: Upload package
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: npm-package
           path: wasm/pkg
@@ -35,18 +35,18 @@ jobs:
       name: npm
       url: https://www.npmjs.com/package/cql2-wasm
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: npm-package
           path: package
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
       - name: Upgrade npm version
         run: npm install -g npm@latest
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4
         with:
           subject-path: "package/*"
       - name: Publish to npm
