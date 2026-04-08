@@ -44,7 +44,10 @@ fn like_to_wildcard(pattern: &str) -> String {
 /// Attempts to extract a property name from an expression, handling `casei`/`accenti` wrappers.
 ///
 /// Returns `Some((property_name, case_insensitive))` if the expression is a property reference
-/// (optionally wrapped in `casei` or `accenti`), or `None` otherwise.
+/// (optionally wrapped in `casei` or `accenti`). The `case_insensitive` flag is `true` only
+/// for `casei`; `accenti` is recognized but does not set `case_insensitive` because
+/// Elasticsearch's `case_insensitive` parameter handles character case only, not diacritics.
+/// Accent-insensitive matching in Elasticsearch requires a custom analyzer.
 fn extract_property(expr: &Expr) -> Option<(&str, bool)> {
     match expr {
         Expr::Property { property } => Some((property.as_str(), false)),
@@ -356,9 +359,20 @@ impl ToElasticsearch for Expr {
                         let inner = spatial_args_query(args, "intersects")?;
                         Ok(json!({"bool": {"must_not": [inner]}}))
                     }
-                    "s_equals" | "st_equals" => spatial_args_query(args, "within"),
-                    "s_touches" | "st_touches" | "s_overlaps" | "st_overlaps"
-                    | "s_crosses" | "st_crosses" => spatial_args_query(args, "intersects"),
+                    "s_equals" | "st_equals" => {
+                        // Two shapes are equal iff each is within the other.
+                        // Elasticsearch has no native "equals" geo_shape relation, so
+                        // we express it as the conjunction of "within" and "contains".
+                        let within = spatial_args_query(args, "within")?;
+                        let contains = spatial_args_query(args, "contains")?;
+                        Ok(json!({"bool": {"must": [within, contains]}}))
+                    }
+                    // NOTE: Elasticsearch does not expose `touches`, `overlaps`, or
+                    // `crosses` geo_shape relations. The queries below are approximated
+                    // as `intersects`, which is a superset of each of those relations.
+                    "s_touches" | "st_touches" => spatial_args_query(args, "intersects"),
+                    "s_overlaps" | "st_overlaps" => spatial_args_query(args, "intersects"),
+                    "s_crosses" | "st_crosses" => spatial_args_query(args, "intersects"),
                     // Temporal operators: convert to range queries on the property field.
                     // When the property is an interval field, the implementation is an approximation.
                     "t_before" => {
@@ -433,9 +447,9 @@ impl ToElasticsearch for Expr {
                             Err(Error::OperationError())
                         }
                     }
-                    "t_starts" | "t_startedby" => {
-                        // t_starts(A, B): start(A) = start(B) AND end(A) < end(B)
-                        // Approximate: A >= start(B) AND A < end(B)
+                    "t_starts" => {
+                        // t_starts(A, B): start(A) = start(B) AND end(A) < end(B).
+                        // For a point-in-time property A, approximate as: start(B) <= A < end(B).
                         if let Some((field, _)) = extract_property(args[0].as_ref()) {
                             let (start, end) = temporal_extent(args[1].as_ref())?;
                             Ok(json!({"range": {field: {"gte": start, "lt": end}}}))
@@ -446,9 +460,22 @@ impl ToElasticsearch for Expr {
                             Err(Error::OperationError())
                         }
                     }
-                    "t_finishes" | "t_finishedby" => {
-                        // t_finishes(A, B): end(A) = end(B) AND start(A) > start(B)
-                        // Approximate: A > start(B) AND A <= end(B)
+                    "t_startedby" => {
+                        // t_startedby(A, B): B starts A, i.e. start(A) = start(B) AND end(B) < end(A).
+                        // For a point-in-time property A, approximate as: A = start(B).
+                        if let Some((field, _)) = extract_property(args[0].as_ref()) {
+                            let (start, _end) = temporal_extent(args[1].as_ref())?;
+                            Ok(json!({"term": {field: start}}))
+                        } else if let Some((field, _)) = extract_property(args[1].as_ref()) {
+                            let (start, _end) = temporal_extent(args[0].as_ref())?;
+                            Ok(json!({"term": {field: start}}))
+                        } else {
+                            Err(Error::OperationError())
+                        }
+                    }
+                    "t_finishes" => {
+                        // t_finishes(A, B): end(A) = end(B) AND start(A) > start(B).
+                        // For a point-in-time property A, approximate as: start(B) < A <= end(B).
                         if let Some((field, _)) = extract_property(args[0].as_ref()) {
                             let (start, end) = temporal_extent(args[1].as_ref())?;
                             Ok(json!({"range": {field: {"gt": start, "lte": end}}}))
@@ -459,9 +486,37 @@ impl ToElasticsearch for Expr {
                             Err(Error::OperationError())
                         }
                     }
-                    "t_overlaps" | "t_overlappedby" => {
-                        // t_overlaps(A, B): start(A) < end(B) AND start(B) < end(A) AND end(A) < end(B)
-                        // Approximate as intersection check
+                    "t_finishedby" => {
+                        // t_finishedby(A, B): end(B) = end(A) AND start(B) > start(A).
+                        // For a point-in-time property A, approximate as: A = end(B).
+                        if let Some((field, _)) = extract_property(args[0].as_ref()) {
+                            let (_start, end) = temporal_extent(args[1].as_ref())?;
+                            Ok(json!({"term": {field: end}}))
+                        } else if let Some((field, _)) = extract_property(args[1].as_ref()) {
+                            let (_start, end) = temporal_extent(args[0].as_ref())?;
+                            Ok(json!({"term": {field: end}}))
+                        } else {
+                            Err(Error::OperationError())
+                        }
+                    }
+                    "t_overlaps" => {
+                        // t_overlaps(A, B): start(A) < start(B) < end(A) < end(B).
+                        // A starts before B and they overlap on the trailing end of A.
+                        // For a point-in-time property A, approximate as: start(B) <= A <= end(B).
+                        if let Some((field, _)) = extract_property(args[0].as_ref()) {
+                            let (start, end) = temporal_extent(args[1].as_ref())?;
+                            Ok(json!({"range": {field: {"gte": start, "lte": end}}}))
+                        } else if let Some((field, _)) = extract_property(args[1].as_ref()) {
+                            let (start, end) = temporal_extent(args[0].as_ref())?;
+                            Ok(json!({"range": {field: {"gte": start, "lte": end}}}))
+                        } else {
+                            Err(Error::OperationError())
+                        }
+                    }
+                    "t_overlappedby" => {
+                        // t_overlappedby(A, B): start(B) < start(A) < end(B) < end(A).
+                        // A is overlapped at its start by B; A extends past the end of B.
+                        // For a point-in-time property A, approximate as: start(B) <= A <= end(B).
                         if let Some((field, _)) = extract_property(args[0].as_ref()) {
                             let (start, end) = temporal_extent(args[1].as_ref())?;
                             Ok(json!({"range": {field: {"gte": start, "lte": end}}}))
@@ -791,6 +846,25 @@ mod tests {
     }
 
     #[test]
+    fn test_s_equals() {
+        let expr: Expr = serde_json::from_str::<Expr>(
+            r#"{
+                "op": "s_equals",
+                "args": [
+                    {"property": "footprint"},
+                    {"type": "Point", "coordinates": [0.0, 0.0]}
+                ]
+            }"#,
+        )
+        .unwrap();
+        let dsl = expr.to_elasticsearch().unwrap();
+        // s_equals = within AND contains
+        assert!(dsl["bool"]["must"].is_array());
+        assert_eq!(dsl["bool"]["must"][0]["geo_shape"]["footprint"]["relation"], json!("within"));
+        assert_eq!(dsl["bool"]["must"][1]["geo_shape"]["footprint"]["relation"], json!("contains"));
+    }
+
+    #[test]
     fn test_s_intersects_bbox() {
         let expr: Expr = "s_intersects(footprint, BBOX(0, 0, 1, 1))".parse().unwrap();
         let dsl = expr.to_elasticsearch().unwrap();
@@ -905,6 +979,28 @@ mod tests {
             dsl,
             json!({"term": {"datetime": "2020-06-15T00:00:00Z"}})
         );
+    }
+
+    #[test]
+    fn test_t_startedby() {
+        let expr: Expr =
+            "t_startedby(datetime, INTERVAL('2020-01-01T00:00:00Z','2021-01-01T00:00:00Z'))"
+                .parse()
+                .unwrap();
+        let dsl = expr.to_elasticsearch().unwrap();
+        // startedby: property ≈ start of reference interval
+        assert_eq!(dsl, json!({"term": {"datetime": "2020-01-01T00:00:00Z"}}));
+    }
+
+    #[test]
+    fn test_t_finishedby() {
+        let expr: Expr =
+            "t_finishedby(datetime, INTERVAL('2020-01-01T00:00:00Z','2021-01-01T00:00:00Z'))"
+                .parse()
+                .unwrap();
+        let dsl = expr.to_elasticsearch().unwrap();
+        // finishedby: property ≈ end of reference interval
+        assert_eq!(dsl, json!({"term": {"datetime": "2021-01-01T00:00:00Z"}}));
     }
 
     #[test]
