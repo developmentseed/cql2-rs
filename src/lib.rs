@@ -31,6 +31,7 @@
 #![allow(clippy::result_large_err)]
 
 mod duckdb;
+mod elasticsearch;
 mod error;
 mod expr;
 mod geometry;
@@ -40,6 +41,7 @@ mod temporal;
 mod validator;
 
 pub use duckdb::ToDuckSQL;
+pub use elasticsearch::ToElasticsearch;
 pub use error::Error;
 pub use expr::*;
 pub use geometry::{spatial_op, Geometry};

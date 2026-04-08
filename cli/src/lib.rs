@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use clap::{ArgAction, Parser, ValueEnum};
-use cql2::{Expr, ToSqlAst, Validator};
+use cql2::{Expr, ToElasticsearch, ToSqlAst, Validator};
 use std::io::Read;
 
 /// The CQL2 command-line interface.
@@ -69,6 +69,12 @@ enum OutputFormat {
 
     /// SQL
     Sql,
+
+    /// Elasticsearch DSL, pretty-printed
+    ElasticsearchPretty,
+
+    /// Elasticsearch DSL, compact
+    Elasticsearch,
 }
 
 impl Cli {
@@ -172,6 +178,14 @@ impl Cli {
             OutputFormat::Sql => {
                 let sql_ast = expr.to_sql_ast()?;
                 println!("{}", sql_ast);
+            }
+            OutputFormat::ElasticsearchPretty => {
+                let dsl = expr.to_elasticsearch()?;
+                serde_json::to_writer_pretty(std::io::stdout(), &dsl)?;
+            }
+            OutputFormat::Elasticsearch => {
+                let dsl = expr.to_elasticsearch()?;
+                serde_json::to_writer(std::io::stdout(), &dsl)?;
             }
         }
         println!();
