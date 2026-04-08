@@ -1,0 +1,34 @@
+landsat:scene_id = 'LC82030282019133LGN00'
+{"term":{"landsat:scene_id":"LC82030282019133LGN00"}}
+eo:cloud_cover < 0.5
+{"range":{"eo:cloud_cover":{"lt":0.5}}}
+eo:cloud_cover > 10
+{"range":{"eo:cloud_cover":{"gt":10.0}}}
+eo:cloud_cover >= 10
+{"range":{"eo:cloud_cover":{"gte":10.0}}}
+eo:cloud_cover <= 10
+{"range":{"eo:cloud_cover":{"lte":10.0}}}
+eo:cloud_cover <> 10
+{"bool":{"must_not":[{"term":{"eo:cloud_cover":10.0}}]}}
+eo:cloud_cover BETWEEN 0 AND 50
+{"range":{"eo:cloud_cover":{"gte":0.0,"lte":50.0}}}
+eo:instrument LIKE 'OLI%'
+{"wildcard":{"eo:instrument":{"value":"OLI*"}}}
+eo:cloud_cover = 0.1 OR eo:cloud_cover = 0.2
+{"bool":{"should":[{"term":{"eo:cloud_cover":0.1}},{"term":{"eo:cloud_cover":0.2}}]}}
+beamMode = 'ScanSAR Narrow' AND swathDirection = 'ascending'
+{"bool":{"must":[{"term":{"beamMode":"ScanSAR Narrow"}},{"term":{"swathDirection":"ascending"}}]}}
+NOT landsat:scene_id = 'LC82030282019133LGN00'
+{"bool":{"must_not":[{"term":{"landsat:scene_id":"LC82030282019133LGN00"}}]}}
+eo:cloud_cover IS NULL
+{"bool":{"must_not":[{"exists":{"field":"eo:cloud_cover"}}]}}
+vehicle:fuel IN ('petrol', 'diesel')
+{"terms":{"vehicle:fuel":["petrol","diesel"]}}
+t_before(datetime, TIMESTAMP('2021-01-01T00:00:00Z'))
+{"range":{"datetime":{"lt":"2021-01-01T00:00:00Z"}}}
+t_after(datetime, TIMESTAMP('2020-01-01T00:00:00Z'))
+{"range":{"datetime":{"gt":"2020-01-01T00:00:00Z"}}}
+t_during(datetime, INTERVAL('2020-01-01T00:00:00Z','2021-01-01T00:00:00Z'))
+{"range":{"datetime":{"gt":"2020-01-01T00:00:00Z","lt":"2021-01-01T00:00:00Z"}}}
+t_intersects(datetime, INTERVAL('2020-01-01T00:00:00Z','2021-01-01T00:00:00Z'))
+{"range":{"datetime":{"gte":"2020-01-01T00:00:00Z","lte":"2021-01-01T00:00:00Z"}}}
