@@ -3,6 +3,10 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
     schedule:
       interval: "weekly"
   - package-ecosystem: "cargo"
@@ -19,5 +23,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "pip"
     directory: "/"
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+      development-dependencies:
+        dependency-type: "development"
     schedule:
       interval: "weekly"
