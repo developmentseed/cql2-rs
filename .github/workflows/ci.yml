@@ -74,7 +74,7 @@ jobs:
       - name: Test (Rust unit tests in Node.js)
         run: wasm-pack test --node wasm
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: "20"
       - name: Test (JavaScript integration tests)
@@ -90,7 +90,7 @@ jobs:
       - name: Build for web
         run: wasm-pack build --target web wasm
       - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: "20"
       - name: Test (JavaScript integration tests with web target)
