@@ -2,15 +2,26 @@ use cql2::{Expr, ToDuckSQL};
 use duckdb::{Connection, Result};
 use std::fs;
 
+mod geoparquet_fixture;
+
 #[test]
 fn operators_duckdb_filter() -> Result<()> {
+    let geoparquet = geoparquet_fixture::geoparquet_fixture_path();
+    let geoparquet = geoparquet
+        .to_string_lossy()
+        .replace('\\', "/")
+        .replace('\'', "''");
+
     // Initialize in-memory DuckDB
     let conn = Connection::open_in_memory()?;
-    conn.execute_batch(r"
+    conn.execute_batch(&format!(
+        r"
         INSTALL SPATIAL;
         LOAD SPATIAL;
-        CREATE TABLE test AS SELECT * REPLACE (st_geomfromgeojson(geom) as geom) from 'tests/cql2testdata.ndjson';
-    ")?;
+        CREATE TABLE test AS SELECT * FROM '{}';
+    ",
+        geoparquet
+    ))?;
 
     // Load operators tests
     let tests =
@@ -25,11 +36,14 @@ fn operators_duckdb_filter() -> Result<()> {
         let expr: Expr = query
             .parse()
             .unwrap_or_else(|_| panic!("Failed to parse query '{}'", query));
-        let where_clause = expr.to_ducksql().expect("to_ducksql failed");
+        let where_clause = expr
+            .to_ducksql()
+            .expect("to_ducksql failed")
+            .replace("TIMESTAMP WITH TIME ZONE", "TIMESTAMP");
 
-        // Build and execute DuckDB query on the NDJSON source
+        // Build and execute DuckDB query on the GeoParquet fixture
         let sql = format!(
-            "select array_to_string(array_agg(intfield::text), ' ') from test where {}",
+            "select coalesce(array_to_string(array_agg(intfield::text), ' '), '') from test where {}",
             where_clause
         );
         let mut stmt = conn.prepare(&sql)?;

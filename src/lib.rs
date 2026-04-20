@@ -29,7 +29,9 @@
     unused_results
 )]
 #![allow(clippy::result_large_err)]
+#![cfg_attr(test, allow(unused_crate_dependencies))]
 
+mod datafusion;
 mod duckdb;
 mod error;
 mod expr;
@@ -39,6 +41,7 @@ mod sql;
 mod temporal;
 mod validator;
 
+pub use datafusion::ToDataFusionSQL;
 pub use duckdb::ToDuckSQL;
 pub use error::Error;
 pub use expr::*;
