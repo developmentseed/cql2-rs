@@ -12,11 +12,6 @@ updates:
   - package-ecosystem: "cargo"
     directory: "/"
     versioning-strategy: "increase"
-    groups:
-      production-dependencies:
-        dependency-type: "production"
-      development-dependencies:
-        dependency-type: "development"
     schedule:
       interval: "weekly"
   - package-ecosystem: "pip"
