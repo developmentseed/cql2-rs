@@ -11,6 +11,7 @@ updates:
       interval: "weekly"
   - package-ecosystem: "cargo"
     directory: "/"
+    versioning-strategy: "increase"
     groups:
       production-dependencies:
         dependency-type: "production"
