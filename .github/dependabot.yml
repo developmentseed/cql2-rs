@@ -11,7 +11,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "cargo"
     directory: "/"
-    versioning-strategy: "increase"
     schedule:
       interval: "weekly"
   - package-ecosystem: "pip"
