@@ -654,7 +654,7 @@ dependencies = [
  "sqlparser",
  "thiserror 2.0.18",
  "unaccent",
- "wkt 0.14.0",
+ "wkt",
 ]
 
 [[package]]
@@ -1134,16 +1134,16 @@ dependencies = [
 
 [[package]]
 name = "geozero"
-version = "0.14.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5f28f34864745eb2f123c990c6ffd92c1584bd39439b3f27ff2a0f4ea5b309b"
+checksum = "db5eda63aa99ac06160fd53328ed75c34f14e3196d3f56a3649e247ed796e54b"
 dependencies = [
  "geo-types",
  "geojson",
  "log",
  "serde_json",
- "thiserror 1.0.69",
- "wkt 0.11.1",
+ "thiserror 2.0.18",
+ "wkt",
 ]
 
 [[package]]
@@ -4163,18 +4163,6 @@ dependencies = [
  "serde_json",
  "unicode-xid",
  "wasmparser",
-]
-
-[[package]]
-name = "wkt"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54f7f1ff4ea4c18936d6cd26a6fd24f0003af37e951a8e0e8b9e9a2d0bd0a46d"
-dependencies = [
- "geo-types",
- "log",
- "num-traits",
- "thiserror 1.0.69",
 ]
 
 [[package]]
