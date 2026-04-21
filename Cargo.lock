@@ -685,6 +685,7 @@ name = "cql2-wasm"
 version = "0.5.3"
 dependencies = [
  "cql2",
+ "getrandom 0.3.4",
  "getrandom 0.4.2",
  "js-sys",
  "serde-wasm-bindgen",
