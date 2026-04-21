@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.4](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.3...cql2-v0.5.4) - 2026-04-21
+
+### Fixed
+
+- dependabot for cargo ([#200](https://github.com/developmentseed/cql2-rs/pull/200))
+
+### Other
+
+- *(deps)* bump the production-dependencies group with 12 updates ([#201](https://github.com/developmentseed/cql2-rs/pull/201))
+- *(deps-dev)* update mkdocs-material requirement ([#192](https://github.com/developmentseed/cql2-rs/pull/192))
+- *(deps-dev)* update ruff requirement from >=0.6.9 to >=0.15.10 ([#193](https://github.com/developmentseed/cql2-rs/pull/193))
+- *(deps)* bump the github-actions group with 4 updates ([#198](https://github.com/developmentseed/cql2-rs/pull/198))
+- dependabot groups ([#197](https://github.com/developmentseed/cql2-rs/pull/197))
+- *(deps)* bump actions/setup-node from 6.3.0 to 6.4.0 ([#196](https://github.com/developmentseed/cql2-rs/pull/196))
+- *(deps)* bump astral-sh/setup-uv from 7.6.0 to 8.0.0 ([#182](https://github.com/developmentseed/cql2-rs/pull/182))
+- pin GitHub Actions to SHA digests ([#181](https://github.com/developmentseed/cql2-rs/pull/181))
+- *(deps)* bump actions/create-github-app-token from 2.2.1 to 3.0.0 ([#177](https://github.com/developmentseed/cql2-rs/pull/177))
+- *(deps)* bump actions/download-artifact from 7 to 8 ([#171](https://github.com/developmentseed/cql2-rs/pull/171))
+- *(deps)* bump actions/upload-artifact from 6 to 7 ([#172](https://github.com/developmentseed/cql2-rs/pull/172))
+- *(deps)* bump actions/attest-build-provenance from 3 to 4 ([#173](https://github.com/developmentseed/cql2-rs/pull/173))
+- *(deps)* bump the production-dependencies group across 1 directory with 12 updates ([#169](https://github.com/developmentseed/cql2-rs/pull/169))
+
 ## [0.5.3](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.2...cql2-v0.5.3) - 2026-02-04
 
 ### Fixed
