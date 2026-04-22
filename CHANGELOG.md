@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.5](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.4...cql2-v0.5.5) - 2026-04-21
+
+### Fixed
+
+- remove cargo groups ([#205](https://github.com/developmentseed/cql2-rs/pull/205))
+
+### Other
+
+- *(deps)* bump sqlparser from 0.58.0 to 0.61.0 ([#207](https://github.com/developmentseed/cql2-rs/pull/207))
+- *(deps)* bump jsonschema from 0.33.0 to 0.46.2 ([#206](https://github.com/developmentseed/cql2-rs/pull/206))
+- *(deps)* bump geojson from 0.24.2 to 1.0.0 ([#209](https://github.com/developmentseed/cql2-rs/pull/209))
+- *(deps)* bump geozero from 0.14.0 to 0.15.1 ([#210](https://github.com/developmentseed/cql2-rs/pull/210))
+- *(deps)* bump geo from 0.31.0 to 0.33.1 ([#208](https://github.com/developmentseed/cql2-rs/pull/208))
+- revert the versioning strategy
+- versioning-strategy for cargo ([#211](https://github.com/developmentseed/cql2-rs/pull/211))
+- update wasm-bindgen in cargo.lock ([#202](https://github.com/developmentseed/cql2-rs/pull/202))
+
 ## [0.5.4](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.3...cql2-v0.5.4) - 2026-04-21
 
 ### Fixed
