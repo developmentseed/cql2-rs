@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.6](https://github.com/developmentseed/cql2-rs/compare/cql2-cli-v0.5.5...cql2-cli-v0.5.6) - 2026-04-27
+
+### Other
+
+- update Cargo.lock dependencies
+
 ## [0.5.5](https://github.com/developmentseed/cql2-rs/compare/cql2-cli-v0.5.4...cql2-cli-v0.5.5) - 2026-04-21
 
 ### Other
