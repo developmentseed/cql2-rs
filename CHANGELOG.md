@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.6](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.5...cql2-v0.5.6) - 2026-04-27
+
+### Other
+
+- *(deps)* bump jsonschema from 0.33.0 to 0.46.2 ([#212](https://github.com/developmentseed/cql2-rs/pull/212))
+- *(deps)* bump geojson from 0.24.2 to 1.0.0 ([#213](https://github.com/developmentseed/cql2-rs/pull/213))
+- *(deps)* bump jiff from 0.2.23 to 0.2.24 ([#214](https://github.com/developmentseed/cql2-rs/pull/214))
+- *(deps)* bump geo from 0.31.0 to 0.33.1 ([#215](https://github.com/developmentseed/cql2-rs/pull/215))
+- *(deps)* bump sqlparser from 0.58.0 to 0.61.0 ([#216](https://github.com/developmentseed/cql2-rs/pull/216))
+
 ## [0.5.5](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.4...cql2-v0.5.5) - 2026-04-21
 
 ### Fixed
