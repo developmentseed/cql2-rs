@@ -27,5 +27,5 @@ version = "0.3.82"
 features = ['Document', 'Element', 'HtmlElement', 'Node', 'Window']
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3.68"
+wasm-bindgen-test = "0.3.70"
 js-sys = "0.3"
