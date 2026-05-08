@@ -23,7 +23,7 @@ license = { workspace = true }
 keywords = ["cql2"]
 
 [dependencies]
-geo = "0.31.0"
+geo = "0.33.0"
 geo-types = "0.7.17"
 geojson = "0.24.1"
 geozero = "0.14.0"
