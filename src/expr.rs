@@ -258,6 +258,11 @@ impl Expr {
     /// let toexpr: Expr = Expr::from_str("20").unwrap();
     /// assert_eq!(reduced, toexpr);
     ///
+    /// let fromexpr: Expr = Expr::from_str("cityName IN ('Toronto','Frankfurt','Tokyo','New York')").unwrap();
+    /// let reduced = fromexpr.reduce(None).unwrap();
+    /// let toexpr: Expr = Expr::from_str("cityName IN ('Toronto','Frankfurt','Tokyo','New York')").unwrap();
+    /// assert_eq!(reduced, toexpr);
+    ///
     /// let fromexpr: Expr = Expr::from_str("(bork=1) and (bork=1) and (bork=1 and true)").unwrap();
     /// let reduced = fromexpr.reduce(Some(&item)).unwrap();
     /// let toexpr: Expr = Expr::from_str("bork=1").unwrap();
@@ -447,6 +452,9 @@ impl Expr {
                             Ok(Expr::Operation { op, args })
                         }
                     } else if op == "in" {
+                        let Some(_) = j else {
+                            return Ok(Expr::Operation { op, args });
+                        };
                         let l: String = left.to_text()?;
                         let r: HashSet<String> = right.try_into()?;
                         let isin: bool = r.contains(&l);
