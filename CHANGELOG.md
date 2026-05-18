@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.7](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.6...cql2-v0.5.7) - 2026-05-18
+
+### Other
+
+- *(deps)* bump actions/create-github-app-token ([#228](https://github.com/developmentseed/cql2-rs/pull/228))
+- *(deps)* bump the production-dependencies group with 3 updates ([#229](https://github.com/developmentseed/cql2-rs/pull/229))
+- *(deps)* bump the production-dependencies group with 4 updates ([#226](https://github.com/developmentseed/cql2-rs/pull/226))
+
 ## [0.5.6](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.5...cql2-v0.5.6) - 2026-05-08
 
 ### Other
