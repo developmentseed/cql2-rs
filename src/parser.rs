@@ -298,10 +298,15 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
                     op: "not".to_string(),
                     args: vec![Box::new(child)],
                 }),
-                Rule::Negative => Ok(Expr::Operation {
-                    op: "*".to_string(),
-                    args: vec![Box::new(Expr::Float(-1.0)), Box::new(child)],
-                }),
+                Rule::Negative => match child {
+                    // A negated numeric literal is itself a numeric literal, e.g.
+                    // `-2` is `Float(-2.0)`, not `-1 * 2`.
+                    Expr::Float(v) => Ok(Expr::Float(-v)),
+                    _ => Ok(Expr::Operation {
+                        op: "*".to_string(),
+                        args: vec![Box::new(Expr::Float(-1.0)), Box::new(child)],
+                    }),
+                },
                 rule => unreachable!("Expr::parse expected prefix operator, found {:?}", rule),
             }
         })

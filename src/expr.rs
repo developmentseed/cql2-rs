@@ -236,6 +236,26 @@ fn array_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
     }
 }
 
+/// Returns `true` if a *reduced* expression is still "unknown", i.e. its value
+/// cannot be determined at reduction time.
+///
+/// This is the case for an unresolved property reference (a property that was
+/// not found in the supplied JSON, or when no JSON was supplied) or an operation
+/// that could not be folded to a concrete value. Predicates over unknown
+/// operands must not be constant-folded, otherwise `reduce` would invent a
+/// truth value for something it does not actually know.
+fn is_unknown(expr: &Expr) -> bool {
+    match expr {
+        Expr::Property { .. } | Expr::Operation { .. } => true,
+        Expr::Interval { interval } => interval.iter().any(|e| is_unknown(e)),
+        Expr::Date { date } => is_unknown(date),
+        Expr::Timestamp { timestamp } => is_unknown(timestamp),
+        Expr::Array(elements) => elements.iter().any(|e| is_unknown(e)),
+        Expr::BBox { bbox } => bbox.iter().any(|e| is_unknown(e)),
+        Expr::Float(_) | Expr::Literal(_) | Expr::Bool(_) | Expr::Geometry(_) | Expr::Null => false,
+    }
+}
+
 impl Expr {
     /// Update this expression with values from the `properties` attribute of a JSON object
     ///
@@ -297,10 +317,25 @@ impl Expr {
                     .collect::<Result<_, _>>()?;
 
                 if op == "isnull" {
-                    match args[0].as_ref() {
-                        Expr::Null => Ok(Expr::Bool(true)),
-                        Expr::Property { property: _ } => Ok(Expr::Bool(true)),
-                        _ => Ok(Expr::Bool(false)),
+                    if matches!(args[0].as_ref(), Expr::Null) {
+                        Ok(Expr::Bool(true))
+                    } else if is_unknown(args[0].as_ref()) {
+                        if j.is_some() {
+                            // We are reducing against a concrete record: an
+                            // unresolved property means the field is absent (and
+                            // therefore null) for this record, so IS NULL is true.
+                            Ok(Expr::Bool(true))
+                        } else {
+                            // No data context: the value of the operand is unknown,
+                            // so leave the predicate in place rather than folding it
+                            // to a constant.
+                            Ok(Expr::Operation {
+                                op: "isNull".to_string(),
+                                args,
+                            })
+                        }
+                    } else {
+                        Ok(Expr::Bool(false))
                     }
                 } else if args.iter().any(|arg| matches!(arg.as_ref(), Expr::Null)) {
                     Ok(Expr::Bool(false))
@@ -371,13 +406,27 @@ impl Expr {
                         _ => Ok(Expr::Operation { op, args }),
                     }
                 } else if op == "between" {
-                    Ok(Expr::Bool(args[0] >= args[1] && args[0] <= args[2]))
+                    if args.iter().any(|a| is_unknown(a)) {
+                        // One of the operands is unknown, so we can't evaluate the
+                        // range check; leave the predicate in place.
+                        Ok(Expr::Operation { op, args })
+                    } else {
+                        Ok(Expr::Bool(args[0] >= args[1] && args[0] <= args[2]))
+                    }
                 } else if args.len() != 2 {
                     Ok(Expr::Operation { op, args })
                 } else {
                     // Two-arg operations
                     let mut left = args[0].deref().clone();
                     let mut right = args[1].deref().clone();
+
+                    // If either operand is unknown (an unresolved property or an
+                    // expression that did not fold to a concrete value) we cannot
+                    // evaluate the operation, so leave it in place rather than
+                    // constant-folding it to an incorrect value.
+                    if is_unknown(&left) || is_unknown(&right) {
+                        return Ok(Expr::Operation { op, args });
+                    }
 
                     // If left is Date/Timestamp and right is Literal, convert right
                     match (&left, &right) {
