@@ -11,6 +11,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `reduce` no longer constant-folds predicates whose value is unknown: `IS NULL`, `IN`, `BETWEEN`, and comparisons over an unresolved property are now preserved instead of being folded to an incorrect boolean ([#231](https://github.com/developmentseed/cql2-rs/issues/231), [#111](https://github.com/developmentseed/cql2-rs/issues/111))
 - negative number literals now parse to negative literals instead of being expanded as `-1 * n` ([#112](https://github.com/developmentseed/cql2-rs/issues/112))
 
+## [0.5.6](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.5...cql2-v0.5.6) - 2026-05-08
+
+### Other
+
+- *(deps)* bump the production-dependencies group with 8 updates ([#224](https://github.com/developmentseed/cql2-rs/pull/224))
+- manually bump the geo dependency, re-add dependabot groups ([#223](https://github.com/developmentseed/cql2-rs/pull/223))
+- *(deps)* bump web-sys from 0.3.95 to 0.3.97 ([#221](https://github.com/developmentseed/cql2-rs/pull/221))
+- *(deps)* bump geozero from 0.14.0 to 0.15.1 ([#222](https://github.com/developmentseed/cql2-rs/pull/222))
+- *(deps)* bump jsonschema from 0.33.0 to 0.46.2 ([#212](https://github.com/developmentseed/cql2-rs/pull/212))
+- *(deps)* bump geojson from 0.24.2 to 1.0.0 ([#213](https://github.com/developmentseed/cql2-rs/pull/213))
+- *(deps)* bump jiff from 0.2.23 to 0.2.24 ([#214](https://github.com/developmentseed/cql2-rs/pull/214))
+- *(deps)* bump geo from 0.31.0 to 0.33.1 ([#215](https://github.com/developmentseed/cql2-rs/pull/215))
+- *(deps)* bump sqlparser from 0.58.0 to 0.61.0 ([#216](https://github.com/developmentseed/cql2-rs/pull/216))
+
+## [0.5.5](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.4...cql2-v0.5.5) - 2026-04-21
+
+### Fixed
+
+- remove cargo groups ([#205](https://github.com/developmentseed/cql2-rs/pull/205))
+
+### Other
+
+- *(deps)* bump sqlparser from 0.58.0 to 0.61.0 ([#207](https://github.com/developmentseed/cql2-rs/pull/207))
+- *(deps)* bump jsonschema from 0.33.0 to 0.46.2 ([#206](https://github.com/developmentseed/cql2-rs/pull/206))
+- *(deps)* bump geojson from 0.24.2 to 1.0.0 ([#209](https://github.com/developmentseed/cql2-rs/pull/209))
+- *(deps)* bump geozero from 0.14.0 to 0.15.1 ([#210](https://github.com/developmentseed/cql2-rs/pull/210))
+- *(deps)* bump geo from 0.31.0 to 0.33.1 ([#208](https://github.com/developmentseed/cql2-rs/pull/208))
+- revert the versioning strategy
+- versioning-strategy for cargo ([#211](https://github.com/developmentseed/cql2-rs/pull/211))
+- update wasm-bindgen in cargo.lock ([#202](https://github.com/developmentseed/cql2-rs/pull/202))
+
+## [0.5.4](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.3...cql2-v0.5.4) - 2026-04-21
+
+### Fixed
+
+- dependabot for cargo ([#200](https://github.com/developmentseed/cql2-rs/pull/200))
+
+### Other
+
+- *(deps)* bump the production-dependencies group with 12 updates ([#201](https://github.com/developmentseed/cql2-rs/pull/201))
+- *(deps-dev)* update mkdocs-material requirement ([#192](https://github.com/developmentseed/cql2-rs/pull/192))
+- *(deps-dev)* update ruff requirement from >=0.6.9 to >=0.15.10 ([#193](https://github.com/developmentseed/cql2-rs/pull/193))
+- *(deps)* bump the github-actions group with 4 updates ([#198](https://github.com/developmentseed/cql2-rs/pull/198))
+- dependabot groups ([#197](https://github.com/developmentseed/cql2-rs/pull/197))
+- *(deps)* bump actions/setup-node from 6.3.0 to 6.4.0 ([#196](https://github.com/developmentseed/cql2-rs/pull/196))
+- *(deps)* bump astral-sh/setup-uv from 7.6.0 to 8.0.0 ([#182](https://github.com/developmentseed/cql2-rs/pull/182))
+- pin GitHub Actions to SHA digests ([#181](https://github.com/developmentseed/cql2-rs/pull/181))
+- *(deps)* bump actions/create-github-app-token from 2.2.1 to 3.0.0 ([#177](https://github.com/developmentseed/cql2-rs/pull/177))
+- *(deps)* bump actions/download-artifact from 7 to 8 ([#171](https://github.com/developmentseed/cql2-rs/pull/171))
+- *(deps)* bump actions/upload-artifact from 6 to 7 ([#172](https://github.com/developmentseed/cql2-rs/pull/172))
+- *(deps)* bump actions/attest-build-provenance from 3 to 4 ([#173](https://github.com/developmentseed/cql2-rs/pull/173))
+- *(deps)* bump the production-dependencies group across 1 directory with 12 updates ([#169](https://github.com/developmentseed/cql2-rs/pull/169))
+
 ## [0.5.3](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.2...cql2-v0.5.3) - 2026-02-04
 
 ### Fixed
