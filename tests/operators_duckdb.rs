@@ -7,6 +7,7 @@ fn operators_duckdb_filter() -> Result<()> {
     // Initialize in-memory DuckDB
     let conn = Connection::open_in_memory()?;
     conn.execute_batch(r"
+        SET TimeZone='UTC';
         INSTALL SPATIAL;
         LOAD SPATIAL;
         CREATE TABLE test AS SELECT * REPLACE (st_geomfromgeojson(geom) as geom) from 'tests/cql2testdata.ndjson';

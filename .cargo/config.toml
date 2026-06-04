@@ -1,0 +1,11 @@
+# Fetch a prebuilt libduckdb for the `duckdb` dev-dependency rather than
+# compiling the bundled C++ amalgamation on every cold build.
+[env]
+DUCKDB_DOWNLOAD_LIB = "1"
+
+# libduckdb-sys downloads a shared library but does not set an rpath, so test
+# binaries would otherwise resolve `libduckdb.so` from a system path (which may
+# be missing or a different version). The runner puts the downloaded library on
+# the load path before executing test/run binaries.
+[target.x86_64-unknown-linux-gnu]
+runner = "scripts/duckdb-runner"
