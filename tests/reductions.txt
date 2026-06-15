@@ -68,3 +68,13 @@ false or c=3 or c=3
 c=3 or false
 true and c=3
 c=3
+eo:cloud_cover is null
+false
+numeric is null
+true
+numeric in ('a','b','c')
+numeric in ('a','b','c')
+numeric between 1 and 5
+numeric between 1 and 5
+eo:cloud_cover > -5
+true

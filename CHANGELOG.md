@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- `reduce` no longer constant-folds predicates whose value is unknown: `IS NULL`, `IN`, `BETWEEN`, and comparisons over an unresolved property are now preserved instead of being folded to an incorrect boolean ([#231](https://github.com/developmentseed/cql2-rs/issues/231), [#111](https://github.com/developmentseed/cql2-rs/issues/111))
+- negative number literals now parse to negative literals instead of being expanded as `-1 * n` ([#112](https://github.com/developmentseed/cql2-rs/issues/112))
+
 ## [0.5.6](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.5...cql2-v0.5.6) - 2026-05-08
 
 ### Other

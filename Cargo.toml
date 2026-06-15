@@ -44,7 +44,10 @@ sqlparser = { version = "0.58.0", features = ["visitor"] }
 
 [dev-dependencies]
 assert-json-diff = "2"
-duckdb = { version = "1.3.2", features = ["bundled"] }
+# Download a prebuilt libduckdb instead of compiling the bundled amalgamation
+# (which is slow and sccache-unfriendly). See `.cargo/config.toml` for the
+# `DUCKDB_DOWNLOAD_LIB` flag and the runner that puts it on the load path.
+duckdb = "1.3.2"
 rstest = "0.26.1"
 
 [workspace]
