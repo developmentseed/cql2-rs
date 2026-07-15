@@ -125,7 +125,7 @@ impl Cli {
         }
         let input = self
             .input
-            .and_then(|input| if input == "-" { None } else { Some(input) })
+            .filter(|input| input != "-")
             .map(Ok)
             .unwrap_or_else(read_stdin)?;
         let input_format = self.input_format.unwrap_or_else(|| {
