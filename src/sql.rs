@@ -441,4 +441,10 @@ mod tests {
         let sql_str = sql_ast.to_string();
         assert_eq!(sql_str, "ts_start < CAST('2020-02-01' AS DATE)");
     }
+
+    #[test]
+    fn test_bbox() {
+        let expr: Expr = "bbox(1, 2, 3, 4)".parse().unwrap();
+        assert_eq!(expr.to_sql().unwrap(), "st_makeenvelope(1, 2, 3, 4)");
+    }
 }
