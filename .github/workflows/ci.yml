@@ -26,6 +26,15 @@ jobs:
           df -h
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - name: Force libduckdb-sys to re-fetch its prebuilt library
+        # rust-cache prunes target/duckdb-download and the libduckdb copy in
+        # target/*/deps because they don't look like normal cargo artifacts, but
+        # it keeps the compiled libduckdb-sys crate and its build-script
+        # fingerprint. On a cache hit cargo therefore skips the build script and
+        # the prebuilt libduckdb.so is never re-downloaded, so linking the tests
+        # fails with `unable to find library -lduckdb`. Clearing the fingerprint
+        # forces the build script to run again and re-fetch the library.
+        run: rm -rf target/*/.fingerprint/libduckdb-sys-* target/*/build/libduckdb-sys-*
       - name: Format
         run: cargo fmt --check
       - name: Check
