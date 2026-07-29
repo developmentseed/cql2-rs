@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.7](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.6...cql2-v0.5.7) - 2026-07-29
+
+### Fixed
+
+- parse bbox into expr ([#246](https://github.com/developmentseed/cql2-rs/pull/246))
+- fix null reductions ([#232](https://github.com/developmentseed/cql2-rs/pull/232))
+
+### Other
+
+- *(deps)* bump the production-dependencies group across 1 directory with 13 updates ([#251](https://github.com/developmentseed/cql2-rs/pull/251))
+- *(deps)* bump the github-actions group across 1 directory with 3 updates ([#250](https://github.com/developmentseed/cql2-rs/pull/250))
+- fix libduckdb download w/ cache ([#252](https://github.com/developmentseed/cql2-rs/pull/252))
+- *(deps)* bump the production-dependencies group with 9 updates ([#244](https://github.com/developmentseed/cql2-rs/pull/244))
+- *(deps)* bump the github-actions group across 1 directory with 4 updates ([#242](https://github.com/developmentseed/cql2-rs/pull/242))
+- *(deps)* bump the production-dependencies group across 1 directory with 8 updates ([#243](https://github.com/developmentseed/cql2-rs/pull/243))
+- *(deps)* bump the production-dependencies group with 7 updates ([#239](https://github.com/developmentseed/cql2-rs/pull/239))
+- *(deps)* bump the production-dependencies group across 1 directory with 8 updates ([#236](https://github.com/developmentseed/cql2-rs/pull/236))
+- *(deps)* bump astral-sh/setup-uv in the github-actions group ([#233](https://github.com/developmentseed/cql2-rs/pull/233))
+- *(deps)* bump the production-dependencies group with 9 updates ([#234](https://github.com/developmentseed/cql2-rs/pull/234))
+- *(deps)* bump the production-dependencies group with 6 updates ([#230](https://github.com/developmentseed/cql2-rs/pull/230))
+- *(deps)* bump actions/create-github-app-token ([#228](https://github.com/developmentseed/cql2-rs/pull/228))
+- *(deps)* bump the production-dependencies group with 3 updates ([#229](https://github.com/developmentseed/cql2-rs/pull/229))
+- *(deps)* bump the production-dependencies group with 4 updates ([#226](https://github.com/developmentseed/cql2-rs/pull/226))
+
 ### Fixed
 
 - `reduce` no longer constant-folds predicates whose value is unknown: `IS NULL`, `IN`, `BETWEEN`, and comparisons over an unresolved property are now preserved instead of being folded to an incorrect boolean ([#231](https://github.com/developmentseed/cql2-rs/issues/231), [#111](https://github.com/developmentseed/cql2-rs/issues/111))
