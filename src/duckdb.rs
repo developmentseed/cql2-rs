@@ -2,7 +2,14 @@ use crate::{sql::func, Error, Expr, ToSqlAst};
 use sqlparser::ast::{visit_expressions_mut, Expr as SqlExpr};
 use std::ops::ControlFlow;
 
-/// Traits for generating SQL for DuckDB with Spatial Extension
+/// A DuckDB list predicate, named by a literal.
+///
+/// [`func`] rejects an empty name, which none of these are.
+fn list_fn(name: &'static str, args: Vec<SqlExpr>) -> SqlExpr {
+    func(name, args).expect("a literal function name is never empty")
+}
+
+/// Trait for generating SQL for DuckDB with Spatial Extension
 pub trait ToDuckSQL {
     /// Convert Expression to SQL for DuckDB with Spatial Extension
     fn to_ducksql(&self) -> Result<String, Error>;
@@ -48,13 +55,13 @@ impl ToDuckSQL for Expr {
             if let SqlExpr::BinaryOp { op, right, left } = expr {
                 match *op {
                     sqlparser::ast::BinaryOperator::AtArrow => {
-                        *expr = func("list_has_all", vec![*left.clone(), *right.clone()]);
+                        *expr = list_fn("list_has_all", vec![*left.clone(), *right.clone()]);
                     }
                     sqlparser::ast::BinaryOperator::ArrowAt => {
-                        *expr = func("list_has_all", vec![*right.clone(), *left.clone()]);
+                        *expr = list_fn("list_has_all", vec![*right.clone(), *left.clone()]);
                     }
                     sqlparser::ast::BinaryOperator::AtAt => {
-                        *expr = func("list_has_any", vec![*left.clone(), *right.clone()]);
+                        *expr = list_fn("list_has_any", vec![*left.clone(), *right.clone()]);
                     }
                     _ => {}
                 }

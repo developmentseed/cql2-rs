@@ -26,10 +26,10 @@ fn cast(arg: SqlExpr, data_type: sqlparser::ast::DataType) -> SqlExpr {
     }
 }
 
-pub(crate) fn func(name: &str, args: Vec<SqlExpr>) -> SqlExpr {
-    SqlExpr::Function(sqlparser::ast::Function {
+pub(crate) fn func(name: &str, args: Vec<SqlExpr>) -> Result<SqlExpr, Error> {
+    Ok(SqlExpr::Function(sqlparser::ast::Function {
         name: sqlparser::ast::ObjectName(vec![sqlparser::ast::ObjectNamePart::Identifier(
-            ident_inner(name),
+            ident_inner(name)?,
         )]),
         args: FunctionArguments::List(FunctionArgumentList {
             duplicate_treatment: None,
@@ -47,7 +47,7 @@ pub(crate) fn func(name: &str, args: Vec<SqlExpr>) -> SqlExpr {
         within_group: vec![],
         uses_odbc_syntax: false,
         parameters: FunctionArguments::None,
-    })
+    }))
 }
 
 fn lit_expr(value: &str) -> SqlExpr {
@@ -121,7 +121,7 @@ struct Targs {
 
 fn lit_or_prop_to_ts(arg: &Expr) -> Result<SqlExpr, Error> {
     Ok(match arg {
-        Expr::Property { property } => ident(property),
+        Expr::Property { property } => ident(property)?,
         Expr::Literal(v) => cast(lit_expr(v), Timestamp(None, TimezoneInfo::WithTimeZone)),
         _ => return Err(Error::OperationError()),
     })
@@ -129,7 +129,7 @@ fn lit_or_prop_to_ts(arg: &Expr) -> Result<SqlExpr, Error> {
 
 fn lit_or_prop_to_date(arg: &Expr) -> Result<SqlExpr, Error> {
     Ok(match arg {
-        Expr::Property { property } => ident(property),
+        Expr::Property { property } => ident(property)?,
         Expr::Literal(v) => cast(lit_expr(v), Date),
         _ => return Err(Error::OperationError()),
     })
@@ -143,7 +143,7 @@ fn t_arg_to_interval(arg: &Expr) -> Result<(SqlExpr, SqlExpr), Error> {
             Ok((start, end))
         }
         Expr::Property { property } => {
-            let start = ident(property);
+            let start = ident(property)?;
             Ok((start.clone(), start.clone()))
         }
         Expr::Date { date } => {
@@ -244,17 +244,27 @@ fn wrap(arg: SqlExpr) -> SqlExpr {
     Nested(Box::new(arg))
 }
 
-fn ident_inner(property: &str) -> Ident {
+/// A name rendered as a SQL identifier.
+///
+/// An empty name is rejected: it has no SQL spelling, and printing it emits nothing at all, so
+/// `Expr::Property { property: String::new() }` compared against `1` would render as the fragment
+/// ` = 1`. Neither encoding forbids an empty name — `{"property": ""}` is accepted by the schema,
+/// and `""` is a quoted identifier the cql2-text grammar takes — so this is reachable input rather
+/// than a defensive check.
+fn ident_inner(property: &str) -> Result<Ident, Error> {
+    if property.is_empty() {
+        return Err(Error::EmptySqlIdentifier);
+    }
     let p = quote_identifier(property);
-    if p.starts_with('"') && p.ends_with('"') {
+    Ok(if p.starts_with('"') && p.ends_with('"') {
         Ident::with_quote('"', p[1..p.len() - 1].to_string())
     } else {
         Ident::new(p)
-    }
+    })
 }
 
-fn ident(property: &str) -> SqlExpr {
-    SqlExpr::Identifier(ident_inner(property))
+fn ident(property: &str) -> Result<SqlExpr, Error> {
+    Ok(SqlExpr::Identifier(ident_inner(property)?))
 }
 
 impl ToSqlAst for Expr {
@@ -278,20 +288,20 @@ impl ToSqlAst for Expr {
             Expr::Geometry(v) => match v {
                 Geometry::GeoJSON(v) => {
                     let s = lit_expr(&v.to_string());
-                    func("st_geomfromgeojson", vec![s])
+                    func("st_geomfromgeojson", vec![s])?
                 }
                 Geometry::Wkt(v) => {
                     let s = lit_expr(&v.to_string());
-                    func("st_geomfromtext", vec![s])
+                    func("st_geomfromtext", vec![s])?
                 }
             },
 
-            Expr::BBox { bbox } => func("st_makeenvelope", args2ast(bbox)?),
+            Expr::BBox { bbox } => func("st_makeenvelope", args2ast(bbox)?)?,
             Expr::Array(ref v) => SqlExpr::Array(SqlArray {
                 elem: args2ast(v)?,
                 named: true,
             }),
-            Expr::Property { property } => ident(property),
+            Expr::Property { property } => ident(property)?,
             Expr::Operation { op, args } => {
                 // Route through the canonical spelling, so the schema's capitalization and the
                 // operator aliases apply here exactly as they do to a parsed expression. A name CQL2
@@ -330,8 +340,8 @@ impl ToSqlAst for Expr {
                             any: false,
                         }
                     }
-                    "accenti" => func("strip_accents", a),
-                    "casei" => func("lower", a),
+                    "accenti" => func("strip_accents", a)?,
+                    "casei" => func("lower", a)?,
                     "and" => andop(a),
                     "or" => orop(a),
                     "=" | "a_equals" | "eq" => binop(BinaryOperator::Eq, a),
@@ -345,15 +355,15 @@ impl ToSqlAst for Expr {
                     "*" => binop(BinaryOperator::Multiply, a),
                     "/" => binop(BinaryOperator::Divide, a),
                     "%" => binop(BinaryOperator::Modulo, a),
-                    "^" => func("power", a),
-                    "s_intersects" | "st_intersects" | "intersects" => func("st_intersects", a),
-                    "s_equals" | "st_equals" => func("st_equals", a),
-                    "s_within" | "st_within" => func("st_within", a),
-                    "s_contains" | "st_contains" => func("st_contains", a),
-                    "s_crosses" | "st_crosses" => func("st_crosses", a),
-                    "s_overlaps" | "st_overlaps" => func("st_overlaps", a),
-                    "s_touches" | "st_touches" => func("st_touches", a),
-                    "s_disjoint" | "st_disjoint" => func("st_disjoint", a),
+                    "^" => func("power", a)?,
+                    "s_intersects" => func("st_intersects", a)?,
+                    "s_equals" => func("st_equals", a)?,
+                    "s_within" => func("st_within", a)?,
+                    "s_contains" => func("st_contains", a)?,
+                    "s_crosses" => func("st_crosses", a)?,
+                    "s_overlaps" => func("st_overlaps", a)?,
+                    "s_touches" => func("st_touches", a)?,
+                    "s_disjoint" => func("st_disjoint", a)?,
                     "a_contains" => binop(BinaryOperator::AtArrow, a),
                     "a_containedBy" => binop(BinaryOperator::ArrowAt, a),
                     "a_overlaps" => binop(BinaryOperator::AtAt, a),
@@ -452,7 +462,7 @@ impl ToSqlAst for Expr {
                             gteop(t.left_end, t.right_start),
                         ]))
                     }
-                    _ => func(&op_str, a),
+                    _ => func(&canonical, a)?,
                 }
             }
         })
@@ -492,4 +502,23 @@ mod tests {
         let expr: Expr = "bbox(1, 2, 3, 4)".parse().unwrap();
         assert_eq!(expr.to_sql().unwrap(), "st_makeenvelope(1, 2, 3, 4)");
     }
+
+    /// An empty name prints as nothing, so `"" = 1` would render as the fragment ` = 1`.
+    #[test]
+    fn empty_property_name_is_rejected() {
+        let expr = Expr::Operation {
+            op: "=".to_string(),
+            args: vec![
+                Box::new(Expr::Property {
+                    property: String::new(),
+                }),
+                Box::new(Expr::Float(1.0)),
+            ],
+        };
+        assert!(matches!(
+            expr.to_sql(),
+            Err(crate::Error::EmptySqlIdentifier)
+        ));
+    }
+
 }

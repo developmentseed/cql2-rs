@@ -107,6 +107,17 @@ pub enum Error {
     #[error("Could not run operation.")]
     OperationError(),
 
+    /// A name with no SQL spelling.
+    ///
+    /// An empty identifier prints as nothing at all, which would turn a predicate into a fragment.
+    #[error("an empty name cannot be rendered as a SQL identifier")]
+    EmptySqlIdentifier,
+
+    /// A `GEOMETRYCOLLECTION` holding another `GEOMETRYCOLLECTION`.
+    ///
+    /// WKT allows the nesting; CQL2 does not. The cql2-json schema gives a collection's members as
+    /// the six non-collection geometry types, so a nested collection has no cql2-json encoding and
+    /// therefore no CQL2 expression.
     #[error("a GEOMETRYCOLLECTION cannot contain another GEOMETRYCOLLECTION: CQL2 admits only POINT, LINESTRING, POLYGON, MULTIPOINT, MULTILINESTRING and MULTIPOLYGON as members")]
     NestedGeometryCollection,
 
