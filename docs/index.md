@@ -14,23 +14,24 @@
 ## Javascript
 
 ```js
-> import { Expr } from 'cql2-wasm';
+> import init, { Expr } from 'cql2-wasm';
+> await init();  // the published package is a `--target web` build
 > const expr = new Expr("landsat:scene_id = 'LC82030282019133LGN00'");
-> expr.to_json()
-{'op': '=', 'args': [{'property': 'landsat:scene_id'}, 'LC82030282019133LGN00']}
+> expr.to_json()  // a JSON string, not an object
+'{"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]}'
 ```
 
 ## CLI
 
 ```shell
-$ cql2 < tests/fixtures/text/example01.txt # will succeed if the CQL2 is valid
-("landsat:scene_id" = 'LC82030282019133LGN00')
+$ cql2 < examples/text/example01.txt # will succeed if the CQL2 is valid
+landsat:scene_id = 'LC82030282019133LGN00'
 ```
 
 ## Rust
 
 ```rust
 use cql2::Expr;
-let expr: Expr = "landsat:scene_id = 'LC82030282019133LGN00'".parse();
+let expr: Expr = "landsat:scene_id = 'LC82030282019133LGN00'".parse().unwrap();
 let json = expr.to_json().unwrap();
 ```

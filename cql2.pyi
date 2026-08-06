@@ -128,11 +128,11 @@ class Expr:
             >>> from cql2 import Expr
             >>> expr = Expr({"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]})
             >>> expr.to_text()
-            '("landsat:scene_id" = \'LC82030282019133LGN00\')'
+            "landsat:scene_id = 'LC82030282019133LGN00'"
         """
 
     def to_sql(self) -> str:
-        """Converts this cql2 expression to a SQL query.
+        r"""Converts this cql2 expression to a SQL query.
 
         Returns:
             str: The SQL query
@@ -140,10 +140,8 @@ class Expr:
         Examples:
             >>> from cql2 import Expr
             >>> expr = Expr("landsat:scene_id = 'LC82030282019133LGN00'")
-            >>> q.query
-            '("landsat:scene_id" = $1)'
-            >>> q.params
-            ['LC82030282019133LGN00']
+            >>> expr.to_sql()
+            '"landsat:scene_id" = \'LC82030282019133LGN00\''
         """
 
     def __add__(self, other: Expr) -> Expr:
