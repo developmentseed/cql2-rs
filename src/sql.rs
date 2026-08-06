@@ -23,6 +23,7 @@ fn cast(arg: SqlExpr, data_type: sqlparser::ast::DataType) -> SqlExpr {
         data_type,
         kind: CastKind::Cast,
         format: None,
+        array: false,
     }
 }
 
