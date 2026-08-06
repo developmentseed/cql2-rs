@@ -1,8 +1,8 @@
-use crate::{geometry::spatial_op, temporal::temporal_op, Error, Geometry, Validator};
+use crate::{geometry::spatial_op, precedence, temporal::temporal_op, Error, Geometry, Validator};
 use geo_types::{coord, Geometry as GGeom, Rect};
 use json_dotpath::DotPaths;
 use like::Like;
-use pg_escape::{quote_identifier, quote_literal};
+use pg_escape::quote_identifier;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
@@ -61,6 +61,39 @@ pub const ARITHOPS: &[&str] = &["+", "-", "*", "/", "%", "^", "div"];
 pub const ARRAYOPS: &[&str] = &["a_equals", "a_contains", "a_containedby", "a_overlaps"];
 
 // todo: array ops, in, casei, accenti, between, not, like
+/// Renders a string as a cql2-text literal: single-quoted, with an embedded quote doubled.
+fn literal(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "''"))
+}
+
+/// Names the cql2-text grammar reads as something other than an identifier.
+///
+/// `Literal` is tried before `Identifier`, so a bare `true`, `false` or `null` comes back as that
+/// value rather than as a name, and `not` is consumed as the prefix operator, leaving nothing for
+/// the expression that follows. Every other keyword — `and`, `is`, `like`, `between`, `div` — reads
+/// as an identifier where one is expected, so only these four need the quotes.
+const GRAMMAR_RESERVED: &[&str] = &["true", "false", "null", "not"];
+
+/// Renders a name as a cql2-text identifier, quoting it only where the grammar requires.
+///
+/// [`quote_identifier`] applies PostgreSQL's rules, which quote any name that is not lowercase, and
+/// every SQL keyword besides. A cql2-text identifier is case-sensitive and admits `_`, `.` and `:`,
+/// so names like `t_metBy`, `Foo` and `landsat:scene_id` are written bare. This is what both a
+/// property and a function name are rendered with, so one name has one spelling wherever it appears.
+fn identifier(name: &str) -> String {
+    let mut chars = name.chars();
+    let is_bare = chars.next().is_some_and(|c| c.is_ascii_alphabetic())
+        && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | ':'))
+        && !GRAMMAR_RESERVED
+            .iter()
+            .any(|reserved| reserved.eq_ignore_ascii_case(name));
+    if is_bare {
+        name.to_string()
+    } else {
+        quote_identifier(name).to_string()
+    }
+}
+
 
 /// A CQL2 expression.
 ///
@@ -599,8 +632,8 @@ impl Expr {
         match self {
             Expr::Bool(v) => Ok(v.to_string()),
             Expr::Float(v) => Ok(v.to_string()),
-            Expr::Literal(v) => Ok(quote_literal(v).to_string()),
-            Expr::Property { property } => Ok(quote_identifier(property).to_string()),
+            Expr::Literal(v) => Ok(literal(v)),
+            Expr::Property { property } => Ok(identifier(property)),
             Expr::Null => Ok("NULL".to_string()),
             Expr::Interval { interval } => {
                 check_len!(
@@ -623,34 +656,52 @@ impl Expr {
                 Ok(format!("({})", array_els.join(", ")))
             }
             Expr::Operation { op, args } => {
-                let a: Vec<String> = args.iter().map(|x| x.to_text()).collect::<Result<_, _>>()?;
+                // Parenthesize only the operands that would otherwise re-associate when the text is
+                // parsed back, so the rendering round-trips to an identical expression.
+                let requirement = precedence::operands(&op);
+                let a: Vec<String> = args
+                    .iter()
+                    .enumerate()
+                    .map(|(index, arg)| {
+                        let text = arg.to_text()?;
+                        Ok(if requirement.needs_parens(index, arg) {
+                            format!("({})", text)
+                        } else {
+                            text
+                        })
+                    })
+                    .collect::<Result<_, Error>>()?;
                 match op.as_str() {
-                    "and" => Ok(format!("({})", a.join(" AND "))),
-                    "or" => Ok(format!("({})", a.join(" OR "))),
-                    "like" => Ok(format!("({} LIKE {})", a[0], a[1])),
-                    "in" => Ok(format!("({} IN {})", a[0], a[1])),
+                    "and" => Ok(a.join(" AND ")),
+                    "or" => Ok(a.join(" OR ")),
+                    "like" => {
+                        check_len!("like", a, 2, format!("{} LIKE {}", a[0], a[1]))
+                    }
+                    "in" => {
+                        check_len!("in", a, 2, format!("{} IN {}", a[0], a[1]))
+                    }
                     "between" => {
                         check_len!(
                             "between",
                             a,
                             3,
-                            format!("({} BETWEEN {} AND {})", a[0], a[1], a[2])
+                            format!("{} BETWEEN {} AND {}", a[0], a[1], a[2])
                         )
                     }
                     "not" => {
-                        check_len!("not", a, 1, format!("(NOT {})", a[0]))
+                        check_len!("not", a, 1, format!("NOT {}", a[0]))
                     }
                     "isNull" => {
-                        check_len!("is null", a, 1, format!("({} IS NULL)", a[0]))
+                        check_len!("is null", a, 1, format!("{} IS NULL", a[0]))
                     }
                     "+" | "-" | "*" | "/" | "%" => {
                         let paddedop = format!(" {} ", op);
                         Ok(a.join(&paddedop).to_string())
                     }
                     "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
-                        check_len!(op, a, 2, format!("({} {} {})", a[0], op, a[1]))
+                        check_len!(op, a, 2, format!("{} {} {}", a[0], op, a[1]))
                     }
-                    _ => Ok(format!("{}({})", quote_identifier(op), a.join(", "))),
+                    _ => Ok(format!("{}({})", identifier(&op), a.join(", "))),
                 }
             }
             Expr::BBox { bbox } => {
@@ -812,6 +863,6 @@ mod tests {
     fn keep_one_element_lists() {
         // https://github.com/developmentseed/cql2-rs/issues/91
         let expr: Expr = "ogc_fid IN ('1')".parse().unwrap();
-        assert_eq!(expr.to_text().unwrap(), "(ogc_fid IN ('1'))");
+        assert_eq!(expr.to_text().unwrap(), "ogc_fid IN ('1')");
     }
 }

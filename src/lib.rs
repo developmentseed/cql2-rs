@@ -35,6 +35,7 @@ mod error;
 mod expr;
 mod geometry;
 mod parser;
+mod precedence;
 mod sql;
 mod temporal;
 mod validator;
