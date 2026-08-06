@@ -423,6 +423,15 @@ fn array_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
     Ok(Expr::Bool(out))
 }
 
+/// Whether `op` names an operator CQL2 defines, rather than a user-supplied function.
+///
+/// A defined operator has semantics this crate knows, which is what lets NULL be propagated
+/// through it. A function name is the author's, so what it does with a NULL argument is unknown
+/// and the call is left for the caller to evaluate.
+fn is_defined_operator(op: &str) -> bool {
+    canonical_ops().any(|known| known == op)
+}
+
 /// Returns `true` if a *reduced* expression is still "unknown", i.e. its value
 /// cannot be determined at reduction time.
 ///
@@ -431,6 +440,10 @@ fn array_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
 /// that could not be folded to a concrete value. Predicates over unknown
 /// operands must not be constant-folded, otherwise `reduce` would invent a
 /// truth value for something it does not actually know.
+///
+/// [`Expr::Null`] is deliberately *not* unknown. It is a value like any other — the third truth
+/// value of the three-valued logic CQL2 and SQL share — and an operation over it folds to what
+/// that logic says it is, rather than being left for someone else to evaluate.
 fn is_unknown(expr: &Expr) -> bool {
     match expr {
         Expr::Property { .. } | Expr::Operation { .. } => true,
@@ -526,31 +539,35 @@ impl Expr {
                     } else {
                         Ok(Expr::Bool(false))
                     }
-                } else if args.iter().any(|arg| matches!(arg.as_ref(), Expr::Null)) {
-                    Ok(Expr::Bool(false))
                 } else if BOOLOPS.contains(&op.as_str()) {
-                    let curop = op.clone();
                     let mut dedupargs: Vec<Box<Expr>> = vec![];
                     let mut nestedargs: Vec<Box<Expr>> = vec![];
                     for a in args {
                         match *a {
-                            Expr::Operation { op, args } if op == curop => {
-                                nestedargs.append(&mut args.clone());
-                            }
-                            _ => {
-                                dedupargs.push(a.clone());
-                            }
+                            Expr::Operation {
+                                op: nested,
+                                args: inner,
+                            } if nested == op => nestedargs.extend(inner),
+                            _ => dedupargs.push(a),
                         }
                     }
                     dedupargs.append(&mut nestedargs);
                     dedupargs.sort_by(|a, b| a.partial_cmp(b).unwrap());
                     dedupargs.dedup();
 
+                    // The three truth values are counted apart from each other, and both apart from
+                    // an operand that is not a truth value at all: NULL is a value the connectives
+                    // define an answer for, an unfolded operand is one they cannot answer for.
                     let mut anytrue: bool = false;
                     let mut anyfalse: bool = false;
+                    let mut anynull: bool = false;
                     let mut anyexp: bool = false;
 
                     for a in dedupargs.iter() {
+                        if matches!(a.as_ref(), Expr::Null) {
+                            anynull = true;
+                            continue;
+                        }
                         let b = bool::try_from(a.as_ref());
                         match b {
                             Ok(true) => {
@@ -564,26 +581,56 @@ impl Expr {
                             }
                         }
                     }
+                    // One value of each connective absorbs every other operand, whatever it is:
+                    // FALSE AND anything is FALSE and TRUE OR anything is TRUE, NULL and unfolded
+                    // operands included. This is where three-valued logic differs most from
+                    // propagating NULL blindly.
+                    if op == "and" && anyfalse {
+                        return Ok(Expr::Bool(false));
+                    }
+                    if op == "or" && anytrue {
+                        return Ok(Expr::Bool(true));
+                    }
+                    // TRUE is the identity of AND, so a true operand says nothing about the answer
+                    // and is dropped. (FALSE is the identity of OR, but a false operand is left in
+                    // place there, which is the shape this crate has always emitted.)
                     if op == "and" && anytrue {
                         dedupargs.retain(|x| !bool::try_from(x.as_ref()).unwrap_or(false));
                     }
                     if dedupargs.len() == 1 {
-                        Ok(dedupargs.pop().unwrap().as_ref().clone())
-                    } else if (op == "and" && anyfalse) || (op == "or" && !anytrue && !anyexp) {
+                        Ok(*dedupargs.pop().unwrap())
+                    } else if !anyexp && anynull {
+                        // Nothing decides the answer and one operand is NULL, so the answer is
+                        // NULL: `FALSE OR NULL` and `TRUE AND NULL` are both NULL.
+                        Ok(Expr::Null)
+                    } else if !anyexp && op == "or" {
+                        // Every operand is FALSE.
                         Ok(Expr::Bool(false))
-                    } else if (op == "and" && !anyfalse && !anyexp) || (op == "or" && anytrue) {
+                    } else if !anyexp && op == "and" {
+                        // Every operand was TRUE and has been dropped.
                         Ok(Expr::Bool(true))
                     } else {
                         Ok(Expr::Operation {
                             op,
-                            args: dedupargs.clone(),
+                            args: dedupargs,
                         })
                     }
                 } else if op == "not" {
                     match args[0].deref() {
                         Expr::Bool(v) => Ok(Expr::Bool(!v)),
+                        // The negation of "unknown" is "unknown".
+                        Expr::Null => Ok(Expr::Null),
                         _ => Ok(Expr::Operation { op, args }),
                     }
+                } else if is_defined_operator(&op)
+                    && args.iter().any(|arg| matches!(arg.as_ref(), Expr::Null))
+                {
+                    // Every operator CQL2 defines besides the connectives above is NULL-propagating,
+                    // as it is in SQL: a comparison against NULL is NULL rather than false, and so is
+                    // arithmetic, a spatial or temporal predicate, `LIKE`, `BETWEEN` and the rest.
+                    // A user-supplied function is not folded, because what it makes of a NULL
+                    // argument is not this crate's to decide.
+                    Ok(Expr::Null)
                 } else if op == "casei" {
                     match args[0].as_ref() {
                         Expr::Literal(v) => Ok(Expr::Literal(v.to_lowercase())),
@@ -713,10 +760,19 @@ impl Expr {
                             Ok(Expr::Operation { op, args })
                         }
                     } else if op == "in" {
+                        // `x IN (a, b)` is `x = a OR x = b`, so a NULL among the candidates follows
+                        // the same three-valued logic: a match still decides the answer, and
+                        // without one the NULL leaves it unknown rather than false.
+                        let has_null = matches!(&right, Expr::Array(items)
+                            if items.iter().any(|item| matches!(item.as_ref(), Expr::Null)));
                         let l: String = left.to_text()?;
                         let r: HashSet<String> = right.try_into()?;
                         let isin: bool = r.contains(&l);
-                        Ok(Expr::Bool(isin))
+                        Ok(match (isin, has_null) {
+                            (true, _) => Expr::Bool(true),
+                            (false, true) => Expr::Null,
+                            (false, false) => Expr::Bool(false),
+                        })
                     } else {
                         Ok(Expr::Operation { op, args })
                     }
@@ -735,10 +791,14 @@ impl Expr {
     /// use cql2::Expr;
     /// let item = json!({"properties":{"eo:cloud_cover":10, "datetime": "2020-01-01 00:00:00Z", "boolfield": true}});
     ///
-    /// let mut expr: Expr = "boolfield and 1 + 2 = 3".parse().unwrap();
+    /// let expr: Expr = "boolfield and 1 + 2 = 3".parse().unwrap();
     /// assert_eq!(true, expr.matches(Some(&item)).unwrap());
     ///
-    /// let mut expr: Expr = "eo:cloud_cover <= 9".parse().unwrap();
+    /// let expr: Expr = "eo:cloud_cover <= 9".parse().unwrap();
+    /// assert_eq!(false, expr.matches(Some(&item)).unwrap());
+    ///
+    /// // A predicate that evaluates to NULL is not a match, and is not an error either.
+    /// let expr: Expr = "null and true".parse().unwrap();
     /// assert_eq!(false, expr.matches(Some(&item)).unwrap());
     /// ```
     pub fn matches(self, j: Option<&Value>) -> Result<bool, Error> {
@@ -746,16 +806,27 @@ impl Expr {
 
         match reduced {
             Expr::Bool(v) => Ok(v),
+            // A predicate is satisfied only when it is TRUE, so an unknown answer is not a match.
+            // It is not an error: NULL is a value the expression legitimately evaluated to.
+            Expr::Null => Ok(false),
             _ => Err(Error::NonReduced()),
         }
     }
 
-    /// Returns True if the expression evaluates to true and false if either the expression evaluates to false or does not fully reduce to a boolean.
+    /// Returns True if the expression evaluates to true.
+    ///
+    /// Anything else is false: a predicate admits a record only when it is TRUE, so a NULL — the
+    /// third truth value, which a comparison against a null value evaluates to — is not a match,
+    /// and neither is an expression that did not fully reduce to a truth value.
     pub fn is_true(self) -> bool {
         matches!(self, Expr::Bool(true))
     }
 
     /// Filters an iterable of JSON values based on this expression.
+    ///
+    /// A record is kept only when the predicate is TRUE of it. A record the predicate is FALSE of,
+    /// NULL of, or cannot be decided for — because a property it names is absent — is skipped
+    /// rather than reported as an error.
     ///
     /// # Examples
     ///

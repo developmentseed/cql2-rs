@@ -42,11 +42,229 @@ fn validate_reduce_fixtures() {
     }
 }
 
+/// The three truth values, as the expressions that denote them.
+fn truth(value: Option<bool>) -> Expr {
+    match value {
+        Some(v) => Expr::Bool(v),
+        None => Expr::Null,
+    }
+}
+
 fn operation(op: &str, args: Vec<Expr>) -> Expr {
     Expr::Operation {
         op: op.to_string(),
         args: args.into_iter().map(Box::new).collect(),
     }
+}
+
+/// An operand whose value is not known at reduction time, as distinct from NULL.
+fn unknown() -> Expr {
+    Expr::Property {
+        property: "unresolved".to_string(),
+    }
+}
+
+const TRUE: Option<bool> = Some(true);
+const FALSE: Option<bool> = Some(false);
+const NULL: Option<bool> = None;
+
+/// Kleene's three-valued logic, the same `AND`, `OR` and `NOT` SQL and OGC 21-065r2 define.
+///
+/// The absorbing rows are the ones that distinguish it from propagating NULL blindly: `FALSE AND
+/// NULL` is FALSE and `TRUE OR NULL` is TRUE, because the other operand already decides the answer.
+#[test]
+fn kleene_truth_table() {
+    const AND: &[(Option<bool>, Option<bool>, Option<bool>)] = &[
+        (TRUE, TRUE, TRUE),
+        (TRUE, FALSE, FALSE),
+        (TRUE, NULL, NULL),
+        (FALSE, TRUE, FALSE),
+        (FALSE, FALSE, FALSE),
+        (FALSE, NULL, FALSE),
+        (NULL, TRUE, NULL),
+        (NULL, FALSE, FALSE),
+        (NULL, NULL, NULL),
+    ];
+    const OR: &[(Option<bool>, Option<bool>, Option<bool>)] = &[
+        (TRUE, TRUE, TRUE),
+        (TRUE, FALSE, TRUE),
+        (TRUE, NULL, TRUE),
+        (FALSE, TRUE, TRUE),
+        (FALSE, FALSE, FALSE),
+        (FALSE, NULL, NULL),
+        (NULL, TRUE, TRUE),
+        (NULL, FALSE, NULL),
+        (NULL, NULL, NULL),
+    ];
+    const NOT: &[(Option<bool>, Option<bool>)] = &[(TRUE, FALSE), (FALSE, TRUE), (NULL, NULL)];
+
+    for (op, table) in [("and", AND), ("or", OR)] {
+        for (left, right, expected) in table {
+            let expr = operation(op, vec![truth(*left), truth(*right)]);
+            assert_eq!(
+                expr.clone().reduce(None).expect("connectives reduce"),
+                truth(*expected),
+                "{} is not {:?}",
+                expr.to_text().expect("renders as text"),
+                truth(*expected)
+            );
+        }
+    }
+    for (operand, expected) in NOT {
+        let expr = operation("not", vec![truth(*operand)]);
+        assert_eq!(
+            expr.clone().reduce(None).expect("negation reduces"),
+            truth(*expected),
+            "{} is not {:?}",
+            expr.to_text().expect("renders as text"),
+            truth(*expected)
+        );
+    }
+}
+
+/// Anything compared with NULL is NULL, whichever side the NULL is on.
+#[test]
+fn comparison_with_null_is_null() {
+    for op in ["=", "<>", "<", "<=", ">", ">="] {
+        for args in [
+            vec![Expr::Null, Expr::Float(1.0)],
+            vec![Expr::Float(1.0), Expr::Null],
+            vec![Expr::Null, Expr::Null],
+            vec![Expr::Literal("a".to_string()), Expr::Null],
+        ] {
+            let expr = operation(op, args);
+            assert_eq!(
+                expr.clone().reduce(None).expect("comparison reduces"),
+                Expr::Null,
+                "{} is not NULL",
+                expr.to_text().expect("renders as text")
+            );
+        }
+    }
+}
+
+/// An absorbing operand decides the answer even when the other one is not known yet.
+#[test]
+fn absorbing_operands_fold_over_unknowns() {
+    assert_eq!(
+        operation("and", vec![Expr::Bool(false), unknown()])
+            .reduce(None)
+            .unwrap(),
+        Expr::Bool(false)
+    );
+    assert_eq!(
+        operation("or", vec![Expr::Bool(true), unknown()])
+            .reduce(None)
+            .unwrap(),
+        Expr::Bool(true)
+    );
+}
+
+/// NULL beside an operand that is not known yet leaves the connective unfolded.
+///
+/// `unknown AND NULL` is FALSE if the unknown turns out to be FALSE and NULL otherwise, so there is
+/// no answer to fold to; the predicate has to survive for whoever can evaluate it.
+#[test]
+fn null_beside_an_unknown_stays_unfolded() {
+    for op in ["and", "or"] {
+        let reduced = operation(op, vec![unknown(), Expr::Null])
+            .reduce(None)
+            .expect("expression reduces");
+        match &reduced {
+            Expr::Operation { op: name, args } => {
+                assert_eq!(name, op);
+                assert!(
+                    args.iter().any(|a| matches!(a.as_ref(), Expr::Null)),
+                    "the NULL operand was dropped from {reduced:?}"
+                );
+                assert!(
+                    args.iter().any(|a| a.as_ref() == &unknown()),
+                    "the unknown operand was dropped from {reduced:?}"
+                );
+            }
+            other => panic!("expected {op} to survive, got {other:?}"),
+        }
+    }
+}
+
+/// An unresolved operand is not NULL, and must not be folded into one.
+///
+/// A property the record does not carry cannot be evaluated *here*; the predicate has to keep its
+/// shape so it can be pushed down to a database or evaluated against a record that does carry it.
+#[test]
+fn an_unresolved_property_is_not_null() {
+    let record = json!({"properties": {"other": 1}});
+    for source in [
+        "t_intersects(ts_start, DATE('2020-02-01'))",
+        "s_intersects(geom, POINT(0 0))",
+        "missing = 1",
+        "missing + 1 = 2",
+    ] {
+        let expr: Expr = source.parse().unwrap();
+        let reduced = expr.clone().reduce(Some(&record)).expect("reduces");
+        assert!(
+            matches!(reduced, Expr::Operation { .. }),
+            "{source} folded to {reduced:?} instead of staying unfolded"
+        );
+        // The record does not satisfy it either way, and asking is not an error.
+        assert!(expr
+            .filter(std::slice::from_ref(&record))
+            .unwrap()
+            .is_empty());
+    }
+}
+
+/// A record is admitted only when the predicate is TRUE of it: NULL does not pass.
+#[test]
+fn filter_admits_only_a_true_predicate() {
+    let items = vec![
+        json!({"properties": {"intfield": 1}}),
+        json!({"properties": {"intfield": 2}}),
+    ];
+
+    // `intfield = 1 OR NULL` is TRUE of the first record — TRUE absorbs the NULL — and NULL of the
+    // second, where `FALSE OR NULL` is all that is left.
+    let expr: Expr = "intfield = 1 or null".parse().unwrap();
+    let filtered = expr.filter(&items).expect("filter runs");
+    assert_eq!(filtered.len(), 1);
+    assert_eq!(filtered[0]["properties"]["intfield"], 1);
+
+    // The same predicate under `AND`: FALSE absorbs, so the second record is FALSE and the first is
+    // NULL. Neither passes.
+    let expr: Expr = "intfield = 1 and null".parse().unwrap();
+    assert!(expr.filter(&items).expect("filter runs").is_empty());
+
+    // A predicate that is TRUE of both admits both.
+    let expr: Expr = "intfield > 0".parse().unwrap();
+    assert_eq!(expr.filter(&items).expect("filter runs").len(), 2);
+}
+
+/// A NULL predicate is not a match, and asking is not an error.
+#[test]
+fn matches_reports_a_null_predicate_as_no_match() {
+    let record = json!({"properties": {"intfield": 1}});
+    for source in ["null", "intfield = 1 and null", "not null", "null = 1"] {
+        let expr: Expr = source.parse().unwrap();
+        assert!(
+            !expr
+                .matches(Some(&record))
+                .expect("a NULL answer is not an error"),
+            "{source} should not match"
+        );
+    }
+}
+
+/// `IN` reads as a chain of equalities, so a NULL candidate follows the same logic.
+#[test]
+fn in_with_a_null_candidate() {
+    // A match decides the answer.
+    let expr: Expr = "2 in (null, 2)".parse().unwrap();
+    assert_eq!(expr.reduce(None).unwrap(), Expr::Bool(true));
+    // Without one, the NULL leaves it unknown rather than false.
+    let expr: Expr = "1 in (null, 2)".parse().unwrap();
+    assert_eq!(expr.reduce(None).unwrap(), Expr::Null);
+    let expr: Expr = "1 in (2, 3)".parse().unwrap();
+    assert_eq!(expr.reduce(None).unwrap(), Expr::Bool(false));
 }
 
 /// `reduce` must not constant-fold `IS NULL` when there is no data context,
