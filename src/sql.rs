@@ -1,4 +1,4 @@
-use crate::{Error, Expr, Geometry};
+use crate::{precedence, Error, Expr, Geometry};
 use pg_escape::quote_identifier;
 use sqlparser::ast::{
     Array as SqlArray, BinaryOperator, CastKind,
@@ -7,7 +7,6 @@ use sqlparser::ast::{
     Expr::{Cast, Nested, Value as ValExpr},
     FunctionArgumentList, FunctionArguments, Ident, TimezoneInfo, Value,
 };
-use std::vec;
 
 /// Trait for converting expressions to SQLParser AST nodes.
 pub trait ToSqlAst {
@@ -70,6 +69,49 @@ fn binop(op: BinaryOperator, args: Vec<SqlExpr>) -> SqlExpr {
     }
 }
 
+/// The operand requirement for an operator *as SQL renders it*.
+///
+/// Almost every operator keeps its CQL2 requirement, because cql2-text and SQL share PostgreSQL's
+/// precedence shape. Exactly one operator differs: `^` is infix in cql2-text but renders as
+/// `power(a, b)` here, whose arguments the call's own parentheses and commas already delimit. Every
+/// other operator that renders as a SQL function call is written as a function call in cql2-text
+/// too, so it already carries `ATOM` precedence and demands nothing of its operands.
+///
+/// The opposite case is *not* handled here: `a_contains`, `a_containedBy`, `a_overlaps` and
+/// `a_equals` are function calls in cql2-text — ATOM, requiring nothing of their operands — but
+/// render as the infix `@>`, `<@`, `@@` and, for `a_equals`, a conjunction of two `@>`. Their
+/// operands are therefore never parenthesized, which is sound only because what an array predicate
+/// takes as an operand (an array, a property, a function call) is itself an atom. The `a_equals`
+/// rendering wraps itself in parentheses for the same reason the `t_*` renderings do: it is a
+/// conjunction where the caller expects an atom.
+fn sql_operands(op: &str) -> precedence::Operands {
+    match op {
+        // `a ^ b` renders as `power(a, b)`.
+        "^" => precedence::Operands { first: 0, rest: 0 },
+        _ => precedence::operands(op),
+    }
+}
+
+/// Converts operands, parenthesizing any that bind more loosely than the operator they hang off of.
+///
+/// A SQL AST records no grouping of its own: `Display` renders `BinaryOp` as `{left} {op} {right}`,
+/// never emitting parentheses, so a nested `a AND (b OR c)` would print as `a AND b OR c` and
+/// reparse as `(a AND b) OR c`. `Nested` is sqlparser's "parentheses were written here" node, and is
+/// what its own parser produces for `(...)`.
+fn args2ast_grouped(op: &str, args: &[Box<Expr>]) -> Result<Vec<SqlExpr>, Error> {
+    let requirement = sql_operands(op);
+    args.iter()
+        .enumerate()
+        .map(|(index, arg)| {
+            let ast = arg.to_sql_ast()?;
+            Ok(if requirement.needs_parens(index, arg) {
+                wrap(ast)
+            } else {
+                ast
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()
+}
 struct Targs {
     left_start: SqlExpr,
     left_end: SqlExpr,
@@ -257,7 +299,7 @@ impl ToSqlAst for Expr {
                 // fallback below.
                 let canonical = crate::expr::canonical_op(op);
                 let op_str = canonical.as_str();
-                let a = args2ast(args)?;
+                let a = args2ast_grouped(op_str, args)?;
                 match op_str {
                     "isNull" => SqlExpr::IsNull(Box::new(a[0].clone())),
                     "not" => notop(a[0].clone()),
