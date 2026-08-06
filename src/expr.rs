@@ -756,6 +756,9 @@ impl Expr {
 
         match self {
             Expr::Bool(v) => Ok(v.to_string()),
+            // An infinity or a NaN has no cql2-text literal, and the bare words `inf` and `NaN` the
+            // default rendering writes would parse back as property names rather than as numbers.
+            Expr::Float(v) if !v.is_finite() => Err(Error::NonFiniteNumber(*v)),
             Expr::Float(v) => Ok(v.to_string()),
             Expr::Literal(v) => Ok(literal(v)),
             Expr::Property { property } => Ok(identifier(property)),
@@ -1011,6 +1014,42 @@ mod tests {
         }
     }
 
+    /// An infinity or a NaN has no cql2-text spelling, so rendering one is an error.
+    ///
+    /// Rendered as the bare word `f64::to_string` writes, `inf` would parse back as a *property*
+    /// named `inf` — a different expression that reads as valid CQL2, which is worse than a failure.
+    #[test]
+    fn non_finite_numbers_have_no_text() {
+        for value in [f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
+            assert!(
+                matches!(
+                    Expr::Float(value).to_text(),
+                    Err(crate::Error::NonFiniteNumber(_))
+                ),
+                "{value} rendered as cql2-text"
+            );
+        }
+        // Reachable from an expression that parsed: division by zero reduces to an infinity.
+        let divided: Expr = "1 / 0".parse().unwrap();
+        assert!(matches!(
+            divided.reduce(None).unwrap().to_text(),
+            Err(crate::Error::NonFiniteNumber(_))
+        ));
+        // An operand buried in a larger expression is reported the same way.
+        let expr = Expr::Operation {
+            op: ">".to_string(),
+            args: vec![
+                Box::new(Expr::Property {
+                    property: "a".to_string(),
+                }),
+                Box::new(Expr::Float(f64::INFINITY)),
+            ],
+        };
+        assert!(matches!(
+            expr.to_text(),
+            Err(crate::Error::NonFiniteNumber(_))
+        ));
+    }
 
     #[test]
     fn keep_z() {

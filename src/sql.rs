@@ -70,9 +70,34 @@ fn lit_expr(value: &str) -> SqlExpr {
         Value::SingleQuotedString(value.to_string()).into()
     })
 }
+/// A numeric literal.
+///
+/// An infinity or a NaN has no SQL spelling, and `f64::to_string` writes them as the bare words
+/// `inf`, `-inf` and `NaN`, which a database reads as column references. `1 / 0` reduces to
+/// `Float(inf)` and `0 / 0` to `Float(NaN)`, so both are reachable from an expression that parsed.
+/// A numeric literal.
+///
+/// A non-finite value is written as a cast string rather than as a bare number: `inf` on its own is
+/// a bare token that a database reads as a column reference. Both PostgreSQL and DuckDB accept
+/// `'Infinity'`, `'-Infinity'` and `'NaN'` cast to a floating-point type, and compare them as the
+/// IEEE values they name — which is also how `..` interval bounds are already rendered.
 fn float_expr(value: &f64) -> SqlExpr {
-    ValExpr(Value::Number(value.to_string(), false).into())
+    if value.is_finite() {
+        return ValExpr(Value::Number(value.to_string(), false).into());
+    }
+    let name = if value.is_nan() {
+        "NaN"
+    } else if value.is_sign_positive() {
+        "Infinity"
+    } else {
+        "-Infinity"
+    };
+    cast(
+        lit_expr(name),
+        sqlparser::ast::DataType::Double(sqlparser::ast::ExactNumberInfo::None),
+    )
 }
+
 fn args2ast(args: &[Box<Expr>]) -> Result<Vec<SqlExpr>, Error> {
     args.iter()
         .map(|arg| arg.to_sql_ast())
@@ -538,4 +563,24 @@ mod tests {
         ));
     }
 
+    /// `inf` and `NaN` render as the values they name, not as bare tokens.
+    ///
+    /// Emitted bare, `inf` is an identifier a database reads as a column reference.
+    #[test]
+    fn non_finite_numbers_render_as_cast_literals() {
+        for (value, name) in [
+            (f64::INFINITY, "Infinity"),
+            (f64::NEG_INFINITY, "-Infinity"),
+            (f64::NAN, "NaN"),
+        ] {
+            let sql = Expr::Float(value).to_sql().expect("renders as SQL");
+            assert_eq!(sql, format!("CAST('{name}' AS DOUBLE)"));
+        }
+        // Reachable from an expression that parsed: division by zero reduces to an infinity.
+        let divided: Expr = "1 / 0".parse().unwrap();
+        assert_eq!(
+            divided.reduce(None).unwrap().to_sql().expect("renders"),
+            "CAST('Infinity' AS DOUBLE)"
+        );
+    }
 }
