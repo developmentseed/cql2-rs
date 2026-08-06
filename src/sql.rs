@@ -179,12 +179,39 @@ fn args2ast_grouped(op: &str, args: &[Box<Expr>]) -> Result<Vec<SqlExpr>, Error>
         })
         .collect::<Result<Vec<_>, _>>()
 }
+/// The character a `LIKE` pattern escapes its wildcards with.
+///
+/// The evaluator's matcher and PostgreSQL both read `\` this way; DuckDB reads a pattern with no
+/// `ESCAPE` clause literally, wildcards and all. Stating it makes the pattern mean one thing
+/// everywhere, so `like(textfield, 'item\_1')` selects the same rows in each.
+const LIKE_ESCAPE: char = '\\';
+
 /// A binary comparison over the two operands `sql_arity` has already checked for.
 fn binop(op: BinaryOperator, args: Vec<SqlExpr>) -> SqlExpr {
     let [left, right] = args
         .try_into()
         .expect("sql_arity checked the operand count");
     cmp(left, op, right)
+}
+
+/// Array equality, as the *set* comparison the evaluator makes it.
+///
+/// `array_op` compares two arrays as sets: it collects each into a `HashSet`, so neither the order
+/// of the elements nor a repeat of one changes the answer. SQL's `=` on arrays is positional —
+/// `[1,2,3] = [3,2,1]` is false — so rendering `a_equals` as `=` would give the two backends
+/// different answers for the same expression.
+///
+/// Mutual containment says exactly what set equality says, and is spelled the same way in both
+/// dialects: `@>` and its DuckDB rewrite `list_has_all` are already how `a_contains` renders. Sorting
+/// the two arrays would be the other way to say it, but PostgreSQL has no portable array sort.
+fn set_equality(args: Vec<SqlExpr>) -> SqlExpr {
+    let [left, right] = args
+        .try_into()
+        .expect("sql_arity checked the operand count");
+    wrap(andop(vec![
+        cmp(left.clone(), BinaryOperator::AtArrow, right.clone()),
+        cmp(right, BinaryOperator::AtArrow, left),
+    ]))
 }
 
 struct Targs {
@@ -419,7 +446,14 @@ impl ToSqlAst for Expr {
                         SqlExpr::Like {
                             expr: Box::new(expr),
                             pattern: Box::new(pattern),
-                            escape_char: None,
+                            // The escape character is stated rather than left to the engine, so
+                            // every engine reads the pattern the way the evaluator does. `\` is
+                            // what the evaluator escapes with and what PostgreSQL defaults to;
+                            // DuckDB has no default at all, so without this `'item\_1'` matches
+                            // `item_1` here and a disjoint set of rows there.
+                            escape_char: Some(
+                                Value::SingleQuotedString(LIKE_ESCAPE.to_string()).into(),
+                            ),
                             negated: false,
                             any: false,
                         }
@@ -428,7 +462,8 @@ impl ToSqlAst for Expr {
                     "casei" => func("lower", a)?,
                     "and" => chainop(BinaryOperator::And, a)?,
                     "or" => chainop(BinaryOperator::Or, a)?,
-                    "=" | "a_equals" | "eq" => binop(BinaryOperator::Eq, a),
+                    "=" => binop(BinaryOperator::Eq, a),
+                    "a_equals" => set_equality(a),
                     "<>" => binop(BinaryOperator::NotEq, a),
                     ">" => binop(BinaryOperator::Gt, a),
                     ">=" => binop(BinaryOperator::GtEq, a),
