@@ -103,11 +103,36 @@ fn args2ast(args: &[Box<Expr>]) -> Result<Vec<SqlExpr>, Error> {
         .map(|arg| arg.to_sql_ast())
         .collect::<Result<Vec<_>, _>>()
 }
-fn binop(op: BinaryOperator, args: Vec<SqlExpr>) -> SqlExpr {
-    SqlExpr::BinaryOp {
-        left: Box::new(args[0].clone()),
-        op,
-        right: Box::new(args[1].clone()),
+
+/// What an operator's SQL rendering requires of its operand count.
+enum Arity {
+    /// The rendering indexes exactly this many operands.
+    Exactly(usize),
+    /// The rendering chains its operands pairwise and accepts any number from this floor up.
+    AtLeast(usize),
+    /// The rendering is a function call, which takes its arguments as a list.
+    Any,
+}
+
+/// The operand count an operator's SQL rendering requires.
+///
+/// The arithmetic operators are n-ary, as they are in cql2-text: `{"op": "+", "args": [a, b, c]}`
+/// renders as `a + b + c` in both. They chain to the left, so `a - b - c` is `(a - b) - c` and
+/// `a / b / c` is `(a / b) / c`, which is how SQL and cql2-text alike read the flat form. Two
+/// operands is the floor, because one would print as that operand by itself with the operator
+/// silently dropped.
+///
+/// `^` is not one of them. It renders as `power(a, b)`, which engines define as taking a base and an
+/// exponent, and `to_text` also requires exactly two. `div` is a function call in both encodings, so
+/// it takes its arguments as a list like any other.
+fn sql_arity(op: &str) -> Arity {
+    match op {
+        "isNull" | "not" => Arity::Exactly(1),
+        "between" => Arity::Exactly(3),
+        "in" | "like" | "=" | "a_equals" | "<>" | ">" | ">=" | "<" | "<=" | "^" | "a_contains"
+        | "a_containedBy" | "a_overlaps" => Arity::Exactly(2),
+        "+" | "-" | "*" | "/" | "%" => Arity::AtLeast(2),
+        _ => Arity::Any,
     }
 }
 
@@ -154,6 +179,14 @@ fn args2ast_grouped(op: &str, args: &[Box<Expr>]) -> Result<Vec<SqlExpr>, Error>
         })
         .collect::<Result<Vec<_>, _>>()
 }
+/// A binary comparison over the two operands `sql_arity` has already checked for.
+fn binop(op: BinaryOperator, args: Vec<SqlExpr>) -> SqlExpr {
+    let [left, right] = args
+        .try_into()
+        .expect("sql_arity checked the operand count");
+    cmp(left, op, right)
+}
+
 struct Targs {
     left_start: SqlExpr,
     left_end: SqlExpr,
@@ -225,54 +258,49 @@ fn andop(args: Vec<SqlExpr>) -> SqlExpr {
         .expect("andop requires at least one argument")
 }
 
-fn orop(args: Vec<SqlExpr>) -> SqlExpr {
+/// Chains operands with an associative connective. An empty chain has no rendering.
+fn chainop(op: BinaryOperator, args: Vec<SqlExpr>) -> Result<SqlExpr, Error> {
+    let name = op.to_string().to_lowercase();
     args.into_iter()
         .reduce(|left, right| SqlExpr::BinaryOp {
             left: Box::new(left),
-            op: BinaryOperator::Or,
+            op: op.clone(),
             right: Box::new(right),
         })
-        .expect("orop requires at least one argument")
+        .ok_or(Error::InvalidNumberOfArguments {
+            name,
+            actual: 0,
+            expected: 1,
+        })
+}
+
+/// A binary comparison between two already-rendered operands.
+fn cmp(left: SqlExpr, op: BinaryOperator, right: SqlExpr) -> SqlExpr {
+    SqlExpr::BinaryOp {
+        left: Box::new(left),
+        op,
+        right: Box::new(right),
+    }
 }
 
 fn ltop(left: SqlExpr, right: SqlExpr) -> SqlExpr {
-    SqlExpr::BinaryOp {
-        left: Box::new(left),
-        op: BinaryOperator::Lt,
-        right: Box::new(right),
-    }
+    cmp(left, BinaryOperator::Lt, right)
 }
 
 fn gtop(left: SqlExpr, right: SqlExpr) -> SqlExpr {
-    SqlExpr::BinaryOp {
-        left: Box::new(left),
-        op: BinaryOperator::Gt,
-        right: Box::new(right),
-    }
+    cmp(left, BinaryOperator::Gt, right)
 }
 
 fn lteop(left: SqlExpr, right: SqlExpr) -> SqlExpr {
-    SqlExpr::BinaryOp {
-        left: Box::new(left),
-        op: BinaryOperator::LtEq,
-        right: Box::new(right),
-    }
+    cmp(left, BinaryOperator::LtEq, right)
 }
 
 fn gteop(left: SqlExpr, right: SqlExpr) -> SqlExpr {
-    SqlExpr::BinaryOp {
-        left: Box::new(left),
-        op: BinaryOperator::GtEq,
-        right: Box::new(right),
-    }
+    cmp(left, BinaryOperator::GtEq, right)
 }
 
 fn eqop(left: SqlExpr, right: SqlExpr) -> SqlExpr {
-    SqlExpr::BinaryOp {
-        left: Box::new(left),
-        op: BinaryOperator::Eq,
-        right: Box::new(right),
-    }
+    cmp(left, BinaryOperator::Eq, right)
 }
 
 fn notop(arg: SqlExpr) -> SqlExpr {
@@ -352,6 +380,20 @@ impl ToSqlAst for Expr {
                 let canonical = crate::expr::canonical_op(op);
                 let op_str = canonical.as_str();
                 let a = args2ast_grouped(op_str, args)?;
+                // Checked before the arms index into `a`, so a malformed expression is an error
+                // rather than a panic. Operators rendered as function calls take any arity.
+                let required = match sql_arity(op_str) {
+                    Arity::Exactly(expected) if a.len() != expected => Some(expected),
+                    Arity::AtLeast(minimum) if a.len() < minimum => Some(minimum),
+                    _ => None,
+                };
+                if let Some(expected) = required {
+                    return Err(Error::InvalidNumberOfArguments {
+                        name: op_str.to_string(),
+                        actual: a.len(),
+                        expected,
+                    });
+                }
                 match op_str {
                     "isNull" => SqlExpr::IsNull(Box::new(a[0].clone())),
                     "not" => notop(a[0].clone()),
@@ -384,19 +426,19 @@ impl ToSqlAst for Expr {
                     }
                     "accenti" => func("strip_accents", a)?,
                     "casei" => func("lower", a)?,
-                    "and" => andop(a),
-                    "or" => orop(a),
+                    "and" => chainop(BinaryOperator::And, a)?,
+                    "or" => chainop(BinaryOperator::Or, a)?,
                     "=" | "a_equals" | "eq" => binop(BinaryOperator::Eq, a),
                     "<>" => binop(BinaryOperator::NotEq, a),
                     ">" => binop(BinaryOperator::Gt, a),
                     ">=" => binop(BinaryOperator::GtEq, a),
                     "<" => binop(BinaryOperator::Lt, a),
                     "<=" => binop(BinaryOperator::LtEq, a),
-                    "+" => binop(BinaryOperator::Plus, a),
-                    "-" => binop(BinaryOperator::Minus, a),
-                    "*" => binop(BinaryOperator::Multiply, a),
-                    "/" => binop(BinaryOperator::Divide, a),
-                    "%" => binop(BinaryOperator::Modulo, a),
+                    "+" => chainop(BinaryOperator::Plus, a)?,
+                    "-" => chainop(BinaryOperator::Minus, a)?,
+                    "*" => chainop(BinaryOperator::Multiply, a)?,
+                    "/" => chainop(BinaryOperator::Divide, a)?,
+                    "%" => chainop(BinaryOperator::Modulo, a)?,
                     "^" => func("power", a)?,
                     "s_intersects" => func("st_intersects", a)?,
                     "s_equals" => func("st_equals", a)?,

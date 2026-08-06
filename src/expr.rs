@@ -60,7 +60,13 @@ pub const ARITHOPS: &[&str] = &["+", "-", "*", "/", "%", "^", "div"];
 /// Array Operators
 pub const ARRAYOPS: &[&str] = &["a_equals", "a_contains", "a_containedBy", "a_overlaps"];
 
-// todo: array ops, in, casei, accenti, between, not, like
+/// The arithmetic operators that take any number of operands, chained to the left.
+///
+/// `{"op": "+", "args": [a, b, c]}` renders as `a + b + c` in cql2-text and in SQL alike, which both
+/// read as `(a + b) + c`. The other two arithmetic operators are binary: `^` renders as `power(a, b)`
+/// in SQL and requires exactly two operands in cql2-text, and `div` is a function call in both.
+const CHAINED_ARITHOPS: &[&str] = &["+", "-", "*", "/", "%"];
+
 /// Operator names that belong to none of the categories above.
 const OTHER_OPS: &[&str] = &["not", "like", "between", "in", "isNull", "casei", "accenti"];
 
@@ -365,18 +371,31 @@ fn arith_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
     let left = f64::try_from(left)?;
     let right = f64::try_from(right)?;
     let out = match op {
-        "+" => Ok(left + right),
-        "-" => Ok(left - right),
-        "*" => Ok(left * right),
-        "/" => Ok(left / right),
-        "%" => Ok(left % right),
-        "^" => Ok(left.powf(right)),
-        _ => Err(Error::OpNotImplemented("Arith")),
+        "+" => left + right,
+        "-" => left - right,
+        "*" => left * right,
+        "/" => left / right,
+        "%" => left % right,
+        "^" => left.powf(right),
+        // Integer division, which is what CQL2 defines `div` to be and what makes it a different
+        // operator from `/`: `5 div 2` is 2, not 2.5.
+        //
+        // The quotient is truncated toward zero, so `-5 div 2` is -2. That is what Rust's `/` does
+        // on integers, what PostgreSQL's `/` and `div()` do, and what the SQL standard requires;
+        // flooring instead would make the answer depend on the sign of the operands.
+        //
+        // Dividing by zero has no integer answer — the IEEE infinity `/` yields is not one — so it
+        // is reported as a failure, which leaves the operation unfolded exactly as an operand that
+        // is not a number does.
+        "div" => {
+            if right == 0.0 {
+                return Err(Error::OperationError());
+            }
+            (left / right).trunc()
+        }
+        _ => return Err(Error::OperationError()),
     };
-    match out {
-        Ok(v) => Ok(Expr::Float(v)),
-        _ => Err(Error::OperationError()),
-    }
+    Ok(Expr::Float(out))
 }
 
 fn array_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
@@ -571,6 +590,28 @@ impl Expr {
                     } else {
                         Ok(Expr::Bool(args[0] >= args[1] && args[0] <= args[2]))
                     }
+                } else if CHAINED_ARITHOPS.contains(&op.as_str()) && args.len() > 2 {
+                    // Both renderings chain these, so the evaluator has to read the chain the same
+                    // way they write it: `10 - 3 - 2` is `(10 - 3) - 2`, which is 5, not 9. The
+                    // direction is the whole of the meaning for `-` and `/`.
+                    //
+                    // Each step is an ordinary two-operand reduction, so a chain folds exactly as
+                    // the pairs it is made of would.
+                    let mut operands = args.iter().map(|arg| arg.as_ref().clone());
+                    let first = operands.next().expect("length checked above");
+                    let folded = operands.try_fold(first, |left, right| {
+                        Expr::Operation {
+                            op: op.clone(),
+                            args: vec![Box::new(left), Box::new(right)],
+                        }
+                        .reduce(j)
+                    })?;
+                    // A chain that did not fold all the way keeps the flat shape it came in with,
+                    // rather than the half-folded nest the fold left behind.
+                    Ok(match folded {
+                        Expr::Operation { .. } => Expr::Operation { op, args },
+                        value => value,
+                    })
                 } else if args.len() != 2 {
                     Ok(Expr::Operation { op, args })
                 } else {
@@ -826,8 +867,19 @@ impl Expr {
                         check_len!("is null", a, 1, format!("{} IS NULL", a[0]))
                     }
                     "+" | "-" | "*" | "/" | "%" => {
+                        // These chain their operands pairwise, so two is the floor: one operand
+                        // would print as that operand by itself, with the operator silently
+                        // dropped, and `{"op":"-","args":[{"property":"a"}]}` would render as `a`.
+                        // `to_sql` requires the same, as `Arity::AtLeast(2)`.
+                        if a.len() < 2 {
+                            return Err(Error::InvalidNumberOfArguments {
+                                name: op.to_string(),
+                                actual: a.len(),
+                                expected: 2,
+                            });
+                        }
                         let paddedop = format!(" {} ", op);
-                        Ok(a.join(&paddedop).to_string())
+                        Ok(a.join(&paddedop))
                     }
                     "^" | "=" | "<=" | "<" | "<>" | ">" | ">=" => {
                         check_len!(op, a, 2, format!("{} {} {}", a[0], op, a[1]))
@@ -1011,6 +1063,55 @@ mod tests {
                 };
                 assert_eq!(op, expected, "{text} did not fold to {expected}");
             }
+        }
+    }
+
+    /// An n-ary arithmetic operator needs two operands to render, as it does in SQL.
+    ///
+    /// The rendering joins its operands with the operator, so a single operand would print as that
+    /// operand alone and the operator would vanish: `{"op":"-","args":[{"property":"a"}]}` would
+    /// render as `a`, which is a different expression that parses.
+    #[test]
+    fn nary_arithmetic_needs_two_operands() {
+        for op in ["+", "-", "*", "/", "%"] {
+            for count in [0, 1] {
+                let expr = Expr::Operation {
+                    op: op.to_string(),
+                    args: (0..count)
+                        .map(|i| {
+                            Box::new(Expr::Property {
+                                property: format!("a{i}"),
+                            })
+                        })
+                        .collect(),
+                };
+                assert!(
+                    matches!(
+                        expr.to_text(),
+                        Err(crate::Error::InvalidNumberOfArguments { .. })
+                    ),
+                    "{op} rendered {count} operand(s) as text: {:?}",
+                    expr.to_text()
+                );
+                // The SQL backend has always rejected these; the two now agree.
+                assert!(matches!(
+                    crate::ToSqlAst::to_sql(&expr),
+                    Err(crate::Error::InvalidNumberOfArguments { .. })
+                ));
+            }
+            // Two operands is the floor, not a requirement of exactly two.
+            let expr = Expr::Operation {
+                op: op.to_string(),
+                args: vec![
+                    Box::new(Expr::Float(1.0)),
+                    Box::new(Expr::Float(2.0)),
+                    Box::new(Expr::Float(3.0)),
+                ],
+            };
+            assert_eq!(
+                expr.to_text().expect("three operands render"),
+                format!("1 {op} 2 {op} 3")
+            );
         }
     }
 
