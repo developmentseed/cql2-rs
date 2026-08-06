@@ -50,8 +50,25 @@ pub(crate) fn func(name: &str, args: Vec<SqlExpr>) -> Result<SqlExpr, Error> {
     }))
 }
 
+/// A string literal.
+///
+/// A value holding neither a quote nor a backslash needs no escaping at all, and is written plainly.
+/// Anything else is written as an escape string, `E'...'` — PostgreSQL syntax that DuckDB accepts
+/// with the same meaning. That variant is printed by a dedicated escaper which rewrites every quote
+/// and backslash unconditionally.
+///
+/// `SingleQuotedString` is deliberately not used for those values. Its printer exists to reproduce
+/// SQL that sqlparser itself parsed, so it steps over a quote that already looks escaped — one
+/// preceded by a backslash, or one of a `''` pair. That is right for a round trip and wrong for
+/// data: `a''b` would be reprinted unchanged and read back as `a'b`, and a value ending in a
+/// backslash would terminate the literal early.
 fn lit_expr(value: &str) -> SqlExpr {
-    ValExpr(Value::SingleQuotedString(value.to_string()).into())
+    let needs_escaping = value.contains('\'') || value.contains('\\');
+    ValExpr(if needs_escaping {
+        Value::EscapedStringLiteral(value.to_string()).into()
+    } else {
+        Value::SingleQuotedString(value.to_string()).into()
+    })
 }
 fn float_expr(value: &f64) -> SqlExpr {
     ValExpr(Value::Number(value.to_string(), false).into())
