@@ -198,6 +198,12 @@ nfield = true
 nfield <> true
 nfield is not null
 not(nfield = true)
+t_intersects(ts_start, DATE('2020-02-01'))
+t_intersects(ts_start, TIMESTAMP('2020-02-01T00:00:00Z'))
+t_intersects(ts_start, interval('2020-02-01T00:00:00Z', '2020-05-01T00:00:00Z'))
+t_intersects(interval(ts_start, ts_end), interval('2020-02-01T00:00:00Z', '2020-05-01T00:00:00Z'))
+t_disjoint(ts_start, DATE('2020-02-01'))
+t_disjoint(ts_start, TIMESTAMP('2020-02-01T00:00:00Z'))
 t_meets(ts_end, TIMESTAMP('2020-04-01T01:00:00Z'))
 t_meets(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
 t_metby(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
