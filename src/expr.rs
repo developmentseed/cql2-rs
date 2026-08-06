@@ -40,15 +40,15 @@ pub const TEMPORALOPS: &[&str] = &[
     "t_before",
     "t_after",
     "t_meets",
-    "t_metby",
+    "t_metBy",
     "t_overlaps",
-    "t_overlappedby",
+    "t_overlappedBy",
     "t_starts",
-    "t_startedby",
+    "t_startedBy",
     "t_during",
     "t_contains",
     "t_finishes",
-    "t_finishedby",
+    "t_finishedBy",
     "t_equals",
     "t_disjoint",
     "t_intersects",
@@ -58,9 +58,89 @@ pub const TEMPORALOPS: &[&str] = &[
 pub const ARITHOPS: &[&str] = &["+", "-", "*", "/", "%", "^", "div"];
 
 /// Array Operators
-pub const ARRAYOPS: &[&str] = &["a_equals", "a_contains", "a_containedby", "a_overlaps"];
+pub const ARRAYOPS: &[&str] = &["a_equals", "a_contains", "a_containedBy", "a_overlaps"];
 
 // todo: array ops, in, casei, accenti, between, not, like
+/// Operator names that belong to none of the categories above.
+const OTHER_OPS: &[&str] = &["not", "like", "between", "in", "isNull", "casei", "accenti"];
+
+/// Every operator name the JSON schema defines, in the spelling it defines.
+///
+/// Assembled from the category constants so each name is written once; `canonical_ops_match_the_schema`
+/// pins the result against the schema itself.
+fn canonical_ops() -> impl Iterator<Item = &'static str> {
+    [
+        BOOLOPS,
+        EQOPS,
+        CMPOPS,
+        SPATIALOPS,
+        TEMPORALOPS,
+        ARITHOPS,
+        ARRAYOPS,
+        OTHER_OPS,
+    ]
+    .into_iter()
+    .flat_map(|ops| ops.iter().copied())
+}
+
+/// Puts an expression into the crate's canonical form.
+///
+/// Both encodings run through this, so cql2-text and cql2-json describe the same expression
+/// identically:
+///
+/// - `and` and `or` are associative, so a chain becomes one n-ary operation. A chain also has to be
+///   flat to survive a text round trip, since the renderers omit the parentheses that would
+///   otherwise be the only record of the nesting.
+/// - A timestamp denotes an instant, so each instant has one spelling.
+/// - Every operator name is resolved to its canonical spelling, which is what makes the
+///   case-sensitive spellings the cql2-json schema requires come out right.
+pub(crate) fn normalize(expr: Expr) -> Expr {
+    match expr {
+        Expr::Operation { op, args } => {
+            let op = canonical_op(&op);
+            let args = args.into_iter().map(|arg| Box::new(normalize(*arg)));
+            if op == "and" || op == "or" {
+                let mut flat: Vec<Box<Expr>> = Vec::new();
+                for arg in args {
+                    match *arg {
+                        Expr::Operation {
+                            op: nested,
+                            args: inner,
+                        } if nested == op => flat.extend(inner),
+                        other => flat.push(Box::new(other)),
+                    }
+                }
+                Expr::Operation { op, args: flat }
+            } else {
+                Expr::Operation {
+                    op,
+                    args: args.collect(),
+                }
+            }
+        }
+        Expr::Array(items) => {
+            Expr::Array(items.into_iter().map(|i| Box::new(normalize(*i))).collect())
+        }
+        Expr::Timestamp { timestamp } => Expr::Timestamp {
+            timestamp: Box::new(normalize_instant(*timestamp)),
+        },
+        Expr::Interval { interval } => Expr::Interval {
+            interval: interval
+                .into_iter()
+                .map(|bound| Box::new(normalize_instant(*bound)))
+                .collect(),
+        },
+        other => other,
+    }
+}
+
+fn normalize_instant(expr: Expr) -> Expr {
+    match expr {
+        Expr::Literal(value) => Expr::Literal(crate::temporal::canonical_timestamp(&value)),
+        other => normalize(other),
+    }
+}
+
 /// Renders a string as a cql2-text literal: single-quoted, with an embedded quote doubled.
 fn literal(value: &str) -> String {
     format!("'{}'", value.replace('\'', "''"))
@@ -94,6 +174,47 @@ fn identifier(name: &str) -> String {
     }
 }
 
+/// Resolves an operator name to its canonical CQL2 spelling.
+///
+/// Operator names are case-insensitive, so `T_METBY` and `t_metBy` name the same operator, and the
+/// grammar accepts one spelling CQL2 writes differently. Anything CQL2 does not define is a
+/// user-supplied function name, returned unchanged because its case is the author's to choose.
+pub(crate) fn canonical_op(name: &str) -> String {
+    let aliased = ALIASES
+        .iter()
+        .find(|(alias, _)| alias.eq_ignore_ascii_case(name))
+        .map_or(name, |(_, canonical)| canonical);
+    canonical_ops()
+        .find(|canonical| canonical.eq_ignore_ascii_case(aliased))
+        .map_or_else(|| aliased.to_string(), str::to_string)
+}
+
+/// Alternate spellings of operators CQL2 does define, resolved case-insensitively.
+///
+/// Resolved here rather than in one backend, so that a single fold serves the evaluator, both
+/// renderers and both encodings: `ST_Intersects(a, b)` is the same expression as
+/// `s_intersects(a, b)` whichever of them reads it.
+///
+/// `eq`, `lt`, `ne` and friends are deliberately absent: the schema defines no such operators, so
+/// they can only arrive as user-defined function names and must be left alone. `div` is likewise not
+/// aliased to `/` — CQL2 defines it as integer division, a distinct operator.
+const ALIASES: &[(&str, &str)] = &[
+    // A spelling the cql2-text grammar itself accepts: `NotEq = { "<>" | "!=" }`.
+    ("!=", "<>"),
+    // How SQL and PostGIS spell the spatial predicates. One per `SPATIALOPS` entry, which
+    // `every_spatial_operator_has_an_st_alias` pins.
+    ("st_equals", "s_equals"),
+    ("st_intersects", "s_intersects"),
+    ("st_disjoint", "s_disjoint"),
+    ("st_touches", "s_touches"),
+    ("st_within", "s_within"),
+    ("st_overlaps", "s_overlaps"),
+    ("st_crosses", "s_crosses"),
+    ("st_contains", "s_contains"),
+    // How the earlier drafts of CQL2 spelled the two `intersects` predicates.
+    ("intersects", "s_intersects"),
+    ("anyinteracts", "t_intersects"),
+];
 
 /// A CQL2 expression.
 ///
@@ -128,8 +249,12 @@ pub enum Expr {
 }
 impl TryFrom<Value> for Expr {
     type Error = Error;
+    /// Normalizes, so an expression built from a `Value` is identical to the same expression parsed
+    /// from cql2-json text. The bindings construct expressions this way.
     fn try_from(v: Value) -> Result<Expr, Error> {
-        serde_json::from_value(v).map_err(Error::from)
+        serde_json::from_value(v)
+            .map(normalize)
+            .map_err(Error::from)
     }
 }
 impl TryFrom<Expr> for Value {
@@ -257,16 +382,13 @@ fn array_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
     let left: HashSet<String> = left.try_into()?;
     let right: HashSet<String> = right.try_into()?;
     let out = match op {
-        "a_equals" => Ok(left == right),
-        "a_contains" => Ok(left.is_superset(&right)),
-        "a_containedby" => Ok(left.is_subset(&right)),
-        "a_overlaps" => Ok(!left.is_disjoint(&right)),
-        _ => Err(Error::OpNotImplemented("Arith")),
+        "a_equals" => left == right,
+        "a_contains" => left.is_superset(&right),
+        "a_containedBy" => left.is_subset(&right),
+        "a_overlaps" => !left.is_disjoint(&right),
+        _ => return Err(Error::OperationError()),
     };
-    match out {
-        Ok(v) => Ok(Expr::Bool(v)),
-        _ => Err(Error::OperationError()),
-    }
+    Ok(Expr::Bool(out))
 }
 
 /// Returns `true` if a *reduced* expression is still "unknown", i.e. its value
@@ -342,14 +464,16 @@ impl Expr {
                 })
             }
             Expr::Operation { op, args } => {
-                let op = op.clone().to_lowercase();
+                // Dispatch below matches canonical spellings, and an expression left unfolded keeps
+                // the name it came in with.
+                let op = canonical_op(&op);
 
                 let args: Vec<Box<Expr>> = args
                     .into_iter()
                     .map(|expr| expr.reduce(j).map(Box::new))
                     .collect::<Result<_, _>>()?;
 
-                if op == "isnull" {
+                if op == "isNull" {
                     if matches!(args[0].as_ref(), Expr::Null) {
                         Ok(Expr::Bool(true))
                     } else if is_unknown(args[0].as_ref()) {
@@ -656,6 +780,9 @@ impl Expr {
                 Ok(format!("({})", array_els.join(", ")))
             }
             Expr::Operation { op, args } => {
+                // Dispatch on the canonical spelling so a tree built without `normalize` renders
+                // the same as a parsed one.
+                let op = canonical_op(op);
                 // Parenthesize only the operands that would otherwise re-associate when the text is
                 // parsed back, so the rendering round-trips to an identical expression.
                 let requirement = precedence::operands(&op);
@@ -830,7 +957,59 @@ impl Add for Expr {
 }
 #[cfg(test)]
 mod tests {
-    use super::Expr;
+    use super::{canonical_op, canonical_ops, ALIASES, SPATIALOPS};
+    use crate::Expr;
+    use serde_json::Value;
+    use std::collections::HashSet;
+
+    /// Every spatial predicate is reachable by its SQL/PostGIS spelling, not just the ones that
+    /// happened to be written down.
+    #[test]
+    fn every_spatial_operator_has_an_st_alias() {
+        for op in SPATIALOPS {
+            let st = format!("st_{}", op.trim_start_matches("s_"));
+            assert_eq!(canonical_op(&st), *op, "'{st}' does not resolve to '{op}'");
+        }
+    }
+
+    /// An alias has to name an operator that exists, or it silently invents one.
+    #[test]
+    fn aliases_resolve_to_canonical_operators() {
+        let known: HashSet<&str> = canonical_ops().collect();
+        for (alias, canonical) in ALIASES {
+            assert!(
+                known.contains(canonical),
+                "'{alias}' resolves to '{canonical}', which is not an operator"
+            );
+        }
+    }
+
+    /// Aliases fold in both encodings, so the evaluator and both renderers see one operator.
+    #[test]
+    fn aliases_fold_in_both_encodings() {
+        for (source, expected) in [
+            ("ST_Intersects(geom, POINT(0 0))", "s_intersects"),
+            ("st_intersects(geom, POINT(0 0))", "s_intersects"),
+            ("INTERSECTS(geom, POINT(0 0))", "s_intersects"),
+            ("AnyInteracts(a, b)", "t_intersects"),
+            ("ST_CONTAINS(geom, POINT(0 0))", "s_contains"),
+        ] {
+            for text in [
+                source.to_string(),
+                // The same expression in cql2-json, built from the text spelling.
+                {
+                    let name = source.split('(').next().expect("has a name");
+                    format!(r#"{{"op":"{name}","args":[{{"property":"a"}},{{"property":"b"}}]}}"#)
+                },
+            ] {
+                let Ok(Expr::Operation { op, .. }) = text.parse::<Expr>() else {
+                    panic!("{text} should parse to an operation");
+                };
+                assert_eq!(op, expected, "{text} did not fold to {expected}");
+            }
+        }
+    }
+
 
     #[test]
     fn keep_z() {
@@ -864,5 +1043,54 @@ mod tests {
         // https://github.com/developmentseed/cql2-rs/issues/91
         let expr: Expr = "ogc_fid IN ('1')".parse().unwrap();
         assert_eq!(expr.to_text().unwrap(), "ogc_fid IN ('1')");
+    }
+
+    /// The operator constants decide the spelling every name is resolved to, and the JSON schema
+    /// enumerates those names case-sensitively. An operator missing here is emitted with whatever
+    /// case it was written in, which the schema then reads as a function call rather than an
+    /// operator, so the two lists have to agree.
+    #[test]
+    fn canonical_ops_match_the_schema() {
+        let schema: Value =
+            serde_json::from_str(include_str!("cql2.json")).expect("schema is valid JSON");
+
+        let mut from_schema = HashSet::new();
+        collect_operator_enums(&schema, &mut from_schema);
+        assert!(
+            !from_schema.is_empty(),
+            "found no operator enums in the schema"
+        );
+
+        let known: HashSet<String> = canonical_ops().map(str::to_string).collect();
+        let missing: Vec<&String> = from_schema.difference(&known).collect();
+        assert!(
+            missing.is_empty(),
+            "these schema operators are absent from the operator constants: {missing:?}"
+        );
+    }
+
+    /// Collects every `enum` in the schema that names operators, identified by containing an
+    /// operator this crate is certain of.
+    fn collect_operator_enums(node: &Value, out: &mut HashSet<String>) {
+        match node {
+            Value::Object(fields) => {
+                if let Some(Value::Array(values)) = fields.get("enum") {
+                    let names: Vec<String> = values
+                        .iter()
+                        .filter_map(|v| v.as_str().map(str::to_string))
+                        .collect();
+                    if names.iter().any(|n| n == "t_metBy" || n == "a_containedBy") {
+                        out.extend(names);
+                    }
+                }
+                for value in fields.values() {
+                    collect_operator_enums(value, out);
+                }
+            }
+            Value::Array(items) => items
+                .iter()
+                .for_each(|item| collect_operator_enums(item, out)),
+            _ => {}
+        }
     }
 }

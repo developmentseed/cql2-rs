@@ -251,14 +251,16 @@ impl ToSqlAst for Expr {
             }),
             Expr::Property { property } => ident(property),
             Expr::Operation { op, args } => {
-                let op_str = op.to_lowercase();
+                // Route through the canonical spelling, so the schema's capitalization and the
+                // operator aliases apply here exactly as they do to a parsed expression. A name CQL2
+                // does not define comes back unchanged, keeping the author's case for the function
+                // fallback below.
+                let canonical = crate::expr::canonical_op(op);
+                let op_str = canonical.as_str();
                 let a = args2ast(args)?;
-                match op_str.as_str() {
-                    "isnull" => SqlExpr::IsNull(Box::new(a[0].clone())),
-                    "not" => SqlExpr::UnaryOp {
-                        op: sqlparser::ast::UnaryOperator::Not,
-                        expr: Box::new(a[0].clone()),
-                    },
+                match op_str {
+                    "isNull" => SqlExpr::IsNull(Box::new(a[0].clone())),
+                    "not" => notop(a[0].clone()),
                     "between" => SqlExpr::Between {
                         expr: Box::new(a[0].clone()),
                         negated: false,
@@ -291,11 +293,11 @@ impl ToSqlAst for Expr {
                     "and" => andop(a),
                     "or" => orop(a),
                     "=" | "a_equals" | "eq" => binop(BinaryOperator::Eq, a),
-                    "<>" | "!=" | "ne" => binop(BinaryOperator::NotEq, a),
-                    ">" | "gt" => binop(BinaryOperator::Gt, a),
-                    ">=" | "ge" | "gte" => binop(BinaryOperator::GtEq, a),
-                    "<" | "lt" => binop(BinaryOperator::Lt, a),
-                    "<=" | "le" | "lte" => binop(BinaryOperator::LtEq, a),
+                    "<>" => binop(BinaryOperator::NotEq, a),
+                    ">" => binop(BinaryOperator::Gt, a),
+                    ">=" => binop(BinaryOperator::GtEq, a),
+                    "<" => binop(BinaryOperator::Lt, a),
+                    "<=" => binop(BinaryOperator::LtEq, a),
                     "+" => binop(BinaryOperator::Plus, a),
                     "-" => binop(BinaryOperator::Minus, a),
                     "*" => binop(BinaryOperator::Multiply, a),
@@ -311,7 +313,7 @@ impl ToSqlAst for Expr {
                     "s_touches" | "st_touches" => func("st_touches", a),
                     "s_disjoint" | "st_disjoint" => func("st_disjoint", a),
                     "a_contains" => binop(BinaryOperator::AtArrow, a),
-                    "a_containedby" => binop(BinaryOperator::ArrowAt, a),
+                    "a_containedBy" => binop(BinaryOperator::ArrowAt, a),
                     "a_overlaps" => binop(BinaryOperator::AtAt, a),
                     "t_before" => {
                         let t = t_args(args)?;

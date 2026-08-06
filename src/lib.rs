@@ -59,7 +59,7 @@ pub use validator::Validator;
 /// let expr = cql2::parse_json(s);
 /// ```
 pub fn parse_json(s: &str) -> Result<Expr, serde_json::Error> {
-    serde_json::from_str(s)
+    serde_json::from_str(s).map(normalize)
 }
 
 /// Reads a file and returns its contents as a CQL2 expression;

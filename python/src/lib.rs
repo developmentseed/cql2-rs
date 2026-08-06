@@ -52,7 +52,9 @@ impl Expr {
         if let Ok(s) = cql2.extract::<&str>() {
             s.parse().map(Expr).map_err(Error::from)
         } else {
-            let expr: ::cql2::Expr = pythonize::depythonize(&cql2)?;
+            // Via `Value`, so a mapping normalizes exactly as the cql2-json text form does.
+            let value: Value = pythonize::depythonize(&cql2)?;
+            let expr = ::cql2::Expr::try_from(value).map_err(Error::from)?;
             Ok(Expr(expr))
         }
     }

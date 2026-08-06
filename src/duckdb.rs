@@ -25,8 +25,8 @@ impl ToDuckSQL for Expr {
     /// use cql2::Expr;
     /// use cql2::ToDuckSQL;
     ///
-    /// let expr: Expr = "s_intersects(geom, POINT(0 0)) and foo >= 1 and bar='baz' and TIMESTAMP('2020-01-01 00:00:00Z') >= BoRk and DATE('2020-01-01') > b and q = 'hello World!') > b".parse().unwrap();
-    /// assert_eq!(expr.to_ducksql().unwrap(), "st_intersects(geom, st_geomfromtext('POINT(0 0)')) AND foo >= 1 AND bar = 'baz' AND CAST('2020-01-01 00:00:00Z' AS TIMESTAMP WITH TIME ZONE) >= \"BoRk\" AND CAST('2020-01-01' AS DATE) > b AND q = 'hello World!'");
+    /// let expr: Expr = "s_intersects(geom, POINT(0 0)) and foo >= 1 and bar='baz' and TIMESTAMP('2020-01-01 00:00:00Z') >= BoRk and DATE('2020-01-01') > b and q = 'hello World!'".parse().unwrap();
+    /// assert_eq!(expr.to_ducksql().unwrap(), "st_intersects(geom, st_geomfromtext('POINT(0 0)')) AND foo >= 1 AND bar = 'baz' AND CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) >= \"BoRk\" AND CAST('2020-01-01' AS DATE) > b AND q = 'hello World!'");
     /// ```
     /// ```
     /// use cql2::Expr;

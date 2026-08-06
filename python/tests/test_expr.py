@@ -125,3 +125,21 @@ def test_repr() -> None:
 )
 def test_matches(expr, item, should_match) -> None:
     assert cql2.Expr(expr).matches(item) == should_match
+
+
+def test_mapping_and_string_constructors_agree() -> None:
+    """A mapping is normalized exactly as the equivalent cql2-json text is.
+
+    Without this, ``Expr(dict)`` keeps whatever operator spelling the caller wrote, so ``to_json``
+    can emit a name the schema rejects and equality depends on which constructor was used.
+    """
+    mapping = {
+        "op": "t_metby",
+        "args": [
+            {"interval": ["2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"]},
+            {"interval": ["2020-01-02T00:00:00Z", "2020-01-03T00:00:00Z"]},
+        ],
+    }
+    from_mapping = cql2.Expr(mapping)
+    assert from_mapping.to_json()["op"] == "t_metBy"
+    assert from_mapping == cql2.Expr(json.dumps(mapping))

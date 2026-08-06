@@ -27,6 +27,33 @@ fn parse_ts(s: &str) -> Result<Timestamp, Error> {
     fromshort.to_string().parse().map_err(Error::ParseTimestamp)
 }
 
+/// Renders a timestamp literal in a single canonical spelling.
+///
+/// A timestamp denotes an instant, so `2012-08-10T05:30:00.000000Z` and `2012-08-10T05:30:00Z` are
+/// the same value and must produce the same expression.
+///
+/// Only literals that already carry a time are rewritten. A date such as `2010-10-07` is left as
+/// written, since widening it to an instant would change what the literal says.
+pub(crate) fn canonical_timestamp(s: &str) -> String {
+    let has_time = s.contains('T') || s.contains(' ');
+    if !has_time || is_leap_second(s) {
+        return s.to_string();
+    }
+    parse_ts(s).map_or_else(|_| s.to_string(), |ts| ts.to_string())
+}
+
+/// Whether a literal names a leap second.
+///
+/// `jiff` has no representation for one and rounds it down, so rewriting such a literal would move
+/// the instant it names. It is left exactly as written instead.
+fn is_leap_second(s: &str) -> bool {
+    s.split(':').nth(2).is_some_and(|seconds| {
+        seconds
+            .strip_prefix("60")
+            .is_some_and(|rest| !rest.starts_with(|c: char| c.is_ascii_digit()))
+    })
+}
+
 /// Struct to hold a range of timestamps.
 #[derive(Debug, Clone)]
 pub struct DateRange {
@@ -91,13 +118,15 @@ impl PartialOrd for DateRange {
 
 /// Run a temporal operation.
 pub fn temporal_op(left_expr: Expr, right_expr: Expr, op: &str) -> Result<Expr, Error> {
-    let invop = match op {
+    // Accept any spelling a caller might hold, then work in the schema's.
+    let op = &crate::expr::canonical_op(op);
+    let invop = match op.as_str() {
         "t_after" => "t_before",
-        "t_metby" => "t_meets",
-        "t_overlappedby" => "t_overlaps",
-        "t_startedby" => "t_starts",
+        "t_metBy" => "t_meets",
+        "t_overlappedBy" => "t_overlaps",
+        "t_startedBy" => "t_starts",
         "t_contains" => "t_during",
-        "t_finishedby" => "t_finishes",
+        "t_finishedBy" => "t_finishes",
         _ => op,
     };
 

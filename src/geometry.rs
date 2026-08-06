@@ -105,12 +105,14 @@ fn geojson_ndims(geojson: &geojson::Geometry) -> usize {
 
 /// Run a spatial operation.
 pub fn spatial_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
+    // Accept any spelling a caller might hold, then work in the schema's, as `temporal_op` does.
+    let op = crate::expr::canonical_op(op);
     let left: GGeom = GGeom::try_from(left)?;
     let right: GGeom = GGeom::try_from(right)?;
     let rel = left.relate(&right);
-    let out = match op {
+    let out = match op.as_str() {
         "s_equals" => rel.is_equal_topo(),
-        "s_intersects" | "intersects" => rel.is_intersects(),
+        "s_intersects" => rel.is_intersects(),
         "s_disjoint" => rel.is_disjoint(),
         "s_touches" => rel.is_touches(),
         "s_within" => rel.is_within(),
