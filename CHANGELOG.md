@@ -6,6 +6,65 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+Every item marked **Breaking** changes the result of code that compiles unchanged.
+
+### Changed
+
+- **Breaking:** `to_text` emits the minimum parentheses needed rather than wrapping every operation. `((a = 1) AND ((b = 2) OR (c = 3)))` is now `a = 1 AND (b = 2 OR c = 3)`. The expressions are equivalent, but any consumer comparing `to_text` output as a string will see different results
+- **Breaking:** `to_sql` and `to_ducksql` output changes wherever grouping, a timestamp literal, or a date bound is involved. See the corresponding entries under Fixed
+- **Breaking:** `Error` is now `#[non_exhaustive]`, so adding a variant will no longer be a breaking change
+- **Breaking:** `sqlparser` 0.58 → 0.62. This is a public dependency — `ToSqlAst::to_sql_ast` returns `sqlparser::ast::Expr` — so anything naming that type must move too
+- **Breaking:** the `TEMPORALOPS` and `ARRAYOPS` constants carry the spelling the JSON schema defines, so `TEMPORALOPS.contains(&"t_metby")` is now `false`; use `"t_metBy"`. `temporal_op` accepts either spelling
+- **Breaking:** `parse_json`, `Expr::try_from(Value)` and the Python `Expr(mapping)` constructor normalize their input, so cql2-json no longer round-trips byte for byte: `and`/`or` chains flatten, operator names take the schema's spelling, and timestamps are canonicalized. Expressions that used to compare unequal may now compare equal
+- **Breaking:** `eq` is no longer accepted as an alias for `=`. CQL2 defines no such operator and the grammar never had one, so `eq(a, b)` is a user-defined function call and is now preserved as written. `!=` remains an accepted spelling of `<>`, because the grammar does define it
+
+### Fixed
+
+- **Security:** `to_sql` and `to_ducksql` could be made to emit a string literal that terminates early, letting a crafted property value inject arbitrary SQL. `textfield = 'x\'' OR 1=1 --'` generated a predicate matching every row. Quotes in a literal are now escaped before the value reaches the SQL printer
+- `BETWEEN` no longer discards the rest of the expression. `a BETWEEN 1 AND 2 AND b = 3` and `b = 3 AND a BETWEEN 1 AND 2` each silently parsed to just the `BETWEEN`. It is now a grammar production over scalar operands, so the `AND` delimiting its bounds is not confused with the boolean connective ([#255](https://github.com/developmentseed/cql2-rs/issues/255))
+- `to_sql` and `to_ducksql` parenthesize sub-expressions that bind more loosely than their parent, so `A AND (B OR C)` is no longer rendered as the inequivalent `A AND B OR C` ([#255](https://github.com/developmentseed/cql2-rs/issues/255))
+- `to_text` no longer drops grouping in arithmetic: `(a + b) * c` was rendered as `a + b * c`, which parses back as a different expression
+- Input the grammar cannot consume in full is a parse error. Previously the parse ended at the last complete atom and the remainder was discarded, so a filter quietly meant something narrower than what was written
+- A property name beginning with a keyword is no longer misread. `notes = 1` parsed as `NOT (es = 1)` and passed validation; `null_count`, `true_color` and `false_positive` were truncated to the keyword
+- `s_intersects(geom, BBOX(...))` and the other spatial predicates evaluate against a bounding box. A geometry and a bbox were treated as incomparable operand kinds, so the predicate never folded and every row was rejected without error
+- `INTERVAL('..', t)` and `INTERVAL(t, '..')` evaluate. The specification admits `..` for an unbounded bound, and two of the shipped examples use it; the predicate silently matched nothing and the SQL rendering was rejected by the database
+- A date means the whole day in the SQL backends as it always has in the evaluator, so the two no longer disagree at a day boundary. A bare literal compared against a date still asks whether the two name the same day
+- `t_overlaps` and `t_overlappedBy` require the earlier range to begin first. Their first conjunct compared one range's start to the other's end, which is implied by the rest of the condition, so they also matched ranges that are wholly contained in one another
+- A one-element array survives `to_text`. `a_overlaps(x, ['a'])` rendered as `a_overlaps(x, ('a'))`, which re-parsed as a scalar and then matched nothing
+- Geometries no longer lose their third ordinate, in either direction, and a three-dimensional `GEOMETRYCOLLECTION` renders to text that parses back. Evaluating one previously aborted the process
+- A string literal containing an apostrophe round-trips, and a quoted identifier may contain a quote. `O'Brien` rendered as `'O''Brien'`, which the grammar then rejected
+- A leap second is no longer rewritten to a different instant during timestamp canonicalization
+- `reduce` returns errors instead of panicking on malformed input: wrong operand counts for `isNull`, `not`, `casei`, `accenti` and `between`, and `and`/`or` over two geometry-bearing operands, all aborted the process
+- Malformed expressions return errors instead of panicking across `to_text` and `to_sql`, including wrong operand counts for every operator and exponent-form numbers such as `1e5`, which previously reached an `unreachable!`
+- `cql2 --filter` fails on an evaluation error instead of silently dropping the row it happened on
+- The function spelling `in(a, 1, 2)` produces the same expression as the infix `a IN (1, 2)`; it previously produced a flat argument list from which the renderers kept only the first item
+- The function spelling `isNull(a)` produces the same operator name as the postfix `a IS NULL`
+- `a OR b OR c` parses to one n-ary `or`, matching the cql2-json encoding and the existing handling of `and`
+- Timestamp literals are canonical, so `TIMESTAMP('2012-08-10T05:30:00.000000Z')` and `TIMESTAMP('2012-08-10T05:30:00Z')` produce equal expressions
+- Operator names parsed from cql2-text carry the spelling the JSON encoding requires, so `T_METBY(..)` yields `t_metBy`. Names CQL2 does not define are function names and keep the case the author wrote, in both `to_text` and `to_sql`
+- `to_text` quotes a function name only where the cql2-text grammar requires it, rather than applying PostgreSQL's rule
+- String literals render in cql2-text form rather than PostgreSQL's `E'...'` escape-string syntax, which cql2-text cannot read back
+- `NOT LIKE` and `NOT IN` no longer depend on there being exactly one space between the words
+- `\r` counts as whitespace, so a CRLF-terminated expression parses
+- `div` is preserved as the integer-division operator CQL2 defines
+- `t_disjoint` renders as a self-delimiting SQL predicate, so `isNull(t_disjoint(..))` is no longer regrouped by the database
+- `and`, `or`, `not` and the comparisons follow the three-valued logic CQL2 and SQL share. A NULL operand collapsed the whole operation to `false`, so `null OR true` was `false` rather than `true`; NULL now propagates except where the other operand already decides the answer — `FALSE AND anything` is FALSE and `TRUE OR anything` is TRUE. `filter` and `matches` admit a record only when the predicate is TRUE, so a NULL answer excludes it without raising an error. An operand that merely could not be evaluated yet — an unresolved property, a function call — is still left unfolded rather than being read as NULL
+- `div` is evaluated. It was listed as an arithmetic operator but had no implementation, so `5 div 2` reduced to itself. It is integer division, truncated toward zero as PostgreSQL and the SQL standard require, so `5 div 2` is 2 and `-5 div 2` is -2. Division by zero has no integer answer and is left unfolded rather than yielding the infinity `/` gives
+- `to_text` reports an error for an infinity or a NaN instead of writing the bare words `inf` and `NaN`, which cql2-text has no literals for and reads back as *property* names: `1 / 0` rendered as `inf`, an expression that parses and means something else. `to_sql` is unaffected, and still writes `CAST('Infinity' AS DOUBLE)`
+- `to_text` requires two operands for `+`, `-`, `*`, `/` and `%`, as `to_sql` already did. One operand rendered as that operand alone, so `{"op":"-","args":[{"property":"a"}]}` became `a` and the operator vanished
+- `a_equals` renders as a set comparison in SQL, matching the evaluator, which compares two arrays as sets. It rendered as `=`, which is positional in both PostgreSQL and DuckDB, so `a_equals(intarrayfield, (3,2,1))` was true in the evaluator and false in the database for a row holding `[1,2,3]`
+- `LIKE` is emitted with an explicit `ESCAPE '\'`, so every backend reads the pattern the way the evaluator does. DuckDB has no default escape character, which made `like(textfield, 'item\_1')` select a disjoint set of rows there
+- A nested `GEOMETRYCOLLECTION` is a parse error naming the reason, rather than a function call named `GEOMETRYCOLLECTION` that the schema then accepts. The cql2-json encoding admits only the six non-collection geometry types as members, so a nested collection has no CQL2 expression
+- `EMPTY` geometries parse, for every geometry type. GeoJSON with no coordinates is rendered as `POLYGON EMPTY`, which the grammar had no production for, so this crate's own output did not parse back
+
+### Other
+
+- Operator precedence is defined once, in `precedence`, and shared by the cql2-text parser, `to_text` and the SQL backends
+- `NOTICE` and `examples/NOTICE` record the OGC material this repository redistributes and the modifications made to it, and `src/cql2.json` carries the same attribution
+- Added `tests/encoding_invariants.rs` (round-tripping and cross-encoding agreement without reference to the golden files), `tests/sql_precedence.rs` (a filter-versus-DuckDB differential), `tests/temporal_relations.rs` (each temporal relation against its definition), `tests/ats_conformance.rs` (the 109 filter expressions named by the OGC CQL2 Abstract Test Suite) and `tests/proptest_roundtrip.rs` (generated expressions), with `proptest` as a new dev-dependency
+- Both expectation generators rebuild their output atomically: a query the CLI rejects aborts the run with the expectations untouched, where previously a broken invocation blanked every one of them
+- `examples/examples.toml` records the same expected output as the golden files, and a test keeps the two in step
+
 ## [0.5.7](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.6...cql2-v0.5.7) - 2026-07-29
 
 ### Fixed
