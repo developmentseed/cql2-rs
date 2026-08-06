@@ -107,6 +107,9 @@ pub enum Error {
     #[error("Could not run operation.")]
     OperationError(),
 
+    #[error("a GEOMETRYCOLLECTION cannot contain another GEOMETRYCOLLECTION: CQL2 admits only POINT, LINESTRING, POLYGON, MULTIPOINT, MULTILINESTRING and MULTIPOLYGON as members")]
+    NestedGeometryCollection,
+
     /// [json_dotpath::Error]
     #[error(transparent)]
     JsonDotpath(#[from] json_dotpath::Error),

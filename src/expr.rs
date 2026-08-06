@@ -301,8 +301,9 @@ impl TryFrom<Expr> for GGeom {
     type Error = Error;
     fn try_from(v: Expr) -> Result<GGeom, Error> {
         match v {
-            Expr::Geometry(v) => Ok(GGeom::try_from_wkt_str(&v.to_wkt().unwrap())
-                .expect("Failed to convert WKT to Geometry")),
+            Expr::Geometry(ref g) => {
+                GGeom::try_from_wkt_str(&g.to_wkt()?).map_err(|_| Error::ExprToGeom(v.clone()))
+            }
             Expr::BBox { ref bbox } => {
                 let minx: f64 = bbox[0].as_ref().clone().try_into()?;
                 let miny: f64 = bbox[1].as_ref().clone().try_into()?;
