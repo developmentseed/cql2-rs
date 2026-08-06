@@ -2,8 +2,12 @@ use crate::Expr;
 use thiserror::Error;
 
 /// Crate-specific error enum.
+///
+/// Variants are added as new failure modes are found. Matching exhaustively on this enum would
+/// make every such addition a breaking change, so it is marked non-exhaustive.
 #[derive(Debug, Error)]
 #[allow(clippy::large_enum_variant)]
+#[non_exhaustive]
 pub enum Error {
     /// [geojson::Error]
     #[error(transparent)]
@@ -65,9 +69,9 @@ pub enum Error {
     /// A validation error.
     ///
     /// This holds a [serde_json::Value] that is the output from a
-    /// [boon::ValidationError]. We can't hold the validation error itself
-    /// becuase it contains references to both the validated object and the
-    /// validator's data.
+    /// [jsonschema::ValidationError]. We can't hold the validation error itself
+    /// because it borrows from both the validated object and the validator's
+    /// data.
     #[error("validation error")]
     Validation(serde_json::Value),
 
@@ -107,7 +111,7 @@ pub enum Error {
     #[error(transparent)]
     JsonDotpath(#[from] json_dotpath::Error),
 
-    /// [like::Error]
+    /// [like::InvalidPatternError]
     #[error(transparent)]
     Like(#[from] like::InvalidPatternError),
 }
