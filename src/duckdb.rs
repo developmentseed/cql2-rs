@@ -17,7 +17,7 @@ pub trait ToDuckSQL {
 
 impl ToDuckSQL for Expr {
     /// Converts this expression to DuckDB SQL.
-    /// WARNING: This is an experimental feature with limited tests subject to change!
+    /// WARNING: This is an experimental feature subject to change!
     ///
     /// # Examples
     ///

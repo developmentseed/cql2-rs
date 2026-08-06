@@ -36,7 +36,7 @@ def test_parse_text(example01_text: str, example01_json: dict[str, Any]) -> None
 
 
 def test_to_json(example01_text: str) -> None:
-    cql2.Expr(example01_text).to_json() == {
+    assert cql2.Expr(example01_text).to_json() == {
         "op": "=",
         "args": [{"property": "landsat:scene_id"}, "LC82030282019133LGN00"],
     }

@@ -257,7 +257,7 @@ const ALIASES: &[(&str, &str)] = &[
 /// let expr: Expr = "landsat:scene_id = 'LC82030282019133LGN00'".parse().unwrap();
 /// ```
 ///
-/// Use [Expr::to_text], [Expr::to_json], and [Expr::to_sql] to use the CQL2,
+/// Use [Expr::to_text], [Expr::to_json], and [crate::ToSqlAst::to_sql] to use the CQL2,
 /// and use [Expr::is_valid] to check validity.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
 #[serde(untagged)]
