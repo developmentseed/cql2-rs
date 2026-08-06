@@ -5,12 +5,7 @@ use like::Like;
 use pg_escape::quote_identifier;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{
-    collections::HashSet,
-    fmt::Debug,
-    ops::{Add, Deref},
-    str::FromStr,
-};
+use std::{collections::HashSet, fmt::Debug, ops::Add, str::FromStr, sync::OnceLock};
 use unaccent::unaccent;
 use wkt::TryFromWkt;
 
@@ -192,6 +187,22 @@ fn temporal_literal(value: &str) -> Expr {
     }
 }
 
+/// Whether an operand denotes a region a spatial predicate can be evaluated against.
+fn is_region(expr: &Expr) -> bool {
+    matches!(expr, Expr::Geometry(_) | Expr::BBox { .. })
+}
+
+/// The number of operands an operator's reduction indexes, if it is fixed.
+///
+/// `None` means the reduction reads its operands as a list and accepts any number.
+fn reduce_arity(op: &str) -> Option<usize> {
+    match op {
+        "isNull" | "not" | "casei" | "accenti" => Some(1),
+        "between" => Some(3),
+        _ => None,
+    }
+}
+
 /// Resolves an operator name to its canonical CQL2 spelling.
 ///
 /// Operator names are case-insensitive, so `T_METBY` and `t_metBy` name the same operator, and the
@@ -323,22 +334,15 @@ impl TryFrom<Expr> for GGeom {
                 GGeom::try_from_wkt_str(&g.to_wkt()?).map_err(|_| Error::ExprToGeom(v.clone()))
             }
             Expr::BBox { ref bbox } => {
-                let minx: f64 = bbox[0].as_ref().clone().try_into()?;
-                let miny: f64 = bbox[1].as_ref().clone().try_into()?;
-                let maxx: f64;
-                let maxy: f64;
-
-                match bbox.len() {
-                    4 => {
-                        maxx = bbox[2].as_ref().clone().try_into()?;
-                        maxy = bbox[3].as_ref().clone().try_into()?;
-                    }
-                    6 => {
-                        maxx = bbox[3].as_ref().clone().try_into()?;
-                        maxy = bbox[4].as_ref().clone().try_into()?;
-                    }
+                let [minx, miny, maxx, maxy] = match bbox.as_slice() {
+                    [minx, miny, maxx, maxy] => [minx, miny, maxx, maxy],
+                    [minx, miny, _minz, maxx, maxy, _maxz] => [minx, miny, maxx, maxy],
                     _ => return Err(Error::ExprToGeom(v.clone())),
                 };
+                let minx: f64 = minx.as_ref().clone().try_into()?;
+                let miny: f64 = miny.as_ref().clone().try_into()?;
+                let maxx: f64 = maxx.as_ref().clone().try_into()?;
+                let maxy: f64 = maxy.as_ref().clone().try_into()?;
                 let rec = Rect::new(coord! {x:minx, y:miny}, coord! {x:maxx,y:maxy});
                 Ok(rec.into())
             }
@@ -365,18 +369,15 @@ impl TryFrom<Expr> for HashSet<String> {
 
 fn cmp_op<T: PartialEq + PartialOrd>(left: T, right: T, op: &str) -> Result<Expr, Error> {
     let out = match op {
-        "=" => Ok(left == right),
-        "<=" => Ok(left <= right),
-        "<" => Ok(left < right),
-        ">=" => Ok(left >= right),
-        ">" => Ok(left > right),
-        "<>" => Ok(left != right),
-        _ => Err(Error::OpNotImplemented("Binary Bool")),
+        "=" => left == right,
+        "<=" => left <= right,
+        "<" => left < right,
+        ">=" => left >= right,
+        ">" => left > right,
+        "<>" => left != right,
+        _ => return Err(Error::OperationError()),
     };
-    match out {
-        Ok(v) => Ok(Expr::Bool(v)),
-        _ => Err(Error::OperationError()),
-    }
+    Ok(Expr::Bool(out))
 }
 
 fn arith_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
@@ -487,23 +488,25 @@ impl Expr {
     pub fn reduce(self, j: Option<&Value>) -> Result<Expr, Error> {
         match self {
             Expr::Property { ref property } => {
-                if let Some(j) = j {
-                    if let Some(value) = j.dot_get::<Value>(property)? {
-                        Expr::try_from(value)
-                    } else if let Some(value) =
-                        j.dot_get::<Value>(&format!("properties.{}", property))?
-                    {
-                        Expr::try_from(value)
-                    } else {
-                        Ok(self)
-                    }
+                let Some(j) = j else { return Ok(self) };
+                if let Some(value) = j.dot_get::<Value>(property)? {
+                    Expr::try_from(value)
+                } else if let Some(value) = j.dot_get::<Value>(&format!("properties.{property}"))? {
+                    Expr::try_from(value)
                 } else {
                     Ok(self)
                 }
             }
             Expr::Interval { ref interval } => {
-                let start = interval[0].as_ref().clone().reduce(j)?;
-                let end = interval[1].as_ref().clone().reduce(j)?;
+                let [lo, hi] = interval.as_slice() else {
+                    return Err(Error::InvalidNumberOfArguments {
+                        name: "interval".to_string(),
+                        actual: interval.len(),
+                        expected: 2,
+                    });
+                };
+                let start = lo.as_ref().clone().reduce(j)?;
+                let end = hi.as_ref().clone().reduce(j)?;
                 Ok(Expr::Interval {
                     interval: vec![Box::new(start), Box::new(end)],
                 })
@@ -512,6 +515,17 @@ impl Expr {
                 // Dispatch below matches canonical spellings, and an expression left unfolded keeps
                 // the name it came in with.
                 let op = canonical_op(&op);
+                // Checked before any arm indexes into `args`, so a malformed expression is an
+                // error rather than an abort. Operators reduced as whole lists take any arity.
+                if let Some(expected) = reduce_arity(&op) {
+                    if args.len() != expected {
+                        return Err(Error::InvalidNumberOfArguments {
+                            name: op,
+                            actual: args.len(),
+                            expected,
+                        });
+                    }
+                }
 
                 let args: Vec<Box<Expr>> = args
                     .into_iter()
@@ -552,7 +566,13 @@ impl Expr {
                         }
                     }
                     dedupargs.append(&mut nestedargs);
-                    dedupargs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                    // Operands are sorted so equal ones become adjacent. Not every pair is
+                    // comparable — `Geometry` has no ordering — so incomparable operands fall back
+                    // to a total order over their rendering, which keeps distinct operands distinct.
+                    dedupargs.sort_by(|a, b| {
+                        a.partial_cmp(b)
+                            .unwrap_or_else(|| format!("{a:?}").cmp(&format!("{b:?}")))
+                    });
                     dedupargs.dedup();
 
                     // The three truth values are counted apart from each other, and both apart from
@@ -616,7 +636,7 @@ impl Expr {
                         })
                     }
                 } else if op == "not" {
-                    match args[0].deref() {
+                    match args[0].as_ref() {
                         Expr::Bool(v) => Ok(Expr::Bool(!v)),
                         // The negation of "unknown" is "unknown".
                         Expr::Null => Ok(Expr::Null),
@@ -675,8 +695,8 @@ impl Expr {
                     Ok(Expr::Operation { op, args })
                 } else {
                     // Two-arg operations
-                    let mut left = args[0].deref().clone();
-                    let mut right = args[1].deref().clone();
+                    let mut left = args[0].as_ref().clone();
+                    let mut right = args[1].as_ref().clone();
 
                     // If either operand is unknown (an unresolved property or an
                     // expression that did not fold to a concrete value) we cannot
@@ -687,6 +707,7 @@ impl Expr {
                     }
 
                     let is_temporal_relation = TEMPORALOPS.contains(&op.as_str());
+                    let is_spatial_relation = SPATIALOPS.contains(&op.as_str());
                     let is_comparison =
                         EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str());
 
@@ -738,8 +759,13 @@ impl Expr {
                         let l_dr = crate::temporal::DateRange::try_from(left)?;
                         let r_dr = crate::temporal::DateRange::try_from(right)?;
                         cmp_op(l_dr, r_dr, &op)
-                    } else if std::mem::discriminant(&left) == std::mem::discriminant(&right) {
-                        if SPATIALOPS.contains(&op.as_str()) {
+                    // Operands normally have to be the same kind to fold. A spatial predicate is
+                    // the exception: a geometry and a bounding box are both regions, and comparing
+                    // one against the other is the ordinary case.
+                    } else if std::mem::discriminant(&left) == std::mem::discriminant(&right)
+                        || (is_spatial_relation && is_region(&left) && is_region(&right))
+                    {
+                        if is_spatial_relation {
                             Ok(spatial_op(left, right, &op)
                                 .unwrap_or_else(|_| Expr::Operation { op, args }))
                         } else if ARITHOPS.contains(&op.as_str()) {
@@ -1043,10 +1069,15 @@ impl Expr {
     ///
     /// Panics if the default validator can't be created.
     pub fn is_valid(&self) -> bool {
+        // Compiling the embedded schema is the expensive part, and the result is immutable, so
+        // every call shares one validator.
+        static VALIDATOR: OnceLock<Validator> = OnceLock::new();
+
         let value = serde_json::to_value(self);
         match &value {
             Ok(value) => {
-                let validator = Validator::new().expect("Could not create default validator");
+                let validator = VALIDATOR
+                    .get_or_init(|| Validator::new().expect("Could not create default validator"));
                 validator.is_valid(value)
             }
             _ => false,

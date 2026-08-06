@@ -298,8 +298,15 @@ fn t_arg_to_interval(arg: &Expr) -> Result<(SqlExpr, SqlExpr), Error> {
 }
 
 fn t_args(args: &[Box<Expr>]) -> Result<Targs, Error> {
-    let (left_start, left_end) = t_arg_to_interval(args[0].as_ref())?;
-    let (right_start, right_end) = t_arg_to_interval(args[1].as_ref())?;
+    let [left, right] = args else {
+        return Err(Error::InvalidNumberOfArguments {
+            name: "temporal predicate".to_string(),
+            actual: args.len(),
+            expected: 2,
+        });
+    };
+    let (left_start, left_end) = t_arg_to_interval(left)?;
+    let (right_start, right_end) = t_arg_to_interval(right)?;
     Ok(Targs {
         left_start,
         left_end,
@@ -591,8 +598,7 @@ impl ToSqlAst for Expr {
 
     /// Converts the expression to a SQL string.
     fn to_sql(&self) -> Result<String, Error> {
-        let ast = self.to_sql_ast()?;
-        Ok(ast.to_string())
+        Ok(self.to_sql_ast()?.to_string())
     }
 }
 

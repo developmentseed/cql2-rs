@@ -200,7 +200,7 @@ pub fn spatial_op(left: Expr, right: Expr, op: &str) -> Result<Expr, Error> {
         "s_overlaps" => rel.is_overlaps(),
         "s_crosses" => rel.is_crosses(),
         "s_contains" => rel.is_contains(),
-        &_ => todo!(),
+        _ => return Err(Error::OpNotImplemented("spatial")),
     };
     Ok(Expr::Bool(out))
 }
