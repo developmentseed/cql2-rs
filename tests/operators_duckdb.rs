@@ -35,11 +35,13 @@ fn operators_duckdb_filter() -> Result<()> {
         );
         let mut stmt = conn.prepare(&sql)?;
         let mut rows = stmt.query([])?;
+        // `array_agg` over no rows is NULL, which is the empty selection.
         let ids: String = rows
             .next()?
-            .expect("No data returned")
-            .get::<_, String>(0)
-            .expect("Failed to get result");
+            .expect("aggregate query always returns one row")
+            .get::<_, Option<String>>(0)
+            .expect("Failed to get result")
+            .unwrap_or_default();
         assert_eq!(
             ids, expected_line,
             "Query '{}' returned '{}', expected '{}'",
