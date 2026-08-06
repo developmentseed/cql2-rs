@@ -43,7 +43,11 @@ def test_to_json(example01_text: str) -> None:
 
 
 def test_to_text(example01_json: dict[str, Any]) -> None:
-    cql2.Expr(example01_json).to_text() == "landsat:scene_id = 'LC82030282019133LGN00'"
+    # A cql2-text identifier admits `:`, so the property name is written bare. SQL is quoted
+    # separately, by PostgreSQL's rules -- see test_to_sql.
+    assert cql2.Expr(example01_json).to_text() == (
+        "landsat:scene_id = 'LC82030282019133LGN00'"
+    )
 
 
 def test_to_sql(example01_text: str) -> None:
@@ -72,12 +76,12 @@ def test_eq() -> None:
 
 def test_str() -> None:
     expr = cql2.Expr("landsat:scene_id = 'LC82030282019133LGN00'")
-    assert str(expr) == "(\"landsat:scene_id\" = 'LC82030282019133LGN00')"
+    assert str(expr) == "landsat:scene_id = 'LC82030282019133LGN00'"
 
 
 def test_repr() -> None:
     expr = cql2.Expr("landsat:scene_id = 'LC82030282019133LGN00'")
-    assert repr(expr) == "Expr((\"landsat:scene_id\" = 'LC82030282019133LGN00'))"
+    assert repr(expr) == "Expr(landsat:scene_id = 'LC82030282019133LGN00')"
 
 
 @pytest.mark.parametrize(

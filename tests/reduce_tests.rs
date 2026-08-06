@@ -124,7 +124,7 @@ fn in_still_folds_for_known_values() {
 #[test]
 fn negative_number_literal() {
     let expr: Expr = "property > -2".parse().unwrap();
-    assert_eq!(expr.to_text().unwrap(), "(property > -2)");
+    assert_eq!(expr.to_text().unwrap(), "property > -2");
     match &expr {
         Expr::Operation { op, args } => {
             assert_eq!(op, ">");
@@ -134,7 +134,7 @@ fn negative_number_literal() {
     }
 
     let expr: Expr = "property > -3.14".parse().unwrap();
-    assert_eq!(expr.to_text().unwrap(), "(property > -3.14)");
+    assert_eq!(expr.to_text().unwrap(), "property > -3.14");
 
     // Negating a non-literal (e.g. a property) is still expressed as `-1 * x`.
     let expr: Expr = "-foo".parse().unwrap();
