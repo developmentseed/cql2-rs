@@ -221,10 +221,17 @@ struct Targs {
     right_end: SqlExpr,
 }
 
-fn lit_or_prop_to_ts(arg: &Expr) -> Result<SqlExpr, Error> {
+/// The SQL spelling of an interval bound.
+///
+/// `unbounded` is the value `".."` stands for at this end of the range; databases spell an
+/// unbounded timestamp `infinity`.
+fn lit_or_prop_to_ts(arg: &Expr, unbounded: &str) -> Result<SqlExpr, Error> {
     Ok(match arg {
         Expr::Property { property } => ident(property)?,
-        Expr::Literal(v) => cast(lit_expr(v), Timestamp(None, TimezoneInfo::WithTimeZone)),
+        Expr::Literal(v) => cast(
+            lit_expr(if v == ".." { unbounded } else { v }),
+            Timestamp(None, TimezoneInfo::WithTimeZone),
+        ),
         _ => return Err(Error::OperationError()),
     })
 }
@@ -237,28 +244,54 @@ fn lit_or_prop_to_date(arg: &Expr) -> Result<SqlExpr, Error> {
     })
 }
 
+/// Checks an interval carries exactly the two bounds the callers index.
+fn interval_bounds(interval: &[Box<Expr>]) -> Result<(&Expr, &Expr), Error> {
+    match interval {
+        [start, end] => Ok((start, end)),
+        _ => Err(Error::InvalidNumberOfArguments {
+            name: "interval".to_string(),
+            actual: interval.len(),
+            expected: 2,
+        }),
+    }
+}
+
+/// The two endpoints of an interval, each as a SQL timestamp.
+///
+/// Which end is open decides what `".."` means there, so the two sentinels are paired here rather
+/// than at each call site.
+fn interval_endpoints(interval: &[Box<Expr>]) -> Result<(SqlExpr, SqlExpr), Error> {
+    let (lo, hi) = interval_bounds(interval)?;
+    Ok((
+        lit_or_prop_to_ts(lo, "-infinity")?,
+        lit_or_prop_to_ts(hi, "infinity")?,
+    ))
+}
+
+/// A timestamp rendered as a SQL literal.
+fn timestamp_literal(ts: jiff::Timestamp) -> SqlExpr {
+    cast(
+        lit_expr(&ts.to_string()),
+        Timestamp(None, TimezoneInfo::WithTimeZone),
+    )
+}
+
 fn t_arg_to_interval(arg: &Expr) -> Result<(SqlExpr, SqlExpr), Error> {
     match arg {
-        Expr::Interval { interval } => {
-            let start = lit_or_prop_to_ts(&interval[0])?;
-            let end = lit_or_prop_to_ts(&interval[1])?;
-            Ok((start, end))
-        }
+        Expr::Interval { interval } => interval_endpoints(interval),
         Expr::Property { property } => {
             let start = ident(property)?;
-            Ok((start.clone(), start.clone()))
+            Ok((start.clone(), start))
         }
+        // A date names a day, not an instant: `DateRange::try_from` widens it to
+        // `[T00:00:00, T23:59:59.999999999]`, and the SQL rendering has to say the same thing.
         Expr::Date { date } => {
-            let e = Expr::Date { date: date.clone() };
-            let start = e.to_sql_ast()?;
-            Ok((start.clone(), start.clone()))
+            let day = crate::temporal::DateRange::try_from(Expr::Date { date: date.clone() })?;
+            Ok((timestamp_literal(day.start), timestamp_literal(day.end)))
         }
         Expr::Timestamp { timestamp } => {
-            let e = Expr::Timestamp {
-                timestamp: timestamp.clone(),
-            };
-            let start = e.to_sql_ast()?;
-            Ok((start.clone(), start.clone()))
+            let start = lit_or_prop_to_ts(timestamp, "infinity")?;
+            Ok((start.clone(), start))
         }
         _ => Err(Error::OperationError()),
     }
@@ -275,14 +308,70 @@ fn t_args(args: &[Box<Expr>]) -> Result<Targs, Error> {
     })
 }
 
-fn andop(args: Vec<SqlExpr>) -> SqlExpr {
-    args.into_iter()
-        .reduce(|left, right| SqlExpr::BinaryOp {
-            left: Box::new(left),
-            op: BinaryOperator::And,
-            right: Box::new(right),
-        })
-        .expect("andop requires at least one argument")
+/// The SQL for an Allen interval relation.
+///
+/// Every one of these is a comparison between the endpoints of the two operands, so they all start
+/// by resolving each operand to its `[start, end]` pair. `op` is a canonical CQL2 name; the caller
+/// dispatches here on [`crate::expr::TEMPORALOPS`], which is exactly the set covered below.
+fn temporal_sql(op: &str, args: &[Box<Expr>]) -> Result<SqlExpr, Error> {
+    let t = t_args(args)?;
+    Ok(match op {
+        "t_before" => ltop(t.left_end, t.right_start),
+        "t_after" => ltop(t.right_end, t.left_start),
+        "t_meets" => eqop(t.left_end, t.right_start),
+        "t_metBy" => eqop(t.right_end, t.left_start),
+        // `overlaps`: the earlier range begins first, the two share an interior,
+        // and the earlier one ends first.
+        "t_overlaps" => wrap(andop(vec![
+            ltop(t.left_start, t.right_start.clone()),
+            ltop(t.right_start, t.left_end.clone()),
+            ltop(t.left_end, t.right_end),
+        ])),
+        "t_overlappedBy" => wrap(andop(vec![
+            ltop(t.right_start, t.left_start.clone()),
+            ltop(t.left_start, t.right_end.clone()),
+            ltop(t.right_end, t.left_end),
+        ])),
+        "t_starts" => wrap(andop(vec![
+            eqop(t.left_start, t.right_start.clone()),
+            ltop(t.left_end, t.right_end),
+        ])),
+        "t_startedBy" => wrap(andop(vec![
+            eqop(t.right_start, t.left_start.clone()),
+            ltop(t.right_end, t.left_end),
+        ])),
+        "t_during" => wrap(andop(vec![
+            gtop(t.left_start, t.right_start),
+            ltop(t.left_end, t.right_end),
+        ])),
+        "t_contains" => wrap(andop(vec![
+            gtop(t.right_start, t.left_start),
+            ltop(t.right_end, t.left_end),
+        ])),
+        "t_finishes" => wrap(andop(vec![
+            eqop(t.left_end, t.right_end),
+            gtop(t.left_start, t.right_start),
+        ])),
+        "t_finishedBy" => wrap(andop(vec![
+            eqop(t.right_end, t.left_end),
+            gtop(t.right_start, t.left_start),
+        ])),
+        "t_equals" => wrap(andop(vec![
+            eqop(t.left_start, t.right_start),
+            eqop(t.left_end, t.right_end),
+        ])),
+        // Wrapped outside the `NOT` as well, so the whole predicate is self-delimiting like every
+        // other `t_*` rendering.
+        "t_disjoint" => wrap(notop(wrap(andop(vec![
+            lteop(t.left_start, t.right_end),
+            gteop(t.left_end, t.right_start),
+        ])))),
+        "t_intersects" => wrap(andop(vec![
+            lteop(t.left_start, t.right_end),
+            gteop(t.left_end, t.right_start),
+        ])),
+        _ => return Err(Error::InvalidOperator(op.to_string())),
+    })
 }
 
 /// Chains operands with an associative connective. An empty chain has no rendering.
@@ -299,6 +388,11 @@ fn chainop(op: BinaryOperator, args: Vec<SqlExpr>) -> Result<SqlExpr, Error> {
             actual: 0,
             expected: 1,
         })
+}
+
+/// The `t_*` renderings build their own conjunctions, always with operands to chain.
+fn andop(args: Vec<SqlExpr>) -> SqlExpr {
+    chainop(BinaryOperator::And, args).expect("callers supply at least one operand")
 }
 
 /// A binary comparison between two already-rendered operands.
@@ -372,10 +466,12 @@ impl ToSqlAst for Expr {
             Expr::Float(v) => float_expr(v),
             Expr::Literal(v) => lit_expr(v),
             Expr::Date { ref date } => lit_or_prop_to_date(date.as_ref())?,
-            Expr::Timestamp { ref timestamp } => lit_or_prop_to_ts(timestamp.as_ref())?,
+            // An instant has no distinguishable open end, so which sentinel `".."` stands for is
+            // arbitrary here: `TIMESTAMP('..')` renders as `CAST('infinity' AS TIMESTAMP WITH TIME
+            // ZONE)`, and `-infinity` would have been just as good.
+            Expr::Timestamp { ref timestamp } => lit_or_prop_to_ts(timestamp.as_ref(), "infinity")?,
             Expr::Interval { ref interval } => {
-                let start = lit_or_prop_to_ts(interval[0].as_ref())?;
-                let end = lit_or_prop_to_ts(interval[1].as_ref())?;
+                let (start, end) = interval_endpoints(interval)?;
                 SqlExpr::Array(SqlArray {
                     elem: vec![start, end],
                     named: true,
@@ -486,101 +582,7 @@ impl ToSqlAst for Expr {
                     "a_contains" => binop(BinaryOperator::AtArrow, a),
                     "a_containedBy" => binop(BinaryOperator::ArrowAt, a),
                     "a_overlaps" => binop(BinaryOperator::AtAt, a),
-                    "t_before" => {
-                        let t = t_args(args)?;
-                        ltop(t.left_end, t.right_start)
-                    }
-                    "t_after" => {
-                        let t = t_args(args)?;
-                        ltop(t.right_end, t.left_start)
-                    }
-                    "t_meets" => {
-                        let t = t_args(args)?;
-                        eqop(t.left_end, t.right_start)
-                    }
-                    "t_metby" => {
-                        let t = t_args(args)?;
-                        eqop(t.right_end, t.left_start)
-                    }
-                    "t_overlaps" => {
-                        let t = t_args(args)?;
-                        wrap(andop(vec![
-                            ltop(t.left_start, t.right_end.clone()),
-                            ltop(t.right_start, t.left_end.clone()),
-                            ltop(t.left_end, t.right_end),
-                        ]))
-                    }
-                    "t_overlappedby" => {
-                        let t = t_args(args)?;
-                        wrap(andop(vec![
-                            ltop(t.right_start, t.left_end.clone()),
-                            ltop(t.left_start, t.right_end.clone()),
-                            ltop(t.right_end, t.left_end),
-                        ]))
-                    }
-                    "t_starts" => {
-                        let t = t_args(args)?;
-                        wrap(andop(vec![
-                            eqop(t.left_start, t.right_start.clone()),
-                            ltop(t.left_end, t.right_end),
-                        ]))
-                    }
-                    "t_startedby" => {
-                        let t = t_args(args)?;
-                        wrap(andop(vec![
-                            eqop(t.right_start, t.left_start.clone()),
-                            ltop(t.right_end, t.left_end),
-                        ]))
-                    }
-                    "t_during" => {
-                        let t = t_args(args)?;
-                        wrap(andop(vec![
-                            gtop(t.left_start, t.right_start),
-                            ltop(t.left_end, t.right_end),
-                        ]))
-                    }
-                    "t_contains" => {
-                        let t = t_args(args)?;
-                        wrap(andop(vec![
-                            gtop(t.right_start, t.left_start),
-                            ltop(t.right_end, t.left_end),
-                        ]))
-                    }
-                    "t_finishes" => {
-                        let t = t_args(args)?;
-                        wrap(andop(vec![
-                            eqop(t.left_end, t.right_end),
-                            gtop(t.left_start, t.right_start),
-                        ]))
-                    }
-                    "t_finishedby" => {
-                        let t = t_args(args)?;
-                        wrap(andop(vec![
-                            eqop(t.right_end, t.left_end),
-                            gtop(t.right_start, t.left_start),
-                        ]))
-                    }
-                    "t_equals" => {
-                        let t = t_args(args)?;
-                        wrap(andop(vec![
-                            eqop(t.left_start, t.right_start),
-                            eqop(t.left_end, t.right_end),
-                        ]))
-                    }
-                    "t_disjoint" => {
-                        let t = t_args(args)?;
-                        notop(wrap(andop(vec![
-                            lteop(t.left_start, t.right_end),
-                            gteop(t.left_end, t.right_start),
-                        ])))
-                    }
-                    "t_intersects" | "anyinteracts" => {
-                        let t = t_args(args)?;
-                        wrap(andop(vec![
-                            lteop(t.left_start, t.right_end),
-                            gteop(t.left_end, t.right_start),
-                        ]))
-                    }
+                    name if crate::expr::TEMPORALOPS.contains(&name) => temporal_sql(name, args)?,
                     _ => func(&canonical, a)?,
                 }
             }
@@ -609,11 +611,16 @@ mod tests {
 
     #[test]
     fn test_t_before_expression() {
-        // t_before([start1, end1], [start2, end2]) => end1 < start2
+        // t_before([start1, end1], [start2, end2]) => end1 < start2.
+        // A date is the whole day, so the bound is its first instant, matching how the evaluator
+        // reads it.
         let expr: Expr = "t_before(ts_start, DATE('2020-02-01'))".parse().unwrap();
         let sql_ast = expr.to_sql_ast().expect("to_sql_ast failed");
         let sql_str = sql_ast.to_string();
-        assert_eq!(sql_str, "ts_start < CAST('2020-02-01' AS DATE)");
+        assert_eq!(
+            sql_str,
+            "ts_start < CAST('2020-02-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE)"
+        );
     }
 
     #[test]

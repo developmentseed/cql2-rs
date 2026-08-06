@@ -40,14 +40,14 @@ impl ToDuckSQL for Expr {
     /// use cql2::ToDuckSQL;
     ///
     /// let expr: Expr = "t_overlaps(interval(a,'2020-01-01T00:00:00Z'),interval('2020-01-01T00:00:00Z','2020-02-01T00:00:00Z'))".parse().unwrap();
-    /// assert_eq!(expr.to_ducksql().unwrap(), "(a < CAST('2020-02-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) AND CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) < CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) AND CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) < CAST('2020-02-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE))");
+    /// assert_eq!(expr.to_ducksql().unwrap(), "(a < CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) AND CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) < CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) AND CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) < CAST('2020-02-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE))");
     /// ```
     /// ```
     /// use cql2::Expr;
     /// use cql2::ToDuckSQL;
     ///
     /// let expr: Expr = "t_overlaps(interval(a,b),interval('2020-01-01T00:00:00Z','2020-02-01T00:00:00Z'))".parse().unwrap();
-    /// assert_eq!(expr.to_ducksql().unwrap(), "(a < CAST('2020-02-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) AND CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) < b AND b < CAST('2020-02-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE))");
+    /// assert_eq!(expr.to_ducksql().unwrap(), "(a < CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) AND CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE) < b AND b < CAST('2020-02-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE))");
     /// ```
     fn to_ducksql(&self) -> Result<String, Error> {
         let mut ast = self.to_sql_ast()?;

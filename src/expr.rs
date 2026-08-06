@@ -180,6 +180,18 @@ fn identifier(name: &str) -> String {
     }
 }
 
+/// Reads a bare literal as the temporal value it spells.
+///
+/// A value with a time component names an instant; a plain calendar date names a day.
+fn temporal_literal(value: &str) -> Expr {
+    let literal = Box::new(Expr::Literal(value.to_string()));
+    if value.contains('T') || value.contains(' ') {
+        Expr::Timestamp { timestamp: literal }
+    } else {
+        Expr::Date { date: literal }
+    }
+}
+
 /// Resolves an operator name to its canonical CQL2 spelling.
 ///
 /// Operator names are case-insensitive, so `T_METBY` and `t_metBy` name the same operator, and the
@@ -627,8 +639,19 @@ impl Expr {
                         return Ok(Expr::Operation { op, args });
                     }
 
-                    // If left is Date/Timestamp and right is Literal, convert right
+                    let is_temporal_relation = TEMPORALOPS.contains(&op.as_str());
+                    let is_comparison =
+                        EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str());
+
+                    // A bare literal beside a temporal operand is read as temporal too. For a
+                    // comparison it takes its neighbour's kind, so `ts = DATE('2020-01-02')` asks
+                    // whether the two name the same day. The interval relations instead read the
+                    // literal on its own terms: widening an instant to a whole day would change
+                    // which intervals it meets, and the SQL backend cannot widen a column at all.
                     match (&left, &right) {
+                        (Expr::Date { .. }, Expr::Literal(ref v)) if is_temporal_relation => {
+                            right = temporal_literal(v);
+                        }
                         (Expr::Date { .. }, Expr::Literal(ref v)) => {
                             right = Expr::Date {
                                 date: Box::new(Expr::Literal(v.clone())),
@@ -638,6 +661,9 @@ impl Expr {
                             right = Expr::Timestamp {
                                 timestamp: Box::new(Expr::Literal(v.clone())),
                             };
+                        }
+                        (Expr::Literal(ref v), Expr::Date { .. }) if is_temporal_relation => {
+                            left = temporal_literal(v);
                         }
                         (Expr::Literal(ref v), Expr::Date { .. }) => {
                             left = Expr::Date {
@@ -652,27 +678,19 @@ impl Expr {
                         _ => {}
                     }
 
-                    if TEMPORALOPS.contains(&op.as_str()) {
-                        Ok(temporal_op(left, right, &op)
-                            .unwrap_or_else(|_| Expr::Operation { op, args }))
-                    // Date or Timestamp comparison: convert to jiff Timestamp for correct ordering
-                    } else if (matches!(left, Expr::Date { .. } | Expr::Timestamp { .. })
+                    if is_temporal_relation {
+                        match temporal_op(left, right, &op) {
+                            Ok(reduced) => Ok(reduced),
+                            Err(_) => Ok(Expr::Operation { op, args }),
+                        }
+                    } else if matches!(left, Expr::Date { .. } | Expr::Timestamp { .. })
                         && matches!(right, Expr::Date { .. } | Expr::Timestamp { .. })
-                        && (EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str())))
+                        && is_comparison
                     {
                         // convert both operands to DateRange and compare using PartialOrd/PartialEq
-                        let l_dr = crate::temporal::DateRange::try_from(left.clone())?;
-                        let r_dr = crate::temporal::DateRange::try_from(right.clone())?;
-                        let cmp = match op.as_str() {
-                            "=" => l_dr == r_dr,
-                            "<=" => l_dr <= r_dr,
-                            "<" => l_dr < r_dr,
-                            ">=" => l_dr >= r_dr,
-                            ">" => l_dr > r_dr,
-                            "<>" => l_dr != r_dr,
-                            _ => unreachable!(),
-                        };
-                        Ok(Expr::Bool(cmp))
+                        let l_dr = crate::temporal::DateRange::try_from(left)?;
+                        let r_dr = crate::temporal::DateRange::try_from(right)?;
+                        cmp_op(l_dr, r_dr, &op)
                     } else if std::mem::discriminant(&left) == std::mem::discriminant(&right) {
                         if SPATIALOPS.contains(&op.as_str()) {
                             Ok(spatial_op(left, right, &op)
@@ -680,7 +698,7 @@ impl Expr {
                         } else if ARITHOPS.contains(&op.as_str()) {
                             Ok(arith_op(left, right, &op)
                                 .unwrap_or_else(|_| Expr::Operation { op, args }))
-                        } else if EQOPS.contains(&op.as_str()) || CMPOPS.contains(&op.as_str()) {
+                        } else if is_comparison {
                             Ok(cmp_op(left, right, &op)
                                 .unwrap_or_else(|_| Expr::Operation { op, args }))
                         } else if ARRAYOPS.contains(&op.as_str()) {

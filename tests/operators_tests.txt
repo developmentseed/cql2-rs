@@ -108,35 +108,26 @@ t_after(interval(ts_start, ts_end), interval('2019-04-01T00:00:00Z', '2020-02-01
 
 
 // t_meets
-t_meets(ts_end, TIMESTAMP('2020-04-01T01:00:00Z'))
 t_meets(ts_end, interval('2020-03-01T01:00:00Z', '2020-03-01T01:00:00Z'))
-t_meets(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
 t_meets(interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'), ts_end)
 t_meets(interval(ts_start, ts_end), interval('2020-04-01T01:00:00Z', '2020-05-01T00:00:00Z'))
 t_meets(interval('2020-03-01T00:00:00Z', '2020-04-01T00:00:00Z'), interval(ts_start, ts_end))
 
 // t_metby
-t_metby(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
 t_metby(interval('2020-03-01T01:00:00Z', '2020-03-01T01:00:00Z'), ts_end)
-t_metby(ts_end, TIMESTAMP('2020-04-01T01:00:00Z'))
 t_metby(ts_end, interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'))
 t_metby(interval('2020-04-01T01:00:00Z', '2020-05-01T00:00:00Z'), interval(ts_start, ts_end))
 t_metby(interval(ts_start, ts_end), interval('2020-03-01T00:00:00Z', '2020-04-01T00:00:00Z'))
 
 // t_overlaps
-t_overlaps(ts_start, interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'))
-t_overlaps(TIMESTAMP('2020-02-15T00:30:00Z'), interval(ts_start, ts_end))
 t_overlaps(interval(ts_start, ts_end), interval('2020-03-01T00:00:30Z', '2020-03-05T00:00:00Z'))
 t_overlaps(interval('2020-03-01T00:00:00Z', '2020-04-01T00:30:00Z'), interval(ts_start, ts_end))
 
 // t_overlappedby
-t_overlappedby(interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'), ts_start)
-t_overlappedby(interval(ts_start, ts_end), TIMESTAMP('2020-02-15T00:30:00Z'))
 t_overlappedby(interval('2020-03-01T00:00:30Z', '2020-03-05T00:00:00Z'), interval(ts_start, ts_end))
 t_overlappedby(interval(ts_start, ts_end), interval('2020-03-01T00:00:00Z', '2020-04-01T00:30:00Z'))
 
 // t_starts
-t_starts(TIMESTAMP('2020-04-01T00:00:00Z'), interval(ts_start, ts_end))
 t_starts(interval(ts_start, ts_end), interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'))
 t_starts(interval('2020-04-01T00:00:00Z', '2020-04-01T00:30:00Z'), interval(ts_start, ts_end))
 
@@ -147,23 +138,19 @@ t_startedby(interval(ts_start, ts_end), interval('2020-04-01T00:00:00Z', '2020-0
 
 // t_during
 t_during(ts_start, interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'))
-t_during(TIMESTAMP('2020-04-15T00:00:30Z'), interval(ts_start, ts_end))
 t_during(interval(ts_start, ts_end), interval('2020-04-01T00:00:20Z', '2020-04-03T00:00:40Z'))
 t_during(interval('2020-04-01T00:00:20Z', '2020-04-01T00:00:40Z'), interval(ts_start, ts_end))
 
 // t_contains
 t_contains(interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'), ts_start)
-t_contains(interval(ts_start, ts_end), TIMESTAMP('2020-04-15T00:00:30Z'))
 t_contains(interval('2020-04-01T00:00:20Z', '2020-04-03T00:00:40Z'), interval(ts_start, ts_end))
 t_contains(interval(ts_start, ts_end), interval('2020-04-01T00:00:20Z', '2020-04-01T00:00:40Z'))
 
 // t_finishes
-t_finishes(TIMESTAMP('2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
 t_finishes(interval(ts_start, ts_end), interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'))
 t_finishes(interval('2020-04-01T00:00:20Z', '2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
 
 // t_finishedby
-t_finishedby(interval(ts_start, ts_end), TIMESTAMP('2020-04-01T01:00:00Z'))
 t_finishedby(interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
 t_finishedby(interval(ts_start, ts_end), interval('2020-04-01T00:00:20Z', '2020-04-01T01:00:00Z'))
 
@@ -211,3 +198,14 @@ nfield = true
 nfield <> true
 nfield is not null
 not(nfield = true)
+t_meets(ts_end, TIMESTAMP('2020-04-01T01:00:00Z'))
+t_meets(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
+t_metby(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
+t_metby(ts_end, TIMESTAMP('2020-04-01T01:00:00Z'))
+t_overlaps(TIMESTAMP('2020-02-15T00:30:00Z'), interval(ts_start, ts_end))
+t_overlappedby(interval(ts_start, ts_end), TIMESTAMP('2020-02-15T00:30:00Z'))
+t_starts(TIMESTAMP('2020-04-01T00:00:00Z'), interval(ts_start, ts_end))
+t_during(TIMESTAMP('2020-04-15T00:00:30Z'), interval(ts_start, ts_end))
+t_contains(interval(ts_start, ts_end), TIMESTAMP('2020-04-15T00:00:30Z'))
+t_finishes(TIMESTAMP('2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
+t_finishedby(interval(ts_start, ts_end), TIMESTAMP('2020-04-01T01:00:00Z'))
