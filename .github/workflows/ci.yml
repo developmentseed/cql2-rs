@@ -15,8 +15,10 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      # We've run out of disk space while building libduckdb-sys, so this gives
-      # us more headroom in a quite hackey way.
+      # libduckdb is downloaded prebuilt rather than compiled from the bundled
+      # amalgamation (see DUCKDB_DOWNLOAD_LIB in .cargo/config.toml), but the
+      # downloaded library plus the rest of the target dir is still large enough
+      # that the default runner image runs tight on disk.
       - name: Free Disk Space
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -40,7 +42,10 @@ jobs:
       - name: Check
         run: cargo check --workspace
       - name: Test
-        run: cargo test
+        # --workspace, to match the `cargo check` step above. Without it cargo
+        # only builds `default-members` (`.` and `cli`), which skips the python
+        # and wasm crates' test targets.
+        run: cargo test --workspace
   clippy:
     name: Clippy
     runs-on: ubuntu-latest

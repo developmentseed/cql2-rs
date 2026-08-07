@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Derived from OGC 21-065r2 (Common Query Language, CQL2). Copyright (c) Open Geospatial Consortium, used under the OGC document licence; see the NOTICE file at the repository root.",
   "$dynamicAnchor": "cql2expression",
   "oneOf": [
     {"$ref": "#/$defs/andOrExpression"    },

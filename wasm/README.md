@@ -13,15 +13,21 @@ npm i cql2-wasm
 Then:
 
 ```js
-import { CQL2 } from 'cql2-wasm'
+import init, { Expr } from 'cql2-wasm'
 
-const cql2 = new CQL2('collection = foo')
+// The published package is built with `wasm-pack --target web`, which does not
+// initialize itself, so await the default export before using the API.
+await init()
 
-// Parse and display results
-console.log('is_valid():', cql2.is_valid())
-console.log('to_json():', cql2.to_json())
-console.log('to_text():', cql2.to_text())
-````
+const expr = new Expr('collection = foo')
+
+// Throws if the expression is not valid CQL2.
+expr.validate()
+
+// `to_json()` returns a JSON *string*; use `JSON.parse` if you want an object.
+console.log('to_json():', expr.to_json())
+console.log('to_text():', expr.to_text())
+```
 
 ## Building
 

@@ -1,36 +1,26 @@
 #!/usr/bin/env sh
 #
-# Generates the expected output files for all the OGC example inputs.
+# Regenerates the expected output in each tests/expected/*.out file.
+#
+# Each file holds three lines:
+#   1. the input, in cql2-text or cql2-json
+#   2. the expected cql2-text output
+#   3. the expected cql2-json output
+#
+# Only lines 2 and 3 are rewritten. The input is preserved byte for byte, so the diff shows nothing
+# but the change in output.
 
 set -e
 
 cargo build
 
-tests=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+tests=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 root=$(dirname "$tests")
-expected="$tests/expected"
-fixtures="$root/examples"
+cql2="$root/target/debug/cql2"
 
-for input_format in json text; do
-    if [ $input_format = "json" ]; then
-        input_extension="json"
-    else
-        input_extension="txt"
-    fi
-
-    for path in "$fixtures/$input_format"/*.$input_extension; do
-        for output_format in json text; do
-            if [ $output_format = "json" ]; then
-                output_extension="json"
-            else
-                output_extension="txt"
-            fi
-
-            file_name="${path##*/}"
-            file_stem="${file_name%.*}"
-            mkdir -p "$expected/$output_format"
-
-            target/debug/cql2 --output-format $output_format <$path > "$expected/$input_format/$file_stem.$output_extension"
-        done
-    done
+for path in "$tests"/expected/*.out; do
+    input=$(head -1 "$path")
+    text=$(printf '%s\n' "$input" | "$cql2" --output-format text)
+    json=$(printf '%s\n' "$input" | "$cql2" --output-format json)
+    printf '%s\n%s\n%s\n' "$input" "$text" "$json" > "$path"
 done

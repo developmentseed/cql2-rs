@@ -3,7 +3,9 @@ name: Docs
 on:
   push:
     tags:
-      - "v*"
+      # Must match the tags release-plz actually creates, which is also what
+      # pypi.yml and npm.yml trigger on. A bare "v*" matches none of them.
+      - "cql2-v*"
   workflow_dispatch:
 
 permissions:
@@ -36,5 +38,8 @@ jobs:
         run: uv sync && uv sync --no-dev --inexact --directory python
       - name: Deploy
         run: |
-          VERSION=$(git describe --tags --match="v*" --abbrev=0)
+          # release-plz tags the library as `cql2-vX.Y.Z`; strip the crate
+          # prefix so the published docs version stays `vX.Y.Z`.
+          TAG=$(git describe --tags --match="cql2-v*" --abbrev=0)
+          VERSION=${TAG#cql2-}
           uv run mike deploy $VERSION latest --update-aliases --push

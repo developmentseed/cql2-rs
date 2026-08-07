@@ -1,25 +1,49 @@
 #!/usr/bin/env bash
-#set -euo pipefail
-cargo build
-# Script to generate operators_expected.txt by running cql2-cli filter
-OUT_FILE="tests/operators_expected.txt"
-: > "$OUT_FILE"
+#
+# Regenerates tests/operators_expected.txt by running each query in tests/operators_tests.txt
+# against tests/cql2testdata.ndjson.
+#
+# Output is two lines per query: the query, then the space-separated `intfield` of every matching
+# row. A query that matches nothing yields an empty second line.
+#
+# The file is rebuilt in full or not at all. Queries are collected into a scratch file, and it
+# replaces the committed one only if every query succeeded; otherwise each failure is reported and
+# the run exits non-zero with the expectations untouched, so a broken invocation cannot blank them.
 
+set -euo pipefail
+
+tests=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+root=$(dirname "$tests")
+out="$tests/operators_expected.txt"
+data="$tests/cql2testdata.ndjson"
+
+cargo build
+cql2="$root/target/debug/cql2"
+
+scratch=$(mktemp)
+trap 'rm -f "$scratch"' EXIT
+
+failures=0
 while IFS= read -r line; do
-    # Trim whitespace and skip empty or comment lines
-    # Remove comments after '#' and trim leading/trailing whitespace
     q="${line%%#*}"
     q="${q#"${q%%[![:space:]]*}"}"
     q="${q%"${q##*[![:space:]]}"}"
-    # Skip lines that begin with //
-    if [[ "${q}" =~ ^// ]]; then
+    case "$q" in
+        '' | //*) continue ;;
+    esac
+
+    if ! matches=$("$cql2" "$q" --filter "$data" | jq -r '.intfield' | paste -sd ' ' -); then
+        printf 'FAILED: %s\n' "$q" >&2
+        failures=$((failures + 1))
         continue
     fi
-    if [[ -z "$q" ]]; then
-        continue
-    fi
-    echo "$q" >> "$OUT_FILE"
-    # Use cql2-cli to filter NDJSON and extract intfield values
-    target/debug/cql2 filter --file tests/cql2testdata.ndjson "$q" \
-        | jq -r '.intfield' | paste -sd ' ' - >> "$OUT_FILE"
-done < tests/operators_tests.txt
+    printf '%s\n%s\n' "$q" "$matches" >> "$scratch"
+done < "$tests/operators_tests.txt"
+
+if [ "$failures" -ne 0 ]; then
+    printf '%s queries failed; %s left unchanged\n' "$failures" "$out" >&2
+    exit 1
+fi
+
+cp "$scratch" "$out"
+printf 'wrote %s queries to %s\n' "$(($(wc -l < "$out") / 2))" "$out"

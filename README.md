@@ -10,7 +10,7 @@ Parse, validate, and convert [Common Query Language (CQL2)](https://www.ogc.org/
 
 ```toml
 [dependencies]
-cql = "*"
+cql2 = "*"
 ```
 
 Then:
@@ -35,10 +35,10 @@ Responses may not match the input.
 
 ### cql2-text differences
 
-- All identifiers in output are double quoted
+- Identifiers in output are quoted only where the cql2-text grammar requires it
 - The position of "NOT" keywords is standardized to be before the expression (ie "... NOT LIKE ..." will become "NOT ... LIKE ..."
 - The negative operator on anything besides a literal number becomes "* -1"
-- Parentheses are added around all expressions
+- Parentheses are added only where grouping requires them, so the output re-parses to the same expression
 
 ## Development
 

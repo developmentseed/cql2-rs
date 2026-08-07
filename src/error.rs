@@ -2,8 +2,12 @@ use crate::Expr;
 use thiserror::Error;
 
 /// Crate-specific error enum.
+///
+/// Variants are added as new failure modes are found. Matching exhaustively on this enum would
+/// make every such addition a breaking change, so it is marked non-exhaustive.
 #[derive(Debug, Error)]
 #[allow(clippy::large_enum_variant)]
+#[non_exhaustive]
 pub enum Error {
     /// [geojson::Error]
     #[error(transparent)]
@@ -65,9 +69,9 @@ pub enum Error {
     /// A validation error.
     ///
     /// This holds a [serde_json::Value] that is the output from a
-    /// [boon::ValidationError]. We can't hold the validation error itself
-    /// becuase it contains references to both the validated object and the
-    /// validator's data.
+    /// [jsonschema::ValidationError]. We can't hold the validation error itself
+    /// because it borrows from both the validated object and the validator's
+    /// data.
     #[error("validation error")]
     Validation(serde_json::Value),
 
@@ -103,11 +107,37 @@ pub enum Error {
     #[error("Could not run operation.")]
     OperationError(),
 
+    /// A name with no SQL spelling.
+    ///
+    /// An empty identifier prints as nothing at all, which would turn a predicate into a fragment.
+    #[error("an empty name cannot be rendered as a SQL identifier")]
+    EmptySqlIdentifier,
+
+    /// A `GEOMETRYCOLLECTION` holding another `GEOMETRYCOLLECTION`.
+    ///
+    /// WKT allows the nesting; CQL2 does not. The cql2-json schema gives a collection's members as
+    /// the six non-collection geometry types, so a nested collection has no cql2-json encoding and
+    /// therefore no CQL2 expression.
+    #[error("a GEOMETRYCOLLECTION cannot contain another GEOMETRYCOLLECTION: CQL2 admits only POINT, LINESTRING, POLYGON, MULTIPOINT, MULTILINESTRING and MULTIPOLYGON as members")]
+    NestedGeometryCollection,
+
+    /// A number with no cql2-text spelling.
+    ///
+    /// cql2-text has no literal for an infinity or a NaN, and `f64::to_string` writes them as the
+    /// bare words `inf`, `-inf` and `NaN`, which the grammar reads back as *property* names: the
+    /// rendering of `1 / 0` would parse as a reference to a column called `inf`. Both values are
+    /// reachable from an expression that parsed — `1 / 0` reduces to an infinity and `0 / 0` to a
+    /// NaN — and there is nothing correct to emit for them, so rendering one is an error.
+    ///
+    /// SQL is not affected: `to_sql` writes them as `CAST('Infinity' AS DOUBLE)` and friends.
+    #[error("{0} has no cql2-text spelling: cql2-text has no literal for an infinity or a NaN")]
+    NonFiniteNumber(f64),
+
     /// [json_dotpath::Error]
     #[error(transparent)]
     JsonDotpath(#[from] json_dotpath::Error),
 
-    /// [like::Error]
+    /// [like::InvalidPatternError]
     #[error(transparent)]
     Like(#[from] like::InvalidPatternError),
 }

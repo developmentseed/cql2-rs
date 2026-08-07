@@ -187,7 +187,7 @@ fn test_to_ducksql_timestamp() {
     let expr =
         CQL2Expression::new("TIMESTAMP('2020-01-01 00:00:00Z') >= somedate".to_string()).unwrap();
     let ducksql = expr.to_ducksql().unwrap();
-    assert!(ducksql.contains("CAST('2020-01-01 00:00:00Z' AS TIMESTAMP WITH TIME ZONE)"));
+    assert!(ducksql.contains("CAST('2020-01-01T00:00:00Z' AS TIMESTAMP WITH TIME ZONE)"));
     assert!(ducksql.contains(">="));
 }
 

@@ -36,14 +36,18 @@ def test_parse_text(example01_text: str, example01_json: dict[str, Any]) -> None
 
 
 def test_to_json(example01_text: str) -> None:
-    cql2.Expr(example01_text).to_json() == {
+    assert cql2.Expr(example01_text).to_json() == {
         "op": "=",
         "args": [{"property": "landsat:scene_id"}, "LC82030282019133LGN00"],
     }
 
 
 def test_to_text(example01_json: dict[str, Any]) -> None:
-    cql2.Expr(example01_json).to_text() == "landsat:scene_id = 'LC82030282019133LGN00'"
+    # A cql2-text identifier admits `:`, so the property name is written bare. SQL is quoted
+    # separately, by PostgreSQL's rules -- see test_to_sql.
+    assert cql2.Expr(example01_json).to_text() == (
+        "landsat:scene_id = 'LC82030282019133LGN00'"
+    )
 
 
 def test_to_sql(example01_text: str) -> None:
@@ -72,12 +76,12 @@ def test_eq() -> None:
 
 def test_str() -> None:
     expr = cql2.Expr("landsat:scene_id = 'LC82030282019133LGN00'")
-    assert str(expr) == "(\"landsat:scene_id\" = 'LC82030282019133LGN00')"
+    assert str(expr) == "landsat:scene_id = 'LC82030282019133LGN00'"
 
 
 def test_repr() -> None:
     expr = cql2.Expr("landsat:scene_id = 'LC82030282019133LGN00'")
-    assert repr(expr) == "Expr((\"landsat:scene_id\" = 'LC82030282019133LGN00'))"
+    assert repr(expr) == "Expr(landsat:scene_id = 'LC82030282019133LGN00')"
 
 
 @pytest.mark.parametrize(
@@ -121,3 +125,21 @@ def test_repr() -> None:
 )
 def test_matches(expr, item, should_match) -> None:
     assert cql2.Expr(expr).matches(item) == should_match
+
+
+def test_mapping_and_string_constructors_agree() -> None:
+    """A mapping is normalized exactly as the equivalent cql2-json text is.
+
+    Without this, ``Expr(dict)`` keeps whatever operator spelling the caller wrote, so ``to_json``
+    can emit a name the schema rejects and equality depends on which constructor was used.
+    """
+    mapping = {
+        "op": "t_metby",
+        "args": [
+            {"interval": ["2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z"]},
+            {"interval": ["2020-01-02T00:00:00Z", "2020-01-03T00:00:00Z"]},
+        ],
+    }
+    from_mapping = cql2.Expr(mapping)
+    assert from_mapping.to_json()["op"] == "t_metBy"
+    assert from_mapping == cql2.Expr(json.dumps(mapping))

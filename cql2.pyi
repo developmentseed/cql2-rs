@@ -3,6 +3,13 @@ from os import PathLike
 
 __version__: str
 
+def main() -> None:
+    """Runs the cql2 command-line interface.
+
+    This is the entry point behind the ``cql2`` console script; it reads its
+    arguments from ``sys.argv``.
+    """
+
 def parse_file(path: PathLike | str) -> Expr:
     """Parses CQL2 from a filesystem path.
 
@@ -13,8 +20,8 @@ def parse_file(path: PathLike | str) -> Expr:
         Expr: The CQL2 expression
 
     Examples:
-        >>> from cql2 import Expr
-        >>> expr = Expr.parse_file("fixtures/text/example01.txt")
+        >>> from cql2 import parse_file
+        >>> expr = parse_file("examples/text/example01.txt")
     """
 
 def parse_text(s: str) -> Expr:
@@ -30,8 +37,8 @@ def parse_text(s: str) -> Expr:
         ParseError: Raised if the string does not parse as cql2-text
 
     Examples:
-        >>> from cql2 import Expr
-        >>> expr = Expr.parse_text("landsat:scene_id = 'LC82030282019133LGN00'")
+        >>> from cql2 import parse_text
+        >>> expr = parse_text("landsat:scene_id = 'LC82030282019133LGN00'")
     """
 
 def parse_json(s: str) -> Expr:
@@ -47,8 +54,8 @@ def parse_json(s: str) -> Expr:
         ParseError: Raised if the string does not parse as cql2-json
 
     Examples:
-        >>> from cql2 import Expr
-        >>> expr = Expr.parse_json('{"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]}')
+        >>> from cql2 import parse_json
+        >>> expr = parse_json('{"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]}')
     """
 
 class Expr:
@@ -128,11 +135,11 @@ class Expr:
             >>> from cql2 import Expr
             >>> expr = Expr({"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]})
             >>> expr.to_text()
-            '("landsat:scene_id" = \'LC82030282019133LGN00\')'
+            "landsat:scene_id = 'LC82030282019133LGN00'"
         """
 
     def to_sql(self) -> str:
-        """Converts this cql2 expression to a SQL query.
+        r"""Converts this cql2 expression to a SQL query.
 
         Returns:
             str: The SQL query
@@ -140,10 +147,8 @@ class Expr:
         Examples:
             >>> from cql2 import Expr
             >>> expr = Expr("landsat:scene_id = 'LC82030282019133LGN00'")
-            >>> q.query
-            '("landsat:scene_id" = $1)'
-            >>> q.params
-            ['LC82030282019133LGN00']
+            >>> expr.to_sql()
+            '"landsat:scene_id" = \'LC82030282019133LGN00\''
         """
 
     def __add__(self, other: Expr) -> Expr:
@@ -160,6 +165,47 @@ class Expr:
             >>> expr1 = Expr("landsat:scene_id = 'LC82030282019133LGN00'")
             >>> expr2 = Expr("landsat:cloud_cover = 10")
             >>> expr = expr1 + expr2
+        """
+
+    def __eq__(self, other: object) -> bool:
+        """Compares two cql2 expressions for structural equality.
+
+        Comparing against anything that is not an ``Expr`` returns False.
+
+        Args:
+            other (object): The object to compare against
+
+        Returns:
+            bool: True if both are equivalent expressions, False otherwise
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> Expr("landsat:cloud_cover = 10") == Expr("landsat:cloud_cover = 10")
+            True
+        """
+
+    def __str__(self) -> str:
+        """Returns the cql2-text representation of this expression.
+
+        Returns:
+            str: The cql2-text
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> str(Expr("landsat:cloud_cover = 10"))
+            'landsat:cloud_cover = 10'
+        """
+
+    def __repr__(self) -> str:
+        """Returns a debugging representation of this expression.
+
+        Returns:
+            str: The representation
+
+        Examples:
+            >>> from cql2 import Expr
+            >>> repr(Expr("landsat:cloud_cover = 10"))
+            'Expr(landsat:cloud_cover = 10)'
         """
 
 class ParseError(Exception):
