@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/developmentseed/cql2-rs/compare/cql2-cli-v0.5.7...cql2-cli-v0.6.0) - 2026-08-12
+
+### Other
+
+- Fix/sql operator precedence ([#256](https://github.com/developmentseed/cql2-rs/pull/256))
+
 ## [0.5.7](https://github.com/developmentseed/cql2-rs/compare/cql2-cli-v0.5.6...cql2-cli-v0.5.7) - 2026-07-29
 
 ### Fixed
