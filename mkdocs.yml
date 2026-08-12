@@ -4,6 +4,9 @@ site_description: Command-line interface (CLI), Python package, and Rust crate f
 site_author: David Bitner
 repo_name: developmentseed/cql2-rs
 repo_url: https://github.com/developmentseed/cql2-rs
+# Required by the `content.action.edit` feature below: without it mkdocs
+# defaults to `edit/master/docs/`, but this repo's default branch is `main`.
+edit_uri: edit/main/docs/
 
 extra:
   social:

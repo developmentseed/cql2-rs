@@ -33,3 +33,20 @@ build-backend = "maturin"
 
 [tool.maturin]
 manifest-path = "python/Cargo.toml"
+
+[tool.uv]
+# The wheel is a compiled Rust extension, but uv keys its build cache on `pyproject.toml` alone,
+# which no Rust change touches. Without these keys `uv run` reinstalls a cached wheel built from
+# whatever the sources said last time, so `pytest` silently tests stale behaviour — including right
+# after `maturin dev`, whose fresh build the sync overwrites. The globs stay scoped to the source
+# directories: a bare `**/*.rs` would walk `target/`.
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "Cargo.toml" },
+    { file = "Cargo.lock" },
+    { file = "src/**/*" },
+    { file = "cli/Cargo.toml" },
+    { file = "cli/src/**/*" },
+    { file = "python/Cargo.toml" },
+    { file = "python/src/**/*" },
+]

@@ -4,3 +4,4 @@ debug/
 .cache
 site/
 wasm/pkg/
+.plans/

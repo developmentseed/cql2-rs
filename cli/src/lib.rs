@@ -115,12 +115,14 @@ impl Cli {
                 })
                 .collect::<Result<Vec<_>, anyhow::Error>>()?
                 .into_iter()
-                .filter_map(|value| {
-                    expr.filter(&[value])
-                        .ok()
-                        .and_then(|mut v| v.pop().cloned())
-                })
-                .for_each(|v| println!("{}", serde_json::to_string(&v).unwrap()));
+                // An evaluation error is reported rather than dropped: a filter that cannot be
+                // evaluated is not the same answer as a filter that matches nothing.
+                .try_for_each(|value| -> Result<(), anyhow::Error> {
+                    if let Some(matched) = expr.filter(&[value])?.pop() {
+                        println!("{}", serde_json::to_string(matched)?);
+                    }
+                    Ok(())
+                })?;
             return Ok(());
         }
         let input = self
@@ -171,7 +173,9 @@ impl Cli {
             OutputFormat::Text => print!("{}", expr.to_text()?),
             OutputFormat::Sql => {
                 let sql_ast = expr.to_sql_ast()?;
-                println!("{}", sql_ast);
+                // `print!`, not `println!`: the trailing newline is emitted
+                // once for every format by the `println!()` below.
+                print!("{}", sql_ast);
             }
         }
         println!();

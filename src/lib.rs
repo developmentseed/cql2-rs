@@ -35,6 +35,7 @@ mod error;
 mod expr;
 mod geometry;
 mod parser;
+mod precedence;
 mod sql;
 mod temporal;
 mod validator;
@@ -58,6 +59,7 @@ pub use validator::Validator;
 /// let expr = cql2::parse_json(s);
 /// ```
 pub fn parse_json(s: &str) -> Result<Expr, serde_json::Error> {
+    // Normalization happens in `Expr`'s `Deserialize` impl, so every serde entry point agrees.
     serde_json::from_str(s)
 }
 
@@ -66,7 +68,7 @@ pub fn parse_json(s: &str) -> Result<Expr, serde_json::Error> {
 /// # Examples
 ///
 /// ```no_run
-/// let expr = cql2::parse_file("tests/examples/json/example01.json");
+/// let expr = cql2::parse_file("examples/json/example01.json");
 /// ```
 pub fn parse_file(path: impl AsRef<Path>) -> Result<Expr, Error> {
     let s = fs::read_to_string(path)?;
@@ -74,7 +76,7 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Expr, Error> {
 }
 
 #[cfg(test)]
-use {::duckdb as _, assert_json_diff as _, rstest as _};
+use {::duckdb as _, assert_json_diff as _, proptest as _, rstest as _};
 
 // From https://github.com/rust-lang/cargo/issues/383#issuecomment-720873790,
 // may they be forever blessed.

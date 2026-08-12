@@ -168,47 +168,29 @@ t_after(interval('2020-03-01T00:00:00Z', '2020-05-01T00:00:00Z'), interval(ts_st
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59
 t_after(interval(ts_start, ts_end), interval('2019-04-01T00:00:00Z', '2020-02-01T00:00:00Z'))
 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112
-t_meets(ts_end, TIMESTAMP('2020-04-01T01:00:00Z'))
-91
 t_meets(ts_end, interval('2020-03-01T01:00:00Z', '2020-03-01T01:00:00Z'))
 60
-t_meets(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
-91
 t_meets(interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'), ts_end)
 91
 t_meets(interval(ts_start, ts_end), interval('2020-04-01T01:00:00Z', '2020-05-01T00:00:00Z'))
 91
 t_meets(interval('2020-03-01T00:00:00Z', '2020-04-01T00:00:00Z'), interval(ts_start, ts_end))
 91
-t_metby(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
-91
 t_metby(interval('2020-03-01T01:00:00Z', '2020-03-01T01:00:00Z'), ts_end)
 60
-t_metby(ts_end, TIMESTAMP('2020-04-01T01:00:00Z'))
-91
 t_metby(ts_end, interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'))
 91
 t_metby(interval('2020-04-01T01:00:00Z', '2020-05-01T00:00:00Z'), interval(ts_start, ts_end))
 91
 t_metby(interval(ts_start, ts_end), interval('2020-03-01T00:00:00Z', '2020-04-01T00:00:00Z'))
 91
-t_overlaps(ts_start, interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'))
-92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112
-t_overlaps(TIMESTAMP('2020-02-15T00:30:00Z'), interval(ts_start, ts_end))
-45
 t_overlaps(interval(ts_start, ts_end), interval('2020-03-01T00:00:30Z', '2020-03-05T00:00:00Z'))
-60 61 62 63
+60
 t_overlaps(interval('2020-03-01T00:00:00Z', '2020-04-01T00:30:00Z'), interval(ts_start, ts_end))
 91
-t_overlappedby(interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'), ts_start)
-92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112
-t_overlappedby(interval(ts_start, ts_end), TIMESTAMP('2020-02-15T00:30:00Z'))
-45
 t_overlappedby(interval('2020-03-01T00:00:30Z', '2020-03-05T00:00:00Z'), interval(ts_start, ts_end))
-60 61 62 63
+60
 t_overlappedby(interval(ts_start, ts_end), interval('2020-03-01T00:00:00Z', '2020-04-01T00:30:00Z'))
-91
-t_starts(TIMESTAMP('2020-04-01T00:00:00Z'), interval(ts_start, ts_end))
 91
 t_starts(interval(ts_start, ts_end), interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'))
 91
@@ -222,27 +204,19 @@ t_startedby(interval(ts_start, ts_end), interval('2020-04-01T00:00:00Z', '2020-0
 91
 t_during(ts_start, interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'))
 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112
-t_during(TIMESTAMP('2020-04-15T00:00:30Z'), interval(ts_start, ts_end))
-105
 t_during(interval(ts_start, ts_end), interval('2020-04-01T00:00:20Z', '2020-04-03T00:00:40Z'))
 92
 t_during(interval('2020-04-01T00:00:20Z', '2020-04-01T00:00:40Z'), interval(ts_start, ts_end))
 91
 t_contains(interval('2020-04-01T00:00:00Z', '2020-05-01T00:00:00Z'), ts_start)
 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112
-t_contains(interval(ts_start, ts_end), TIMESTAMP('2020-04-15T00:00:30Z'))
-105
 t_contains(interval('2020-04-01T00:00:20Z', '2020-04-03T00:00:40Z'), interval(ts_start, ts_end))
 92
 t_contains(interval(ts_start, ts_end), interval('2020-04-01T00:00:20Z', '2020-04-01T00:00:40Z'))
 91
-t_finishes(TIMESTAMP('2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
-91
 t_finishes(interval(ts_start, ts_end), interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'))
 91
 t_finishes(interval('2020-04-01T00:00:20Z', '2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
-91
-t_finishedby(interval(ts_start, ts_end), TIMESTAMP('2020-04-01T01:00:00Z'))
 91
 t_finishedby(interval('2020-03-01T00:00:00Z', '2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
 91
@@ -277,7 +251,7 @@ intfield > 1 and floatfield < 5.0
 not (intfield <= 2) or (boolfield and floatfield >= 2.0)
 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112
 floatfield between -23 and 40 and in(textfield, 'item_2', 'item_3')
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39
+2 3
 s_intersects(geom, POINT(-93 45)) or s_disjoint(geom, POINT(-93 45))
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112
 t_before(interval(ts_start, ts_end), interval('2020-01-10T00:00:00Z','2022-02-01T00:00:00Z')) and not boolfield
@@ -308,3 +282,37 @@ nfield is not null
 25 26 27 28 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60
 not(nfield = true)
 25 26 27 28
+t_intersects(ts_start, DATE('2020-02-01'))
+31
+t_intersects(ts_start, TIMESTAMP('2020-02-01T00:00:00Z'))
+31
+t_intersects(ts_start, interval('2020-02-01T00:00:00Z', '2020-05-01T00:00:00Z'))
+31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112
+t_intersects(interval(ts_start, ts_end), interval('2020-02-01T00:00:00Z', '2020-05-01T00:00:00Z'))
+31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112
+t_disjoint(ts_start, DATE('2020-02-01'))
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112
+t_disjoint(ts_start, TIMESTAMP('2020-02-01T00:00:00Z'))
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112
+t_meets(ts_end, TIMESTAMP('2020-04-01T01:00:00Z'))
+91
+t_meets(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
+91
+t_metby(TIMESTAMP('2020-04-01T01:00:00Z'), ts_end)
+91
+t_metby(ts_end, TIMESTAMP('2020-04-01T01:00:00Z'))
+91
+t_overlaps(TIMESTAMP('2020-02-15T00:30:00Z'), interval(ts_start, ts_end))
+
+t_overlappedby(interval(ts_start, ts_end), TIMESTAMP('2020-02-15T00:30:00Z'))
+
+t_starts(TIMESTAMP('2020-04-01T00:00:00Z'), interval(ts_start, ts_end))
+91
+t_during(TIMESTAMP('2020-04-15T00:00:30Z'), interval(ts_start, ts_end))
+105
+t_contains(interval(ts_start, ts_end), TIMESTAMP('2020-04-15T00:00:30Z'))
+105
+t_finishes(TIMESTAMP('2020-04-01T01:00:00Z'), interval(ts_start, ts_end))
+91
+t_finishedby(interval(ts_start, ts_end), TIMESTAMP('2020-04-01T01:00:00Z'))
+91

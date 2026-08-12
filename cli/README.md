@@ -21,14 +21,14 @@ pip install cql2
 At its simplest, the CLI is a pass-through validator:
 
 ```shell
-$ cql2 < tests/fixtures/text/example01.txt # will succeed if the CQL2 is valid
-("landsat:scene_id" = 'LC82030282019133LGN00')
+$ cql2 < examples/text/example01.txt # will succeed if the CQL2 is valid
+landsat:scene_id = 'LC82030282019133LGN00'
 ```
 
 You can convert formats:
 
 ```shell
-$ cql2 -o json < tests/fixtures/text/example01.txt
+$ cql2 -o json < examples/text/example01.txt
 {"op":"=","args":[{"property":"landsat:scene_id"},"LC82030282019133LGN00"]}
 ```
 
@@ -38,21 +38,7 @@ Use `-v` to get detailed validation information:
 $ cql2 'wrong' -v
 [ERROR] Invalid CQL2: wrong
 For more detailed validation information, use -vv
-jsonschema validation failed with file:///tmp/cql2.json#
-- at '': oneOf failed, none matched
-  - at '': missing properties 'op', 'args'
-  - at '': missing properties 'op', 'args'
-  - at '': oneOf failed, none matched
-    - at '': missing properties 'op', 'args'
-    - at '': missing properties 'op', 'args'
-    - at '': missing properties 'op', 'args'
-    - at '': missing properties 'op', 'args'
-    - at '': missing properties 'op', 'args'
-  - at '': missing properties 'op', 'args'
-  - at '': missing properties 'op', 'args'
-  - at '': missing properties 'op', 'args'
-  - at '': missing properties 'op', 'args'
-  - at '': want boolean, but got object
+{"property":"wrong"} is not valid under any of the schemas listed in the 'oneOf' keyword
 ```
 
 cql2-text parsing errors are pretty-printed:
@@ -65,7 +51,7 @@ $ cql2 '(foo ~= "bar")'
 1 | (foo ~= "bar")
   |      ^---
   |
-  = expected NotFlag, And, Or, ConcatInfixOp, Add, Subtract, Multiply, Divide, Modulo, Power, Eq, Gt, GtEq, Lt, LtEq, NotEq, Is, or IsNullPostfix
+  = expected NotFlag, And, Or, Add, Subtract, Multiply, Divide, Modulo, Power, Eq, Gt, GtEq, Lt, LtEq, NotEq, or IsNullPostfix
 ```
 
 Use `cql2 --help` to get a complete listing of the CLI arguments and formats.

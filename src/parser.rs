@@ -1,9 +1,6 @@
 use crate::{Error, Expr, Geometry};
-use pest::{
-    iterators::{Pair, Pairs},
-    pratt_parser::PrattParser,
-    Parser,
-};
+use pest::{iterators::Pairs, pratt_parser::PrattParser, Parser};
+use std::borrow::Cow;
 
 /// Parses a cql2-text string into a CQL2 expression.
 ///
@@ -14,16 +11,13 @@ use pest::{
 /// let expr = cql2::parse_text(s);
 /// ```
 pub fn parse_text(s: &str) -> Result<Expr, Error> {
-    let mut pairs = CQL2Parser::parse(Rule::Expr, s).map_err(Box::new)?;
-    if let Some(pair) = pairs.next() {
-        if pairs.next().is_some() {
-            Err(Error::InvalidCql2Text(s.to_string()))
-        } else {
-            parse_expr(pair.into_inner())
-        }
-    } else {
-        Err(Error::InvalidCql2Text(s.to_string()))
-    }
+    // `ExprRoot` is anchored between `SOI` and `EOI`, so input the grammar cannot consume in full
+    // is a parse error rather than a silently truncated expression.
+    let mut pairs = CQL2Parser::parse(Rule::ExprRoot, s).map_err(Box::new)?;
+    let expr = pairs
+        .next()
+        .ok_or_else(|| Error::InvalidCql2Text(s.to_string()))?;
+    parse_expr(expr.into_inner()).map(crate::expr::normalize)
 }
 
 #[derive(pest_derive::Parser)]
@@ -35,8 +29,8 @@ lazy_static::lazy_static! {
         use pest::pratt_parser::{Assoc::*, Op};
         use Rule::*;
         PrattParser::new()
+            // Ordered loosest to tightest, mirroring `crate::precedence`.
             .op(Op::infix(Or, Left))
-            .op(Op::infix(Between, Left))
             .op(Op::infix(And, Left))
             .op(Op::prefix(UnaryNot))
             .op(Op::infix(Eq, Right))
@@ -49,8 +43,9 @@ lazy_static::lazy_static! {
             )
             .op(Op::infix(Like, Right))
             .op(Op::infix(In, Left))
-            .op(Op::postfix(IsNullPostfix))
-            .op(Op::infix(Is, Right))
+            // `BETWEEN` is a postfix predicate on its left operand, binding looser than arithmetic
+            // (`a + b BETWEEN 1 AND 2` brackets the sum) and tighter than the boolean connectives.
+            .op(Op::postfix(IsNullPostfix) | Op::postfix(BetweenPostfix))
             .op(
                 Op::infix(Add, Left) |
                 Op::infix(Subtract, Left)
@@ -65,81 +60,126 @@ lazy_static::lazy_static! {
         };
 }
 
-fn normalize_op(op: &str) -> String {
-    let op = op.to_lowercase();
-    if op == "eq" {
-        "=".to_string()
-    } else {
-        op
+/// Unwraps a quoted token, undoing the doubling that escapes the quote character inside it.
+pub(crate) fn strip_quotes(s: &str) -> Cow<'_, str> {
+    for quote in ['"', '\''] {
+        if let Some(inner) = s
+            .strip_prefix(quote)
+            .and_then(|rest| rest.strip_suffix(quote))
+        {
+            let doubled = [quote, quote].iter().collect::<String>();
+            return if inner.contains(&doubled) {
+                Cow::Owned(inner.replace(&doubled, &quote.to_string()))
+            } else {
+                Cow::Borrowed(inner)
+            };
+        }
     }
+    Cow::Borrowed(s)
 }
 
-fn strip_quotes(s: &str) -> &str {
-    if (s.starts_with('"') && s.ends_with('"')) || (s.starts_with('\'') && s.ends_with('\'')) {
-        &s[1..s.len() - 1]
-    } else {
-        s
-    }
+/// Replaces every internal run of whitespace with a single space, and removes leading and trailing
+/// runs entirely.
+fn collapse_whitespace(wkt: &str) -> String {
+    wkt.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-fn opstr(op: Pair<'_, Rule>) -> String {
-    normalize_op(op.as_str())
+/// Restores a one-element array operand that the grammar read as a parenthesized scalar.
+///
+/// `(1)` is ambiguous in cql2-text: `AtomicExpr` tries grouping before an array literal, so a
+/// single-element list arrives as the value itself. Only the operators whose operand is a list are
+/// affected, and only a bare scalar is rewrapped — a property or an expression may legitimately
+/// evaluate to an array.
+fn restore_single_element_array(op: &str, args: &mut [Box<Expr>]) {
+    if !crate::expr::ARRAYOPS
+        .iter()
+        .any(|name| name.eq_ignore_ascii_case(op))
+    {
+        return;
+    }
+    for arg in args.iter_mut() {
+        if matches!(
+            arg.as_ref(),
+            Expr::Float(_) | Expr::Literal(_) | Expr::Bool(_)
+        ) {
+            **arg = Expr::Array(vec![arg.clone()]);
+        }
+    }
 }
 
 fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
     PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {
-            Rule::Expr | Rule::ExpressionInParentheses => parse_expr(primary.into_inner()),
-            Rule::Unsigned => Ok(Expr::Float(primary.as_str().parse::<f64>()?)),
-            Rule::DECIMAL => Ok(Expr::Float(primary.as_str().parse::<f64>()?)),
+            Rule::Expr | Rule::ExpressionInParentheses | Rule::BetweenOperand => {
+                parse_expr(primary.into_inner())
+            }
+            Rule::DECIMAL | Rule::Double => Ok(Expr::Float(primary.as_str().parse::<f64>()?)),
             Rule::SingleQuotedString => {
                 Ok(Expr::Literal(strip_quotes(primary.as_str()).to_string()))
             }
-            Rule::True | Rule::False => {
-                let bool_value = primary.as_str().to_lowercase().parse::<bool>()?;
-                Ok(Expr::Bool(bool_value))
-            }
+            Rule::True | Rule::False => Ok(Expr::Bool(primary.as_rule() == Rule::True)),
             Rule::Identifier => Ok(Expr::Property {
                 property: strip_quotes(primary.as_str()).to_string(),
             }),
             Rule::GEOMETRY => {
-                // These are some incredibly annoying backflips to handle
-                // geometries without `Z` but that have 3D coordinates. It's
-                // not part of OGC WKT, but CQL2 demands 🤦‍♀️.
+                // CQL2 allows coordinates past the second without the `Z` or `ZM` marker OGC WKT
+                // requires, so the marker is spliced in before the geometry is handed on. Which one
+                // follows from the widest coordinate the grammar matched.
                 let start = primary.as_span().start();
                 let s = primary.as_str().to_string();
                 let pairs = primary.into_inner();
-                if pairs.find_first_tagged("three_d").is_some() {
-                    let zm = pairs
-                        .flatten()
-                        .find(|pair| matches!(pair.as_rule(), Rule::ZM))
-                        .expect("all geometries should have a ZM rule");
-                    if zm.as_str().chars().all(|c| c.is_ascii_whitespace()) {
-                        let span = zm.as_span();
-                        let s = format!(
-                            "{} Z{}",
-                            &s[0..span.start() - start],
-                            &s[span.end() - start..]
-                        );
-                        return Ok(Expr::Geometry(Geometry::Wkt(s)));
-                    }
+                // The grammar matches a nested collection so that it is read as the geometry it
+                // looks like rather than as a function call, and it is refused here: CQL2 gives a
+                // collection's members as the six non-collection types, so there is no cql2-json
+                // encoding for one. More than one `GEOMETRYCOLLECTION` in the token is nesting,
+                // since a collection is the only rule a second one can appear inside.
+                if pairs
+                    .clone()
+                    .flatten()
+                    .filter(|pair| pair.as_rule() == Rule::GEOMETRY_COLLECTION)
+                    .count()
+                    > 1
+                {
+                    return Err(Error::NestedGeometryCollection);
                 }
-                Ok(Expr::Geometry(Geometry::Wkt(s)))
+                let marker = if pairs.find_first_tagged("four_d").is_some() {
+                    " ZM"
+                } else if pairs.find_first_tagged("three_d").is_some() {
+                    " Z"
+                } else {
+                    return Ok(Expr::Geometry(Geometry::Wkt(collapse_whitespace(&s))));
+                };
+                // Every unmarked geometry in the token needs it. A collection carries the marker and
+                // so does each of its members, and no WKT reader accepts a mix.
+                let mut slots: Vec<(usize, usize)> = pairs
+                    .flatten()
+                    .filter(|pair| matches!(pair.as_rule(), Rule::ZM))
+                    .filter(|pair| pair.as_str().chars().all(char::is_whitespace))
+                    .map(|pair| (pair.as_span().start() - start, pair.as_span().end() - start))
+                    .collect();
+                slots.sort_unstable();
+                // Back to front, so the offsets ahead of each splice stay valid.
+                let tagged = slots.into_iter().rev().fold(s, |acc, (lo, hi)| {
+                    format!("{}{marker}{}", &acc[..lo], &acc[hi..])
+                });
+                Ok(Expr::Geometry(Geometry::Wkt(collapse_whitespace(&tagged))))
             }
             Rule::Function => {
                 let mut pairs = primary.into_inner();
-                let op = strip_quotes(
+                // cql2-text is case-insensitive for operator names, but a user-supplied function
+                // name keeps the case the author wrote.
+                let op = crate::expr::canonical_op(&strip_quotes(
                     pairs
                         .next()
                         .expect("the grammar guarantees that there is always an op")
                         .as_str(),
-                )
-                .to_lowercase();
+                ));
                 let mut args = Vec::new();
                 for pair in pairs {
                     args.push(Box::new(parse_expr(pair.into_inner())?))
                 }
-                match op.as_str() {
+                restore_single_element_array(&op, &mut args);
+                match op.to_lowercase().as_str() {
                     "interval" => Ok(Expr::Interval { interval: args }),
                     "date" => Ok(Expr::Date {
                         date: args
@@ -154,6 +194,23 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
                             .ok_or(Error::MissingArgument("timestamp"))?,
                     }),
                     "bbox" => Ok(Expr::BBox { bbox: args }),
+                    // The function-call spelling `in(a, 1, 2)` arrives as a flat argument list, but
+                    // `in` is always `[value, array]`, per the JSON schema's `inListOperands`.
+                    "in" => {
+                        let mut args = args.into_iter();
+                        let value = args.next().ok_or(Error::MissingArgument("in"))?;
+                        let list = match args.len() {
+                            1 => match *args.next().expect("length checked above") {
+                                array @ Expr::Array(_) => array,
+                                other => Expr::Array(vec![Box::new(other)]),
+                            },
+                            _ => Expr::Array(args.collect()),
+                        };
+                        Ok(Expr::Operation {
+                            op,
+                            args: vec![value, Box::new(list)],
+                        })
+                    }
                     _ => Ok(Expr::Operation { op, args }),
                 }
             }
@@ -167,122 +224,38 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
             }
             Rule::Null => Ok(Expr::Null),
 
-            rule => unreachable!("Expr::parse expected atomic rule, found {:?}", rule),
+            rule => unreachable!("parse_expr expected atomic rule, found {:?}", rule),
         })
         .map_infix(|lhs, op, rhs| {
             let lhs = lhs?;
             let rhs = rhs?;
-            let mut opstring = opstr(op);
 
-            let mut notflag: bool = false;
-            if opstring.starts_with("not") {
-                opstring = opstring.replace("not ", "");
-                notflag = true;
-            }
-
-            let rhsclone = if opstring == "in" {
-                match rhs {
-                    Expr::Array(_) => rhs.clone(),
-                    _ => Expr::Array(vec![Box::new(rhs.clone())]),
-                }
-            } else {
-                rhs.clone()
+            // `LIKE` and `IN` carry an optional leading `NOT` as a `NotFlag` child, so the matched
+            // text spans both words. Take the name from the rule and the negation from the child,
+            // which keeps both independent of the whitespace between them.
+            let notflag = op
+                .clone()
+                .into_inner()
+                .next()
+                .is_some_and(|pair| pair.as_rule() == Rule::NotFlag);
+            let opstring = match op.as_rule() {
+                Rule::Like => "like".to_string(),
+                Rule::In => "in".to_string(),
+                _ => op.as_str().to_lowercase(),
             };
 
-            let origargs = vec![Box::new(lhs.clone()), Box::new(rhsclone.clone())];
-            let mut retexpr: Expr;
-            let mut lhsclone = lhs.clone();
-
-            let mut lhsargs: Vec<Box<Expr>> = Vec::new();
-            let mut rhsargs: Vec<Box<Expr>> = Vec::new();
-            let mut betweenargs: Vec<Box<Expr>> = Vec::new();
-
-            if opstring == "between" {
-                match &lhsclone {
-                    Expr::Operation { op, args } if op == "and" => {
-                        lhsargs = args.to_vec();
-                        lhsclone = *lhsargs.pop().unwrap();
-                    }
-                    _ => (),
-                }
-
-                match &lhsclone {
-                    Expr::Operation { op, args } if op == "not" => {
-                        lhsargs = args.to_vec();
-                        lhsclone = *lhsargs.pop().unwrap();
-                        notflag = true;
-                    }
-                    _ => (),
-                }
-                let betweenleft = lhsclone.to_owned();
-                betweenargs.push(Box::new(betweenleft));
-
-                match &rhs {
-                    Expr::Operation { op, args } if op == "and" => {
-                        for a in args {
-                            betweenargs.push(a.clone());
-                        }
-                        rhsargs = betweenargs.split_off(3);
-                    }
-                    _ => (),
-                }
-
-                retexpr = Expr::Operation {
-                    op: "between".to_string(),
-                    args: betweenargs,
-                };
-
-                if notflag {
-                    retexpr = Expr::Operation {
-                        op: "not".to_string(),
-                        args: vec![Box::new(retexpr)],
-                    };
-                };
-
-                if lhsargs.is_empty() || rhsargs.is_empty() {
-                    return Ok(retexpr);
-                }
-
-                let mut andargs: Vec<Box<Expr>> = Vec::new();
-
-                if !lhsargs.is_empty() {
-                    for a in lhsargs.into_iter() {
-                        andargs.push(a);
-                    }
-                }
-                andargs.push(Box::new(retexpr));
-
-                if !rhsargs.is_empty() {
-                    for a in rhsargs.into_iter() {
-                        andargs.push(a);
-                    }
-                }
-
-                return Ok(Expr::Operation {
-                    op: "and".to_string(),
-                    args: andargs,
-                });
+            // `(1)` parses as a parenthesized scalar, since the grammar tries grouping before an
+            // array literal. `in`, the one infix operator whose right operand is a list, restores it.
+            let rhs = if opstring == "in" && !matches!(rhs, Expr::Array(_)) {
+                Expr::Array(vec![Box::new(rhs)])
             } else {
-                let mut outargs: Vec<Box<Expr>> = Vec::new();
+                rhs
+            };
 
-                match lhsclone {
-                    Expr::Operation { ref op, ref args } if op == "and" && op == &opstring => {
-                        for arg in args.iter() {
-                            outargs.push(arg.clone());
-                        }
-                        outargs.push(Box::new(rhsclone));
-                        return Ok(Expr::Operation {
-                            op: opstring,
-                            args: outargs,
-                        });
-                    }
-                    _ => (),
-                }
-                retexpr = Expr::Operation {
-                    op: opstring,
-                    args: origargs,
-                };
-            }
+            let retexpr = Expr::Operation {
+                op: opstring,
+                args: vec![Box::new(lhs), Box::new(rhs)],
+            };
 
             if notflag {
                 return Ok(Expr::Operation {
@@ -308,20 +281,42 @@ fn parse_expr(expression_pairs: Pairs<'_, Rule>) -> Result<Expr, Error> {
                         args: vec![Box::new(Expr::Float(-1.0)), Box::new(child)],
                     }),
                 },
-                rule => unreachable!("Expr::parse expected prefix operator, found {:?}", rule),
+                rule => unreachable!("parse_expr expected prefix operator, found {:?}", rule),
             }
         })
         .map_postfix(|child, op| {
             let child = child?;
-            let notflag = &op.clone().into_inner().next().is_some();
-            let retexpr = match op.as_rule() {
+            let rule = op.as_rule();
+            let mut inner = op.into_inner();
+
+            // Both postfix predicates carry an optional `NOT` as their first child.
+            let mut notflag = false;
+            if inner.peek().map(|pair| pair.as_rule()) == Some(Rule::NotFlag) {
+                let _ = inner.next();
+                notflag = true;
+            }
+
+            let retexpr = match rule {
                 Rule::IsNullPostfix => Expr::Operation {
                     op: "isNull".to_string(),
                     args: vec![Box::new(child)],
                 },
-                rule => unreachable!("Expr::parse expected postfix operator, found {:?}", rule),
+                Rule::BetweenPostfix => {
+                    let mut bounds = Vec::with_capacity(2);
+                    for bound in inner {
+                        bounds.push(Box::new(parse_expr(bound.into_inner())?));
+                    }
+                    let [low, high]: [Box<Expr>; 2] = bounds
+                        .try_into()
+                        .map_err(|_| Error::MissingArgument("between"))?;
+                    Expr::Operation {
+                        op: "between".to_string(),
+                        args: vec![Box::new(child), low, high],
+                    }
+                }
+                rule => unreachable!("parse_expr expected postfix operator, found {:?}", rule),
             };
-            if *notflag {
+            if notflag {
                 return Ok(Expr::Operation {
                     op: "not".to_string(),
                     args: vec![Box::new(retexpr)],
@@ -341,6 +336,22 @@ mod tests {
     #[test]
     fn point_zm() {
         let _ = CQL2Parser::parse(Rule::GEOMETRY, "POINT ZM(-105.1019 40.1672 4981 42)").unwrap();
+    }
+
+    /// A four-ordinate coordinate written without a marker is tagged `ZM`, as a three-ordinate one
+    /// is tagged `Z`. Untagged, the rendering is text no WKT reader accepts.
+    #[test]
+    fn four_dimensional_coordinates_are_tagged() {
+        for source in [
+            "s_intersects(geom, POINT(1 2 3 4))",
+            "s_intersects(geom, POINT ZM(1 2 3 4))",
+        ] {
+            let text = super::parse_text(source)
+                .unwrap()
+                .to_text()
+                .expect("renders as text");
+            assert_eq!(text, "s_intersects(geom, POINT ZM(1 2 3 4))");
+        }
     }
 
     #[test]

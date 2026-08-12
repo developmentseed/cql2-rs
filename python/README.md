@@ -11,15 +11,18 @@ pip install cql2
 Then:
 
 ```python
+from cql2 import Expr, parse_file
+
 expr = Expr("landsat:scene_id = 'LC82030282019133LGN00'")
 # or
-expr = cql2.parse_file("fixtures/text/example01.txt")
+expr = parse_file("examples/text/example01.txt")
 
 s = expr.to_text()
 d = expr.to_json()
 sql = expr.to_sql()
-print("SQL query:", sql.query)
-print("SQL params:", sql.params)
+print("cql2-text:", s)
+print("cql2-json:", d)
+print("SQL:", sql)
 ```
 
 Or from via the command-line interface:
