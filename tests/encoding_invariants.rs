@@ -932,3 +932,77 @@ fn keyword_operators_parse_case_insensitively() {
         failures.join("\n  ")
     );
 }
+
+/// Every serde entry point normalizes, not just [`cql2::parse_json`].
+///
+/// `Expr` hand-writes `Deserialize` for this reason. The derived impl kept whatever the caller
+/// wrote, so an `Expr` reached through serde rather than through `parse_json` — a `filter` field on
+/// a search body, an element of a collection, a mapping handed to the bindings — held operator
+/// spellings the cql2-json schema rejects, unflattened `and`/`or` chains, and uncanonicalized
+/// timestamps. Two spellings of one filter then compared unequal.
+#[test]
+fn deserialization_normalizes_at_every_entry_point() {
+    // A nested `and` to flatten, two operator spellings to canonicalize, and a timestamp whose
+    // subsecond zeros are not part of the instant it denotes.
+    const FILTER: &str = r#"{"op":"AND","args":[
+        {"op":"and","args":[
+            {"op":"=","args":[{"property":"a"},1]},
+            {"op":"=","args":[{"property":"b"},2]}]},
+        {"op":"t_metby","args":[
+            {"property":"t"},
+            {"timestamp":"2020-01-01T00:00:00.000Z"}]}]}"#;
+
+    let canonical = shape(&cql2::parse_json(FILTER).expect("filter is valid cql2-json"));
+    assert_eq!(
+        canonical["op"], "and",
+        "the outer operator should be canonicalized"
+    );
+    assert_eq!(
+        canonical["args"].as_array().map(Vec::len),
+        Some(3),
+        "the nested `and` should have been flattened into the outer one"
+    );
+    assert_eq!(
+        canonical["args"][2]["op"], "t_metBy",
+        "the operator should take the spelling the schema defines"
+    );
+    assert_eq!(
+        canonical["args"][2]["args"][1]["timestamp"], "2020-01-01T00:00:00Z",
+        "the timestamp should be canonicalized"
+    );
+
+    // Reached as a struct field, the way a downstream crate holds a filter...
+    #[derive(serde::Deserialize)]
+    struct Search {
+        filter: Expr,
+    }
+    let body = format!(r#"{{"filter":{FILTER}}}"#);
+    let search: Search = serde_json::from_str(&body).expect("search body deserializes");
+    assert_eq!(shape(&search.filter), canonical);
+
+    // ...as an element of a collection...
+    let collected: Vec<Expr> =
+        serde_json::from_str(&format!("[{FILTER}]")).expect("array of filters deserializes");
+    assert_eq!(shape(&collected[0]), canonical);
+
+    // ...and through `Value`, which is how the bindings build an expression from a mapping.
+    let value: Value = serde_json::from_str(FILTER).expect("filter is valid JSON");
+    let converted = Expr::try_from(value).expect("value converts");
+    assert_eq!(shape(&converted), canonical);
+}
+
+/// Serialization is unchanged by the hand-written impls: `Expr` still round trips through its own
+/// JSON, and a normalized expression is a fixed point of another deserialization.
+#[test]
+fn serialization_round_trips_through_the_hand_written_impls() {
+    for source in GROUPING_BATTERY {
+        let expr = parse(source);
+        let json = expr.to_json().expect("expression serializes");
+        let reparsed: Expr = serde_json::from_str(&json).expect("its own JSON deserializes");
+        assert_eq!(
+            shape(&reparsed),
+            shape(&expr),
+            "{source} did not round trip"
+        );
+    }
+}

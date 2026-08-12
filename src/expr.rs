@@ -259,8 +259,15 @@ const ALIASES: &[(&str, &str)] = &[
 ///
 /// Use [Expr::to_text], [Expr::to_json], and [crate::ToSqlAst::to_sql] to use the CQL2,
 /// and use [Expr::is_valid] to check validity.
+///
+/// Deserializing normalizes, so every serde entry point agrees with [crate::parse_json].
+// `remote = "Self"` turns the derives into inherent `Expr::serialize` and `Expr::deserialize`
+// functions instead of trait impls, so the hand-written impls below can call them. Without the
+// normalizing impl, `serde_json::from_str::<Expr>`, a `#[derive(Deserialize)]` struct holding an
+// `Expr` field, and the bindings' mapping constructors would each produce an expression
+// `parse_json` would have canonicalized, and two spellings of one filter would compare unequal.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
-#[serde(untagged)]
+#[serde(untagged, remote = "Self")]
 #[allow(missing_docs)]
 pub enum Expr {
     Operation { op: String, args: Vec<Box<Expr>> },
@@ -276,14 +283,27 @@ pub enum Expr {
     Geometry(Geometry),
     Null,
 }
+
+impl Serialize for Expr {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        // The inherent function the `remote = "Self"` derive generated, not this method.
+        Expr::serialize(self, serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Expr {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        // As above: the derived inherent function. Nested expressions come back through this impl,
+        // so they are already normalized; `normalize` is idempotent, so the outer pass is free to
+        // run over them again.
+        Expr::deserialize(deserializer).map(normalize)
+    }
+}
+
 impl TryFrom<Value> for Expr {
     type Error = Error;
-    /// Normalizes, so an expression built from a `Value` is identical to the same expression parsed
-    /// from cql2-json text. The bindings construct expressions this way.
     fn try_from(v: Value) -> Result<Expr, Error> {
-        serde_json::from_value(v)
-            .map(normalize)
-            .map_err(Error::from)
+        serde_json::from_value(v).map_err(Error::from)
     }
 }
 impl TryFrom<Expr> for Value {

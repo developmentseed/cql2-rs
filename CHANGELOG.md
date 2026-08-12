@@ -15,7 +15,7 @@ Every item marked **Breaking** changes the result of code that compiles unchange
 - **Breaking:** `Error` is now `#[non_exhaustive]`, so adding a variant will no longer be a breaking change
 - **Breaking:** `sqlparser` 0.58 → 0.62. This is a public dependency — `ToSqlAst::to_sql_ast` returns `sqlparser::ast::Expr` — so anything naming that type must move too
 - **Breaking:** the `TEMPORALOPS` and `ARRAYOPS` constants carry the spelling the JSON schema defines, so `TEMPORALOPS.contains(&"t_metby")` is now `false`; use `"t_metBy"`. `temporal_op` accepts either spelling
-- **Breaking:** `parse_json`, `Expr::try_from(Value)` and the Python `Expr(mapping)` constructor normalize their input, so cql2-json no longer round-trips byte for byte: `and`/`or` chains flatten, operator names take the schema's spelling, and timestamps are canonicalized. Expressions that used to compare unequal may now compare equal
+- **Breaking:** deserializing an `Expr` normalizes it, so cql2-json no longer round-trips byte for byte: `and`/`or` chains flatten, operator names take the schema's spelling, and timestamps are canonicalized. Expressions that used to compare unequal may now compare equal. This is `Expr`'s `Deserialize` impl rather than any one entry point, so `parse_json`, `Expr::try_from(Value)`, `serde_json::from_str::<Expr>`, an `Expr` field on a `#[derive(Deserialize)]` struct and the bindings' mapping constructors all agree
 - **Breaking:** `eq` is no longer accepted as an alias for `=`. CQL2 defines no such operator and the grammar never had one, so `eq(a, b)` is a user-defined function call and is now preserved as written. `!=` remains an accepted spelling of `<>`, because the grammar does define it
 
 ### Fixed
