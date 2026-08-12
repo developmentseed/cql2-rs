@@ -27,17 +27,6 @@ pub(crate) const POWER: u8 = 7;
 /// arrays, and already-parenthesized expressions. Never needs wrapping.
 pub(crate) const ATOM: u8 = u8::MAX;
 
-// The ladder must stay strictly increasing for `needs_parens` to mean anything.
-const _: () = assert!(
-    OR < AND
-        && AND < NOT
-        && NOT < PREDICATE
-        && PREDICATE < ADDITIVE
-        && ADDITIVE < MULTIPLICATIVE
-        && MULTIPLICATIVE < POWER
-        && POWER < ATOM
-);
-
 /// The precedence of a CQL2 operator name.
 ///
 /// What matters here is the shape an operator *renders* in, not the level the grammar parses it at.
@@ -134,6 +123,20 @@ pub(crate) fn operands(op: &str) -> Operands {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The ladder must stay strictly increasing for `needs_parens` to mean anything. Bound to a
+    /// local first, since clippy rejects asserting on constants directly.
+    #[test]
+    fn levels_are_strictly_increasing() {
+        let increasing = OR < AND
+            && AND < NOT
+            && NOT < PREDICATE
+            && PREDICATE < ADDITIVE
+            && ADDITIVE < MULTIPLICATIVE
+            && MULTIPLICATIVE < POWER
+            && POWER < ATOM;
+        assert!(increasing);
+    }
 
     /// The parser's Pratt ordering and this table are written separately, so they are checked
     /// against each other behaviourally: for each pair, the tighter operator must end up nested
