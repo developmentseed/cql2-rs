@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.7...cql2-v0.6.0) - 2026-08-12
+
+### Other
+
+- Fix/sql operator precedence ([#256](https://github.com/developmentseed/cql2-rs/pull/256))
+- *(deps)* bump the production-dependencies group with 5 updates ([#257](https://github.com/developmentseed/cql2-rs/pull/257))
+- update readme so the version doesn't go out of date ([#225](https://github.com/developmentseed/cql2-rs/pull/225))
+- *(deps)* bump the production-dependencies group with 4 updates ([#253](https://github.com/developmentseed/cql2-rs/pull/253))
+
 Every item marked **Breaking** changes the result of code that compiles unchanged.
 
 ### Changed
