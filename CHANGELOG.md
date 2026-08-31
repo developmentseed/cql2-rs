@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.6.1](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.6.0...cql2-v0.6.1) - 2026-08-31
+
+### Other
+
+- *(deps)* bump the production-dependencies group with 3 updates ([#264](https://github.com/developmentseed/cql2-rs/pull/264))
+- *(deps)* bump the production-dependencies group with 7 updates ([#262](https://github.com/developmentseed/cql2-rs/pull/262))
+- *(deps)* bump Swatinem/rust-cache in the github-actions group ([#263](https://github.com/developmentseed/cql2-rs/pull/263))
+- *(deps)* bump the github-actions group with 3 updates ([#258](https://github.com/developmentseed/cql2-rs/pull/258))
+- *(deps)* bump the production-dependencies group with 6 updates ([#259](https://github.com/developmentseed/cql2-rs/pull/259))
+
 ## [0.6.0](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.7...cql2-v0.6.0) - 2026-08-12
 
 ### Other
