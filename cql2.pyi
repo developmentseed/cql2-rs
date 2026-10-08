@@ -208,6 +208,39 @@ class Expr:
             'Expr(landsat:cloud_cover = 10)'
         """
 
+class Validator:
+    def __init__(self) -> None:
+        """A json-schema validator for CQL2 expressions.
+
+        The schema is compiled once, when the validator is created. Reuse one
+        validator to check many expressions.
+
+        Examples:
+            >>> from cql2 import Expr, Validator
+            >>> validator = Validator()
+            >>> validator.validate(Expr("landsat:scene_id = 'LC82030282019133LGN00'"))
+        """
+
+    def validate(self, expr: Expr) -> None:
+        """Validates an expression using json-schema.
+
+        Args:
+            expr (Expr): The expression to validate
+
+        Raises:
+            ValidationError: Raised if the validation fails
+        """
+
+    def is_valid(self, expr: Expr) -> bool:
+        """Checks an expression against the json-schema.
+
+        Args:
+            expr (Expr): The expression to check
+
+        Returns:
+            bool: True if the expression is valid, False otherwise
+        """
+
 class ParseError(Exception):
     """An error raised when cql2 parsing fails."""
 

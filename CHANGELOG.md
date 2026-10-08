@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Python: `Validator`, a json-schema validator that compiles the CQL2 schema once and can check many expressions.
+
 ## [0.6.0](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.7...cql2-v0.6.0) - 2026-08-12
 
 ### Other
