@@ -7,7 +7,7 @@ use pyo3::{
     types::PyDict,
 };
 use serde_json::Value;
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::OnceLock};
 
 create_exception!(cql2, ValidationError, PyException);
 create_exception!(cql2, ParseError, PyException);
@@ -58,7 +58,16 @@ impl Expr {
     }
 
     fn validate(&self) -> PyResult<()> {
-        let validator = ::cql2::Validator::new().map_err(Error::from)?;
+        // Compiling the embedded schema is the expensive part, so every call shares one
+        // validator, as `Expr::is_valid` does.
+        static VALIDATOR: OnceLock<::cql2::Validator> = OnceLock::new();
+        let validator = match VALIDATOR.get() {
+            Some(validator) => validator,
+            None => {
+                let validator = ::cql2::Validator::new().map_err(Error::from)?;
+                VALIDATOR.get_or_init(|| validator)
+            }
+        };
         if let Err(error) = validator.validate(&self.0.to_value().map_err(Error::from)?) {
             Err(ValidationError::new_err(error.to_string()))
         } else {
