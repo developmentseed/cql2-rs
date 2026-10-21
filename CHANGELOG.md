@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Python: `Expr.validate()` compiles the CQL2 JSON Schema once per process instead of on every call, as `Expr::is_valid` already does. A call took about 20 ms, and now takes microseconds.
+
 ## [0.6.0](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.7...cql2-v0.6.0) - 2026-08-12
 
 ### Other
