@@ -1006,3 +1006,19 @@ fn serialization_round_trips_through_the_hand_written_impls() {
         );
     }
 }
+
+/// `in` called as a function takes its list as one array or as the arguments after the first.
+#[test]
+fn in_called_as_a_function_takes_a_list() {
+    for text in ["in(a, (1, 2))", "in(a, 1, 2)"] {
+        assert_eq!(
+            cql2::parse_text(text).unwrap().to_text().unwrap(),
+            "a IN (1, 2)"
+        );
+    }
+    assert_eq!(
+        cql2::parse_text("in(a, 1)").unwrap().to_text().unwrap(),
+        "a IN (1)"
+    );
+    assert!(cql2::parse_text("in()").is_err());
+}

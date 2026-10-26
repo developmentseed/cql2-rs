@@ -143,3 +143,14 @@ def test_mapping_and_string_constructors_agree() -> None:
     from_mapping = cql2.Expr(mapping)
     assert from_mapping.to_json()["op"] == "t_metBy"
     assert from_mapping == cql2.Expr(json.dumps(mapping))
+
+
+def test_reduce() -> None:
+    assert cql2.Expr("a < 1 + 1 AND true").reduce().to_text() == "a < 2"
+    assert cql2.Expr("a < 2 AND 1 > 2").reduce().to_text() == "false"
+    assert cql2.Expr("a + 10").reduce({"a": 5}).to_text() == "15"
+
+
+def test_parse_file_errors(fixtures: Path) -> None:
+    with pytest.raises(OSError):
+        cql2.parse_file(fixtures / "missing.txt")
