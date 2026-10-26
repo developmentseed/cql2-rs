@@ -273,6 +273,26 @@ await (async () => {
     // Both should be semantically equivalent (though formatting may differ)
     assert.ok(expr.equals(expr2));
   });
+
+  await test("new Expr() parses cql2-json", () => {
+    assert.equal(new Expr('{"op":">","args":[{"property":"value"},100]}').to_text(), "value > 100");
+  });
+
+  await test("validate() throws for an invalid expression", () => {
+    assert.throws(() => new Expr("wrong").validate(), Error);
+  });
+
+  await test("is_valid() returns false for an invalid expression", () => {
+    assert.equal(new Expr("wrong").is_valid(), false);
+  });
+
+  await test("reduce() folds constants", () => {
+    assert.equal(new Expr("a < 1 + 1 AND true").reduce(null).to_text(), "a < 2");
+  });
+
+  await test("to_ducksql() converts expression to DuckDB SQL", () => {
+    assert.equal(new Expr("a_contains(foo, bar)").to_ducksql(), "list_has_all(foo, bar)");
+  });
 })();
 
 // Print summary

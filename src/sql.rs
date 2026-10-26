@@ -22,7 +22,6 @@ fn cast(arg: SqlExpr, data_type: sqlparser::ast::DataType) -> SqlExpr {
         data_type,
         kind: CastKind::Cast,
         format: None,
-        array: false,
     }
 }
 
@@ -554,9 +553,9 @@ impl ToSqlAst for Expr {
                             // what the evaluator escapes with and what PostgreSQL defaults to;
                             // DuckDB has no default at all, so without this `'item\_1'` matches
                             // `item_1` here and a disjoint set of rows there.
-                            escape_char: Some(
-                                Value::SingleQuotedString(LIKE_ESCAPE.to_string()).into(),
-                            ),
+                            escape_char: Some(Box::new(SqlExpr::value(Value::SingleQuotedString(
+                                LIKE_ESCAPE.to_string(),
+                            )))),
                             negated: false,
                             any: false,
                         }

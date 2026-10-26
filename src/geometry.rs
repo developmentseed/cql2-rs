@@ -171,16 +171,20 @@ where
 /// The minimum is taken, not the first: a marker claims a dimension for the whole geometry, so a
 /// ragged coordinate array must be treated as its shallowest position.
 fn geojson_ndims(geojson: &geojson::Geometry) -> usize {
-    use geojson::Value::*;
+    use geojson::{GeometryValue::*, Position};
     fn min_len(positions: impl IntoIterator<Item = usize>) -> usize {
         positions.into_iter().min().unwrap_or(DEFAULT_NDIM)
     }
     match &geojson.value {
-        Point(coords) => coords.len(),
-        MultiPoint(v) | LineString(v) => min_len(v.iter().map(Vec::len)),
-        MultiLineString(v) | Polygon(v) => min_len(v.iter().flatten().map(Vec::len)),
-        MultiPolygon(v) => min_len(v.iter().flatten().flatten().map(Vec::len)),
-        GeometryCollection(v) => min_len(v.iter().map(geojson_ndims)),
+        Point { coordinates } => coordinates.len(),
+        MultiPoint { coordinates: v } | LineString { coordinates: v } => {
+            min_len(v.iter().map(Position::len))
+        }
+        MultiLineString { coordinates: v } | Polygon { coordinates: v } => {
+            min_len(v.iter().flatten().map(Position::len))
+        }
+        MultiPolygon { coordinates: v } => min_len(v.iter().flatten().flatten().map(Position::len)),
+        GeometryCollection { geometries: v } => min_len(v.iter().map(geojson_ndims)),
     }
 }
 

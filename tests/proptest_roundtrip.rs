@@ -78,8 +78,15 @@ fn shape(expr: &Expr) -> String {
     expr.to_json().expect("expression serializes")
 }
 
+/// 2000 cases by default; set `PROPTEST_CASES` for a longer run.
+fn cases() -> u32 {
+    std::env::var("PROPTEST_CASES").map_or(2000, |n| {
+        n.parse().expect("PROPTEST_CASES is a number of cases")
+    })
+}
+
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(2000))]
+    #![proptest_config(ProptestConfig::with_cases(cases()))]
 
     /// Rendering to cql2-text and parsing it back yields the same expression.
     #[test]

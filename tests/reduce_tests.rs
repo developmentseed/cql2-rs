@@ -490,3 +490,47 @@ fn negative_number_literal() {
     let expr: Expr = "-foo".parse().unwrap();
     assert_eq!(expr.to_text().unwrap(), "-1 * foo");
 }
+
+/// A 200-way `OR` and a twelve-clause `AND` of `OR`s each reduce in under five seconds.
+#[test]
+fn large_expressions_reduce_quickly() {
+    let wide = (0..200)
+        .map(|i| format!("a = {i}"))
+        .collect::<Vec<_>>()
+        .join(" OR ");
+    let cnf = (0..12)
+        .map(|i| format!("(a = {i} OR b = {i} OR c > {i})"))
+        .collect::<Vec<_>>()
+        .join(" AND ");
+    for text in [wide, cnf] {
+        let start = std::time::Instant::now();
+        let _ = text.parse::<Expr>().unwrap().reduce(None).unwrap();
+        assert!(
+            start.elapsed().as_secs() < 5,
+            "{text} took {:?}",
+            start.elapsed()
+        );
+    }
+}
+
+/// The relations of a geometry collection of mixed dimensions, as GEOS (PostGIS) computes them:
+/// the line meets the box only at its corner (2 2), so the two touch and do not overlap.
+#[test]
+#[ignore = "geo 0.33 computes the wrong DE-9IM matrix for collections of mixed dimension"]
+fn mixed_dimension_collections_relate_as_in_geos() {
+    let collection = "GEOMETRYCOLLECTION(LINESTRING(0 0,3 3),POLYGON((0 0,1 0,1 1,0 1,0 0)))";
+    let square = "POLYGON((2 0,4 0,4 2,2 2,2 0))";
+    for (op, expected) in [
+        ("s_intersects", true),
+        ("s_disjoint", false),
+        ("s_touches", true),
+        ("s_overlaps", false),
+        ("s_crosses", false),
+        ("s_within", false),
+        ("s_contains", false),
+        ("s_equals", false),
+    ] {
+        let expr: Expr = format!("{op}({collection}, {square})").parse().unwrap();
+        assert_eq!(expr.reduce(None).unwrap(), Expr::Bool(expected), "{op}");
+    }
+}

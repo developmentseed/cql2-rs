@@ -251,3 +251,31 @@ fn every_ats_operator_is_evaluated() {
         unevaluated
     );
 }
+
+/// `/conf/property-property/comparison-value-value` compares each value with itself, which is
+/// equal to it and neither less nor greater.
+#[test]
+fn a_value_compared_with_itself_is_equal() {
+    let mut checked = 0;
+    for (class, expr) in corpus() {
+        let parsed: Expr = expr.parse().unwrap();
+        let Expr::Operation { op, args } = &parsed else {
+            continue;
+        };
+        if class != "property-property"
+            || args.len() != 2
+            || args[0] != args[1]
+            || matches!(*args[0], Expr::Property { .. })
+        {
+            continue;
+        }
+        let expected = matches!(op.as_str(), "=" | ">=" | "<=");
+        assert_eq!(
+            parsed.clone().reduce(None).unwrap(),
+            Expr::Bool(expected),
+            "{expr}"
+        );
+        checked += 1;
+    }
+    assert_eq!(checked, 36, "the six values, each with the six comparisons");
+}

@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** `Validator::apply` returns jsonschema's `Evaluation`: use `.is_valid()` where you used `.flag()`, and `.list()` or `.hierarchical()` where you used `.basic()`. (`src/validator.rs`)
+- Upgraded dependencies, and removed unused ones from the WebAssembly package.
+
+### Other
+
+- The property tests can now run more than their usual 2000 generated cases: set `PROPTEST_CASES`. (`tests/proptest_roundtrip.rs`)
+- Added tests of the public API's conversions and helpers. (`tests/api.rs`)
+- The conformance tests now include the OGC CQL2 Abstract Test Suite's value-to-value comparisons and interval relations, and check that each value compares equal to itself. (`tests/ats/expressions.txt`, `tests/ats_conformance.rs`)
+- Added a test of `in(...)` called as a function. (`tests/encoding_invariants.rs`)
+- Added a test that large filters reduce within five seconds, and an ignored test of a spatial relation that `geo` gets wrong for geometry collections of mixed dimension. (`tests/reduce_tests.rs`)
+- Added Python, WebAssembly and JavaScript tests, including one that runs the examples in `cql2.pyi`. (`python/tests/`, `wasm/tests/`)
+- Added benchmarks of parsing, `reduce`, `filter`, `to_text` and `to_sql`; run them with `cargo bench`. (`benches/cql2.rs`)
+- `CONTRIBUTING.md` says how to run each test suite and the benchmarks, and `tests/README.md` describes more of the test files.
+
 ## [0.6.0](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.5.7...cql2-v0.6.0) - 2026-08-12
 
 ### Other

@@ -198,3 +198,10 @@ fn test_to_ducksql_date() {
     assert!(ducksql.contains("CAST('2020-01-01' AS DATE)"));
     assert!(ducksql.contains("> b"));
 }
+
+#[wasm_bindgen_test]
+fn test_reduce_folds_constants() {
+    let expr = CQL2Expression::new("a < 1 + 1 AND true".to_string()).unwrap();
+    let reduced = expr.reduce(JsValue::NULL).unwrap();
+    assert_eq!(reduced.to_text().unwrap(), "a < 2");
+}
