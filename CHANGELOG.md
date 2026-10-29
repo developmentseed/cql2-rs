@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.6.1](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.6.0...cql2-v0.6.1) - 2026-10-29
+
+### Added
+
+- *(python)* a Validator class that compiles the schema once ([#274](https://github.com/developmentseed/cql2-rs/pull/274))
+
+### Other
+
+- *(deps)* bump the production-dependencies group with 5 updates ([#280](https://github.com/developmentseed/cql2-rs/pull/280))
+- *(deps)* bump the github-actions group with 3 updates ([#279](https://github.com/developmentseed/cql2-rs/pull/279))
+- *(deps)* bump the production-dependencies group across 1 directory with 10 updates ([#277](https://github.com/developmentseed/cql2-rs/pull/277))
+- *(deps)* bump the github-actions group across 1 directory with 5 updates ([#278](https://github.com/developmentseed/cql2-rs/pull/278))
+- *(deps)* bump the production-dependencies group with 11 updates ([#271](https://github.com/developmentseed/cql2-rs/pull/271))
+- *(deps)* bump astral-sh/setup-uv in the github-actions group ([#269](https://github.com/developmentseed/cql2-rs/pull/269))
+- *(deps)* bump the production-dependencies group across 1 directory with 10 updates ([#270](https://github.com/developmentseed/cql2-rs/pull/270))
+- *(deps)* bump astral-sh/setup-uv in the github-actions group ([#266](https://github.com/developmentseed/cql2-rs/pull/266))
+- *(deps)* bump the production-dependencies group across 1 directory with 9 updates ([#267](https://github.com/developmentseed/cql2-rs/pull/267))
+- *(deps)* bump the production-dependencies group with 3 updates ([#264](https://github.com/developmentseed/cql2-rs/pull/264))
+- *(deps)* bump the production-dependencies group with 7 updates ([#262](https://github.com/developmentseed/cql2-rs/pull/262))
+- *(deps)* bump Swatinem/rust-cache in the github-actions group ([#263](https://github.com/developmentseed/cql2-rs/pull/263))
+- *(deps)* bump the github-actions group with 3 updates ([#258](https://github.com/developmentseed/cql2-rs/pull/258))
+- *(deps)* bump the production-dependencies group with 6 updates ([#259](https://github.com/developmentseed/cql2-rs/pull/259))
+
 ### Added
 
 - Python: `Validator`, a json-schema validator that compiles the CQL2 schema once and can check many expressions.
