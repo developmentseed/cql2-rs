@@ -66,6 +66,22 @@ def test_validate() -> None:
         expr.validate()
 
 
+def test_validator(example01_text: str) -> None:
+    validator = cql2.Validator()
+    valid = cql2.Expr(example01_text)
+    invalid = cql2.Expr(
+        {
+            "op": "t_before",
+            "args": [{"property": "updated_at"}, {"timestamp": "invalid-timestamp"}],
+        }
+    )
+    validator.validate(valid)
+    assert validator.is_valid(valid)
+    assert not validator.is_valid(invalid)
+    with pytest.raises(cql2.ValidationError):
+        validator.validate(invalid)
+
+
 def test_add() -> None:
     assert cql2.Expr("True") + cql2.Expr("false") == cql2.Expr("true AND false")
 

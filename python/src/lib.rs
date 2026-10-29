@@ -26,6 +26,32 @@ type Result<T> = std::result::Result<T, Error>;
 #[pyclass]
 struct Expr(::cql2::Expr);
 
+/// A validator for CQL2 JSON, with the schema compiled once at construction.
+#[pyclass]
+struct Validator(::cql2::Validator);
+
+#[pymethods]
+impl Validator {
+    #[new]
+    fn new() -> PyResult<Self> {
+        ::cql2::Validator::new()
+            .map(Validator)
+            .map_err(|err| PyErr::from(Error::from(err)))
+    }
+
+    fn validate(&self, expr: &Expr) -> PyResult<()> {
+        let value = expr.0.to_value().map_err(Error::from)?;
+        self.0
+            .validate(&value)
+            .map_err(|err| ValidationError::new_err(err.to_string()))
+    }
+
+    fn is_valid(&self, expr: &Expr) -> PyResult<bool> {
+        let value = expr.0.to_value().map_err(Error::from)?;
+        Ok(self.0.is_valid(&value))
+    }
+}
+
 #[pyfunction]
 fn parse_file(path: PathBuf) -> Result<Expr> {
     ::cql2::parse_file(path).map(Expr).map_err(Error::from)
@@ -58,12 +84,7 @@ impl Expr {
     }
 
     fn validate(&self) -> PyResult<()> {
-        let validator = ::cql2::Validator::new().map_err(Error::from)?;
-        if let Err(error) = validator.validate(&self.0.to_value().map_err(Error::from)?) {
-            Err(ValidationError::new_err(error.to_string()))
-        } else {
-            Ok(())
-        }
+        Validator::new()?.validate(self)
     }
 
     fn matches(&self, item: Bound<'_, PyDict>) -> Result<bool> {
@@ -162,6 +183,7 @@ fn main(py: Python<'_>) {
 #[pymodule]
 fn cql2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Expr>()?;
+    m.add_class::<Validator>()?;
     m.add_function(wrap_pyfunction!(main, m)?)?;
     m.add_function(wrap_pyfunction!(parse_file, m)?)?;
     m.add_function(wrap_pyfunction!(parse_text, m)?)?;
