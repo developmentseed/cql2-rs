@@ -58,6 +58,13 @@ pub enum Error {
     #[error(transparent)]
     ParseTimestamp(#[from] jiff::Error),
 
+    /// A timestamp whose UTC offset is a day or more.
+    ///
+    /// RFC 3339 ends an offset at `23:59`. `jiff` reads one out to `25:59:59`, so it reads
+    /// `2020-01-01T00:00:00+25:00` as `2019-12-30T23:00:00Z`.
+    #[error("{0} has a UTC offset of 24 hours or more")]
+    TimestampOffsetOutOfRange(String),
+
     /// [pest::error::Error]
     #[error(transparent)]
     Pest(#[from] Box<pest::error::Error<crate::parser::Rule>>),

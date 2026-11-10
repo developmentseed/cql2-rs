@@ -1,5 +1,5 @@
 use crate::{Error, Expr};
-use jiff::{SignedDuration, Timestamp};
+use jiff::{fmt::temporal::Pieces, SignedDuration, Timestamp};
 use std::cmp::Ordering;
 
 const DAY: SignedDuration = SignedDuration::from_hours(24);
@@ -21,7 +21,14 @@ fn parse_ts(s: &str) -> Result<Timestamp, Error> {
         _ => stripped,
     };
 
-    fromshort.parse().map_err(Error::ParseTimestamp)
+    let timestamp = fromshort.parse().map_err(Error::ParseTimestamp)?;
+    // RFC 3339 ends a UTC offset at 23:59, and `jiff` reads one out to 25:59:59. An offset in
+    // between would move the instant by a day or more, so it is refused, as `jiff` refuses 26:00.
+    let offset = Pieces::parse(&fromshort)?.to_numeric_offset();
+    if offset.is_some_and(|offset| i64::from(offset.seconds()).abs() >= DAY.as_secs()) {
+        return Err(Error::TimestampOffsetOutOfRange(s.to_string()));
+    }
+    Ok(timestamp)
 }
 
 /// Parses a timestamp from an expression's cql2-text rendering, which is quoted.
@@ -48,7 +55,9 @@ fn parse_bound(expr: &Expr, unbounded: Timestamp) -> Result<Timestamp, Error> {
 /// the same value and must produce the same expression.
 ///
 /// Only literals that already carry a time are rewritten. A date such as `2010-10-07` is left as
-/// written, since widening it to an instant would change what the literal says.
+/// written, since widening it to an instant would change what the literal says. A literal that is
+/// not a timestamp, an offset past 23:59 included, is left as written too, for the validator to
+/// report.
 pub(crate) fn canonical_timestamp(s: &str) -> String {
     let has_time = s.contains('T') || s.contains(' ');
     if !has_time || is_leap_second(s) {
@@ -174,8 +183,8 @@ pub fn temporal_op(left_expr: Expr, right_expr: Expr, op: &str) -> Result<Expr, 
 
 #[cfg(test)]
 mod tests {
-    use super::DateRange;
-    use crate::Expr;
+    use super::{canonical_timestamp, DateRange};
+    use crate::{Error, Expr};
     use serde_json::json;
 
     #[test]
@@ -183,5 +192,87 @@ mod tests {
         // https://github.com/developmentseed/cql2-rs/issues/66
         let expr: Expr = serde_json::from_value(json!({"date": "2020-02-18"})).unwrap();
         let _: DateRange = expr.try_into().unwrap();
+    }
+
+    /// RFC 3339 ends a UTC offset at 23:59, and `jiff` reads one out to 25:59:59. A literal in
+    /// between is not a timestamp: it stays as written, where the validator reports it, and it
+    /// names no instant to evaluate.
+    #[test]
+    fn an_offset_of_a_day_or_more_is_refused() {
+        // https://github.com/developmentseed/cql2-rs/issues/273
+        for offset in ["+24:00", "-24:00", "+25:00", "-25:59", "+25:59:59"] {
+            let written = format!("2020-01-01T00:00:00{offset}");
+            assert_eq!(
+                canonical_timestamp(&written),
+                written,
+                "{written} should be left as written"
+            );
+            let timestamp = Expr::Timestamp {
+                timestamp: Box::new(Expr::Literal(written.clone())),
+            };
+            assert!(
+                matches!(
+                    DateRange::try_from(timestamp),
+                    Err(Error::TimestampOffsetOutOfRange(_))
+                ),
+                "{written} should not name an instant"
+            );
+        }
+    }
+
+    /// The check is shared by every path that reads a timestamp: an interval bound is refused the
+    /// same way, and a comparison in `reduce` reports it.
+    #[test]
+    fn a_refused_offset_reaches_every_reader() {
+        const WRITTEN: &str = "2020-01-01T00:00:00+25:00";
+        let interval = Expr::Interval {
+            interval: vec![
+                Box::new(Expr::Literal(WRITTEN.to_string())),
+                Box::new(Expr::Literal("..".to_string())),
+            ],
+        };
+        assert!(matches!(
+            DateRange::try_from(interval),
+            Err(Error::TimestampOffsetOutOfRange(_))
+        ));
+        let comparison = crate::parse_text(&format!(
+            "TIMESTAMP('{WRITTEN}') < TIMESTAMP('2021-01-01T00:00:00Z')"
+        ))
+        .unwrap();
+        assert!(matches!(
+            comparison.reduce(None),
+            Err(Error::TimestampOffsetOutOfRange(_))
+        ));
+    }
+
+    /// An offset under a day names an instant, which keeps its one UTC spelling.
+    #[test]
+    fn an_offset_under_a_day_is_converted_to_utc() {
+        for (written, utc) in [
+            ("2020-01-01T00:00:00+23:59", "2019-12-31T00:01:00Z"),
+            ("2020-01-01T00:00:00-23:59", "2020-01-01T23:59:00Z"),
+            ("2020-01-01T00:00:00+05:30", "2019-12-31T18:30:00Z"),
+        ] {
+            assert_eq!(canonical_timestamp(written), utc);
+        }
+    }
+
+    /// Both encodings hand a refused timestamp to the validator unchanged.
+    #[test]
+    fn a_refused_offset_fails_validation_in_both_encodings() {
+        const WRITTEN: &str = "2020-01-01T00:00:00+25:00";
+        let from_text =
+            crate::parse_text(&format!("t_before(datetime, TIMESTAMP('{WRITTEN}'))")).unwrap();
+        let from_json: Expr = serde_json::from_value(json!({
+            "op": "t_before",
+            "args": [{"property": "datetime"}, {"timestamp": WRITTEN}],
+        }))
+        .unwrap();
+        assert_eq!(from_text, from_json);
+        assert_eq!(
+            from_text.to_value().unwrap()["args"][1]["timestamp"],
+            WRITTEN
+        );
+        assert!(!from_text.is_valid());
     }
 }
