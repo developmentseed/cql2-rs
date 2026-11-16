@@ -490,3 +490,25 @@ fn negative_number_literal() {
     let expr: Expr = "-foo".parse().unwrap();
     assert_eq!(expr.to_text().unwrap(), "-1 * foo");
 }
+
+/// The relations of a geometry collection of mixed dimensions, as GEOS (PostGIS) computes them:
+/// the line meets the box only at its corner (2 2), so the two touch and do not overlap.
+#[test]
+#[ignore = "geo 0.33 computes the wrong DE-9IM matrix for collections of mixed dimension"]
+fn mixed_dimension_collections_relate_as_in_geos() {
+    let collection = "GEOMETRYCOLLECTION(LINESTRING(0 0,3 3),POLYGON((0 0,1 0,1 1,0 1,0 0)))";
+    let square = "POLYGON((2 0,4 0,4 2,2 2,2 0))";
+    for (op, expected) in [
+        ("s_intersects", true),
+        ("s_disjoint", false),
+        ("s_touches", true),
+        ("s_overlaps", false),
+        ("s_crosses", false),
+        ("s_within", false),
+        ("s_contains", false),
+        ("s_equals", false),
+    ] {
+        let expr: Expr = format!("{op}({collection}, {square})").parse().unwrap();
+        assert_eq!(expr.reduce(None).unwrap(), Expr::Bool(expected), "{op}");
+    }
+}

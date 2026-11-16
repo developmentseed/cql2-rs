@@ -59,6 +59,7 @@ const GROUPING_BATTERY: &[&str] = &[
     "d between DATE('2020-01-01') and DATE('2020-02-01')",
     "a in (1, 2)",
     "in(a, 1, 2)",
+    "in(a, (1, 2))",
     "a not in (1, 2)",
     "a in (1, 2) and b = 3",
     "a like 'x' and b = 2",
@@ -1005,4 +1006,14 @@ fn serialization_round_trips_through_the_hand_written_impls() {
             "{source} did not round trip"
         );
     }
+}
+
+/// `in` called as a function with one item is a one-item list, and without arguments is an error.
+#[test]
+fn in_called_as_a_function_takes_a_list() {
+    assert_eq!(
+        cql2::parse_text("in(a, 1)").unwrap().to_text().unwrap(),
+        "a IN (1)"
+    );
+    assert!(cql2::parse_text("in()").is_err());
 }
