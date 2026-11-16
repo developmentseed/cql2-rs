@@ -5,7 +5,6 @@ authors = { workspace = true }
 edition = { workspace = true }
 description = "Parse, validate, and convert Common Query Language (CQL2) text and JSON"
 readme = "README.md"
-homepage = "https://github.com/developmentseed/cql2-rs"
 repository = { workspace = true }
 license = { workspace = true }
 keywords = ["cql2"]
