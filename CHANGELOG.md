@@ -6,9 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Upgraded dependencies. (`Cargo.toml`, `Cargo.lock`)
+- **Breaking:** `Validator::apply` returns `jsonschema::Evaluation` instead of `jsonschema::output::Output`, which jsonschema removed. (`src/validator.rs`)
+- **Breaking:** `Validator::validate` and `Validator::iter_errors` return jsonschema 0.61 error types. (`src/validator.rs`)
+- **Breaking:** `Geometry::GeoJSON` and `Error::GeoJSON` use geojson 1.0. (`Cargo.toml`)
+- **Breaking:** `Error::Geozero` uses geozero 0.15. (`Cargo.toml`)
+- **Breaking:** `ToSqlAst::to_sql_ast` returns a sqlparser 0.64 expression. (`src/sql.rs`)
+- **Breaking:** `DateRange` and `Error::ParseTimestamp` use jiff 1.x. (`Cargo.toml`)
+- A cql2-json geometry with a duplicate `coordinates` key, or a Point with a `geometries` member, is rejected. (`Cargo.toml`)
+
 ### Fixed
 
 - A timestamp with a UTC offset of 24 hours or more, which `jiff` reads and RFC 3339 does not, is left as written and fails validation instead of being rewritten as UTC; `TIMESTAMP('2020-01-01T00:00:00+25:00')` became `2019-12-30T23:00:00Z`. A `=` or `<` comparison against one in `reduce` is the new `Error::TimestampOffsetOutOfRange`, and a temporal relation leaves the operation unreduced, as for `+26:00` ([#273](https://github.com/developmentseed/cql2-rs/issues/273))
+
+### Other
+
+- Removed `homepage` from the Cargo manifests; it repeated `repository`. (`Cargo.toml`, `cli/Cargo.toml`, `python/Cargo.toml`, `wasm/Cargo.toml`)
 
 ## [0.6.1](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.6.0...cql2-v0.6.1) - 2026-11-02
 
