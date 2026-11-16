@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Upgraded dependencies. (`Cargo.toml`, `Cargo.lock`)
+
 ### Fixed
 
 - A timestamp with a UTC offset of 24 hours or more, which `jiff` reads and RFC 3339 does not, is left as written and fails validation instead of being rewritten as UTC; `TIMESTAMP('2020-01-01T00:00:00+25:00')` became `2019-12-30T23:00:00Z`. A `=` or `<` comparison against one in `reduce` is the new `Error::TimestampOffsetOutOfRange`, and a temporal relation leaves the operation unreduced, as for `+26:00` ([#273](https://github.com/developmentseed/cql2-rs/issues/273))
