@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Upgraded dependencies. (`Cargo.toml`, `Cargo.lock`)
 - **Breaking:** `Validator::apply` returns `jsonschema::Evaluation` instead of `jsonschema::output::Output`, which jsonschema removed. (`src/validator.rs`)
 - **Breaking:** `Validator::validate` and `Validator::iter_errors` return jsonschema 0.61 error types. (`src/validator.rs`)
+- **Breaking:** `Error::Geozero` uses geozero 0.15. (`Cargo.toml`)
 - **Breaking:** `ToSqlAst::to_sql_ast` returns a sqlparser 0.64 expression. (`src/sql.rs`)
 
 ### Fixed

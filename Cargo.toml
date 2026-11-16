@@ -26,7 +26,7 @@ keywords = ["cql2"]
 geo = "0.33.0"
 geo-types = "0.7.17"
 geojson = "0.24.1"
-geozero = "0.14.0"
+geozero = "0.15.1"
 jiff = "0.2.15"
 json_dotpath = "1.1.0"
 jsonschema = { version = "0.61.2", default-features = false }
