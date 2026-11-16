@@ -9,7 +9,15 @@
 # use duckdb, so locating the library must never fail the command: if no download
 # is found we simply exec the binary unchanged.
 
-libdir="$(find "${CARGO_TARGET_DIR:-target}/duckdb-download" -name 'libduckdb.so' -printf '%h\n' 2>/dev/null | sort -Vu | tail -n1)"
+# The download is in a `duckdb-download` directory above the binary, in the target
+# directory or cargo's build-dir.
+dir="$(dirname "$(realpath "$1")")"
+while [ ! -d "${dir}/duckdb-download" ]; do
+    parent="$(dirname "${dir}")"
+    [ "${parent}" = "${dir}" ] && break
+    dir="${parent}"
+done
+libdir="$(find "${dir}/duckdb-download" -name 'libduckdb.so' -printf '%h\n' 2>/dev/null | sort -Vu | tail -n1)"
 if [ -n "${libdir}" ]; then
     export LD_LIBRARY_PATH="${libdir}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 fi
