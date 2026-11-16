@@ -9,6 +9,38 @@ We aim for comprehensive unit testing of this library.
 Please provide tests for any new features, or to demonstrate bugs.
 Draft pull requests with a failing test to demonstrate a bug are much appreciated.
 
+## Running the tests
+
+Get [Rust](https://rustup.rs/) and [uv](https://docs.astral.sh/uv/). Then:
+
+```shell
+uv sync
+scripts/test   # cargo test (the crate and the CLI), then the Python package and its tests
+scripts/lint   # rustfmt, clippy, mypy, ruff
+```
+
+`cargo test` downloads a prebuilt libduckdb for the DuckDB tests (see `.cargo/config.toml`), so
+the first run needs network access.
+
+| Suite | How |
+|---|---|
+| Rust, every crate | `cargo test --workspace` |
+| DuckDB | part of `cargo test`: `operators_duckdb` and `sql_precedence` |
+| Longer property tests | `PROPTEST_CASES=100000 cargo test --release --test proptest_roundtrip` |
+| Golden files | see `tests/README.md` |
+| Python | `uv run maturin develop --uv && uv run pytest` |
+| WebAssembly | `wasm-pack build --target nodejs wasm && wasm-pack test --node wasm && npm --prefix wasm test` (or `--headless --firefox` in place of `--node`) |
+| Docs | `scripts/buildwasm && uv run mkdocs serve` |
+
+## Benchmarks
+
+`benches/cql2.rs` times parsing, `reduce`, `filter`, `to_text` and `to_sql` on the
+fixtures in `examples/` and `tests/`, and on a few long generated filters. Run
+`cargo bench --bench cql2 -- --save-baseline before` on the base branch, then
+`cargo bench --bench cql2 -- --baseline before` with your change to compare. Pass a name, such
+as `cargo bench --bench cql2 -- reduce/`, to run only some. Benchmarks build with the release
+profile.
+
 ## Submitting changes
 
 Please open a [pull request](https://docs.github.com/en/pull-requests) with your changes -- make sure to include unit tests.

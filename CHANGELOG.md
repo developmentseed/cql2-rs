@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Removed `homepage` from the Cargo manifests; it repeated `repository`. (`Cargo.toml`, `cli/Cargo.toml`, `python/Cargo.toml`, `wasm/Cargo.toml`)
 - The DuckDB tests find the downloaded libduckdb when cargo's `build-dir` is outside `target/`. (`scripts/duckdb-runner`)
+- Added tests of the public API, more of OGC's Abstract Test Suite, and the Python, WebAssembly and JavaScript bindings. (`tests/`, `python/tests/`, `wasm/tests/`)
+- Added benchmarks; run them with `cargo bench`. (`benches/cql2.rs`)
 
 ## [0.6.1](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.6.0...cql2-v0.6.1) - 2026-11-02
 

@@ -8,6 +8,8 @@
 # replaced with properties from tests/cql2testdata.ndjson so the expressions are concrete, and
 # AsciiDoc escaping is removed. Expressions whose placeholders have no single sensible substitution
 # are omitted.
+# In /conf/temporal-functions/temporal-functions-2 both Date queryables are `datefield`, the one
+# date property of the test data.
 #
 # Format: <conformance class>|<cql2-text expression>
 accent-insensitive-comparison|ACCENTI(textfield) = accenti('äöüéáí')
@@ -72,6 +74,42 @@ property-property|floatfield < floatfield
 property-property|floatfield >= floatfield
 property-property|floatfield <= floatfield
 property-property|true
+property-property|'foo' = 'foo'
+property-property|'foo' <> 'foo'
+property-property|'foo' > 'foo'
+property-property|'foo' < 'foo'
+property-property|'foo' >= 'foo'
+property-property|'foo' <= 'foo'
+property-property|true = true
+property-property|true <> true
+property-property|true > true
+property-property|true < true
+property-property|true >= true
+property-property|true <= true
+property-property|3.14 = 3.14
+property-property|3.14 <> 3.14
+property-property|3.14 > 3.14
+property-property|3.14 < 3.14
+property-property|3.14 >= 3.14
+property-property|3.14 <= 3.14
+property-property|1 = 1
+property-property|1 <> 1
+property-property|1 > 1
+property-property|1 < 1
+property-property|1 >= 1
+property-property|1 <= 1
+property-property|TIMESTAMP('2022-04-14T14:48:46Z') = TIMESTAMP('2022-04-14T14:48:46Z')
+property-property|TIMESTAMP('2022-04-14T14:48:46Z') <> TIMESTAMP('2022-04-14T14:48:46Z')
+property-property|TIMESTAMP('2022-04-14T14:48:46Z') > TIMESTAMP('2022-04-14T14:48:46Z')
+property-property|TIMESTAMP('2022-04-14T14:48:46Z') < TIMESTAMP('2022-04-14T14:48:46Z')
+property-property|TIMESTAMP('2022-04-14T14:48:46Z') >= TIMESTAMP('2022-04-14T14:48:46Z')
+property-property|TIMESTAMP('2022-04-14T14:48:46Z') <= TIMESTAMP('2022-04-14T14:48:46Z')
+property-property|DATE('2022-04-14') = DATE('2022-04-14')
+property-property|DATE('2022-04-14') <> DATE('2022-04-14')
+property-property|DATE('2022-04-14') > DATE('2022-04-14')
+property-property|DATE('2022-04-14') < DATE('2022-04-14')
+property-property|DATE('2022-04-14') >= DATE('2022-04-14')
+property-property|DATE('2022-04-14') <= DATE('2022-04-14')
 spatial-functions|S_INTERSECTS(geom,BBOX(-180,-90,180,90))
 spatial-functions|S_INTERSECTS(geom,POLYGON((-180 -90,180 -90,180 90,-180 90,-180 -90)))
 spatial-functions|S_INTERSECTS(geom,LINESTRING(7 50, 10 51))
@@ -119,3 +157,33 @@ temporal-functions|T_EQUALS(ts_start,DATE('2022-04-24'))
 temporal-functions|T_EQUALS(ts_start,INTERVAL('2021-01-01','2021-12-31'))
 temporal-functions|T_INTERSECTS(ts_start,DATE('2022-04-24'))
 temporal-functions|T_INTERSECTS(ts_start,INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_AFTER(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_BEFORE(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_DISJOINT(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_EQUALS(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_INTERSECTS(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_CONTAINS(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_DURING(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_FINISHEDBY(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_FINISHES(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_MEETS(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_METBY(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_OVERLAPPEDBY(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_OVERLAPS(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_STARTEDBY(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_STARTS(INTERVAL(ts_start,ts_end),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
+temporal-functions|T_AFTER(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_BEFORE(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_DISJOINT(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_EQUALS(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_INTERSECTS(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_CONTAINS(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_DURING(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_FINISHEDBY(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_FINISHES(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_MEETS(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_METBY(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_OVERLAPPEDBY(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_OVERLAPS(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_STARTEDBY(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
+temporal-functions|T_STARTS(INTERVAL(datefield,datefield),INTERVAL('2021-01-01','2021-12-31'))
