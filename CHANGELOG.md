@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Breaking:** `Geometry::GeoJSON` and `Error::GeoJSON` use geojson 1.0. (`Cargo.toml`)
 - **Breaking:** `Error::Geozero` uses geozero 0.15. (`Cargo.toml`)
 - **Breaking:** `ToSqlAst::to_sql_ast` returns a sqlparser 0.64 expression. (`src/sql.rs`)
+- **Breaking:** `DateRange` and `Error::ParseTimestamp` use jiff 1.x. (`Cargo.toml`)
 - A cql2-json geometry with a duplicate `coordinates` key, or a Point with a `geometries` member, is rejected. (`Cargo.toml`)
 
 ### Fixed
