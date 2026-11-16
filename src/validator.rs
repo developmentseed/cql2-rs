@@ -1,5 +1,5 @@
 use crate::Error;
-use jsonschema::{self, output::Output};
+use jsonschema::{self, Evaluation};
 use serde_json::Value;
 
 #[derive(Debug)]
@@ -52,8 +52,8 @@ impl Validator {
     }
 
     /// Apply a validator
-    pub fn apply<'a, 'b>(&'a self, v: &'b Value) -> Output<'a, 'b> {
-        self.validator.apply(v)
+    pub fn apply(&self, v: &Value) -> Evaluation {
+        self.validator.evaluate(v)
     }
 
     /// Iterate through validation errors
