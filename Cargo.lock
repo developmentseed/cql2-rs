@@ -632,7 +632,7 @@ dependencies = [
 
 [[package]]
 name = "cql2"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "assert-json-diff",
  "criterion",
@@ -661,7 +661,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-cli"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -671,7 +671,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-python"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "clap",
  "cql2",
@@ -683,7 +683,7 @@ dependencies = [
 
 [[package]]
 name = "cql2-wasm"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "cql2",
  "js-sys",
