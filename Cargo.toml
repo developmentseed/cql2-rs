@@ -25,7 +25,7 @@ keywords = ["cql2"]
 [dependencies]
 geo = "0.33.0"
 geo-types = "0.7.17"
-geojson = "0.24.1"
+geojson = "1.0.0"
 geozero = "0.15.1"
 jiff = "0.2.15"
 json_dotpath = "1.1.0"
