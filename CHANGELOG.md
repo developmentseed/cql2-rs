@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - Upgraded dependencies. (`Cargo.toml`, `Cargo.lock`)
+- **Breaking:** `ToSqlAst::to_sql_ast` returns a sqlparser 0.64 expression. (`src/sql.rs`)
 
 ### Fixed
 
