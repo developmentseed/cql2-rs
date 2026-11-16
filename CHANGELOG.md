@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.6.2](https://github.com/developmentseed/cql2-rs/compare/cql2-v0.6.1...cql2-v0.6.2) - 2026-11-16
+
+### Fixed
+
+- fix duckdb test runner to make sure it gets the correct path ([#289](https://github.com/developmentseed/cql2-rs/pull/289))
+- *(temporal)* refuse a UTC offset of 24 hours or more ([#286](https://github.com/developmentseed/cql2-rs/pull/286))
+
+### Other
+
+- Add tests and benchmarks ([#290](https://github.com/developmentseed/cql2-rs/pull/290))
+- Upgrade dependencies ([#281](https://github.com/developmentseed/cql2-rs/pull/281))
+- *(deps)* bump Swatinem/rust-cache ([#287](https://github.com/developmentseed/cql2-rs/pull/287))
+- *(deps)* bump the production-dependencies group with 8 updates ([#288](https://github.com/developmentseed/cql2-rs/pull/288))
+- *(deps)* bump the production-dependencies group with 10 updates ([#284](https://github.com/developmentseed/cql2-rs/pull/284))
+
 ### Changed
 
 - Upgraded dependencies. (`Cargo.toml`, `Cargo.lock`)
